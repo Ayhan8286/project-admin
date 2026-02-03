@@ -1,0 +1,59 @@
+import { supabase } from "@/lib/supabase";
+import { AttendanceRecord } from "@/types/student";
+
+export interface AttendanceWithStudent extends AttendanceRecord {
+    student?: {
+        id: string;
+        full_name: string;
+        reg_no: string;
+    };
+}
+
+export async function submitAttendance(records: AttendanceRecord[]): Promise<void> {
+    const { error } = await supabase
+        .from("attendance")
+        .insert(records);
+
+    if (error) {
+        console.error("Error submitting attendance:", error);
+        throw error;
+    }
+}
+
+export async function getAttendanceByDate(date: string): Promise<AttendanceWithStudent[]> {
+    const { data, error } = await supabase
+        .from("attendance")
+        .select(`
+            *,
+            student:students(id, full_name, reg_no)
+        `)
+        .eq("date", date)
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Error fetching attendance:", error);
+        throw error;
+    }
+
+    // Handle Supabase nested relations
+    return (data || []).map((record) => ({
+        ...record,
+        student: Array.isArray(record.student) ? record.student[0] : record.student,
+    }));
+}
+
+export async function getAttendanceSummary(date: string): Promise<{
+    total: number;
+    present: number;
+    absent: number;
+    late: number;
+}> {
+    const records = await getAttendanceByDate(date);
+    return {
+        total: records.length,
+        present: records.filter(r => r.status === "Present").length,
+        absent: records.filter(r => r.status === "Absent").length,
+        late: records.filter(r => r.status === "Late").length,
+    };
+}
+
