@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "School LMS Dashboard",
-  description: "School Management System Dashboard",
+  title: "AL Huda Network LMS",
+  description: "AL Huda Network Management System",
 };
 
 export default function RootLayout({

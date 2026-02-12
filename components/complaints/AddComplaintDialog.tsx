@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getStudents } from "@/lib/api/students";
-import { getTeachers } from "@/lib/api/classes"; // Assuming getTeachers is exported from here
+import { getTeachers, getStudentClasses } from "@/lib/api/classes"; // Assuming getTeachers is exported from here
 import { addComplaint } from "@/lib/api/complaints";
 import { Student } from "@/types/student";
 import { Teacher } from "@/types/student"; // Teacher type is likely in student.ts or similar
@@ -32,6 +32,23 @@ export function AddComplaintDialog({ open, onOpenChange }: AddComplaintDialogPro
 
     const { data: students = [] } = useQuery({ queryKey: ["students"], queryFn: getStudents });
     const { data: teachers = [] } = useQuery({ queryKey: ["teachers"], queryFn: getTeachers });
+
+    const { data: studentClasses = [] } = useQuery({
+        queryKey: ["student-classes", formData.student_id],
+        queryFn: () => getStudentClasses(formData.student_id),
+        enabled: !!formData.student_id,
+    });
+
+    // Auto-select teacher when student is selected
+    useEffect(() => {
+        if (studentClasses.length > 0 && !formData.teacher_id) {
+            // Prefer the first class's teacher, or if multiple, just pick the first one available
+            const firstClass = studentClasses[0];
+            if (firstClass && firstClass.teacher_id) {
+                setFormData(prev => ({ ...prev, teacher_id: firstClass.teacher_id }));
+            }
+        }
+    }, [studentClasses, formData.teacher_id]);
 
     const selectedStudent = students.find((s: Student) => s.id === formData.student_id);
     const selectedTeacher = teachers.find((t: Teacher) => t.id === formData.teacher_id);

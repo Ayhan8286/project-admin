@@ -47,6 +47,7 @@ export async function getAttendanceSummary(date: string): Promise<{
     present: number;
     absent: number;
     late: number;
+    leave: number;
 }> {
     const records = await getAttendanceByDate(date);
     return {
@@ -54,6 +55,7 @@ export async function getAttendanceSummary(date: string): Promise<{
         present: records.filter(r => r.status === "Present").length,
         absent: records.filter(r => r.status === "Absent").length,
         late: records.filter(r => r.status === "Late").length,
+        leave: records.filter(r => r.status === "Leave").length,
     };
 }
 

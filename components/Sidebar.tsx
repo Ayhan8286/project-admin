@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, GraduationCap, ClipboardCheck, BookOpen, Video, Settings, MessageSquareWarning } from "lucide-react";
+import { Home, Users, GraduationCap, ClipboardCheck, BookOpen, Video, Settings, MessageSquareWarning, Library, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
@@ -28,6 +28,16 @@ const navItems = [
         icon: Video,
     },
     {
+        label: "Subjects",
+        href: "/subjects",
+        icon: Library,
+    },
+    {
+        label: "Finance",
+        href: "/finance",
+        icon: DollarSign,
+    },
+    {
         label: "Attendance",
         href: "/attendance",
         icon: ClipboardCheck,
@@ -51,7 +61,7 @@ export function Sidebar() {
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-background md:flex">
             <div className="flex h-16 items-center gap-2 border-b px-6">
                 <GraduationCap className="h-6 w-6 text-primary" />
-                <span className="text-lg font-semibold">School LMS</span>
+                <span className="text-lg font-semibold">AL Huda Network</span>
             </div>
             <nav className="flex-1 space-y-1 p-4">
                 {navItems.map((item) => {

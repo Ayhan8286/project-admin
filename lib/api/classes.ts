@@ -36,7 +36,8 @@ export async function getTeacherClasses(teacherId: string): Promise<(ClassSchedu
         .from("classes")
         .select(`
       *,
-      student:students(id, full_name, reg_no)
+      student:students(id, full_name, reg_no),
+      course:courses(id, name)
     `)
         .eq("teacher_id", teacherId);
 
@@ -54,7 +55,8 @@ export async function getStudentClasses(studentId: string): Promise<ClassSchedul
         .select(`
       *,
       teacher:teachers(id, name, staff_id),
-      app_account:app_accounts(id, platform, account_identifier)
+      app_account:app_accounts(id, platform, account_identifier),
+      course:courses(id, name)
     `)
         .eq("student_id", studentId);
 
@@ -103,7 +105,7 @@ export async function updateClass(id: string, updates: Partial<ClassSchedule>): 
     }
 }
 
-export async function addClass(classData: Omit<ClassSchedule, "id" | "teacher" | "app_account">): Promise<ClassSchedule> {
+export async function addClass(classData: Omit<ClassSchedule, "id" | "teacher" | "app_account" | "course">): Promise<ClassSchedule> {
     const { data, error } = await supabase
         .from("classes")
         .insert([classData])
@@ -124,7 +126,8 @@ export async function getAllClasses(): Promise<(ClassSchedule & { teacher: Teach
         .select(`
       *,
       teacher:teachers(*),
-      student:students(id, full_name, reg_no)
+      student:students(id, full_name, reg_no),
+      course:courses(id, name)
     `);
 
     if (error) {

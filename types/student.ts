@@ -7,6 +7,14 @@ export interface Student {
     shift: string;
     guardian_id: string | null;
     shift_id: string | null;
+    classes?: { course: { name: string } | null }[];
+}
+
+export interface Course {
+    id: string;
+    name: string;
+    description: string | null;
+    created_at: string;
 }
 
 export interface Teacher {
@@ -38,6 +46,8 @@ export interface ClassSchedule {
     schedule_days: Record<string, string>;
     teacher?: Teacher;
     app_account?: AppAccount;
+    course_id: string | null;
+    course?: Course;
 }
 
 export interface AttendanceRecord {

@@ -4,14 +4,25 @@ import { Student } from "@/types/student";
 export async function getStudents(): Promise<Student[]> {
     const { data, error } = await supabase
         .from("students")
-        .select("id, full_name, reg_no, guardian_name, status, shift, guardian_id, shift_id");
+        .select(`
+            id, full_name, reg_no, guardian_name, status, shift, guardian_id, shift_id,
+            classes(
+                course:courses(name)
+            )
+        `);
 
     if (error) {
         console.error("Error fetching students:", error);
         throw error;
     }
 
-    return data || [];
+    return (data || []).map((student: any) => ({
+        ...student,
+        classes: student.classes?.map((cls: any) => ({
+            ...cls,
+            course: Array.isArray(cls.course) ? cls.course[0] : cls.course
+        }))
+    }));
 }
 
 export async function getStudentsCount(): Promise<number> {

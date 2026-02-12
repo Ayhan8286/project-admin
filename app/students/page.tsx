@@ -101,6 +101,7 @@ export default function StudentsPage() {
                         <TableRow>
                             <TableHead>Full Name</TableHead>
                             <TableHead>Reg. No.</TableHead>
+                            <TableHead>Subjects</TableHead>
                             <TableHead>Guardian Name</TableHead>
                             <TableHead>Status</TableHead>
                         </TableRow>
@@ -135,6 +136,18 @@ export default function StudentsPage() {
                                         </Link>
                                     </TableCell>
                                     <TableCell>{student.reg_no}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-1">
+                                            {student.classes?.map((c, i) => (
+                                                c.course?.name ? (
+                                                    <span key={i} className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
+                                                        {c.course.name}
+                                                    </span>
+                                                ) : null
+                                            ))}
+                                            {!student.classes?.length && <span className="text-muted-foreground text-xs">-</span>}
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{student.guardian_name}</TableCell>
                                     <TableCell>
                                         <span

@@ -23,10 +23,10 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CalendarIcon, Check, Loader2, UserCheck, UserX, Clock, History } from "lucide-react";
+import { CalendarIcon, Check, Loader2, UserCheck, UserX, Clock, History, CalendarOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type AttendanceStatus = "Present" | "Absent" | "Late";
+type AttendanceStatus = "Present" | "Absent" | "Late" | "Leave";
 
 interface StudentAttendance {
     student_id: string;
@@ -111,6 +111,7 @@ export default function AttendancePage() {
     const presentCount = attendanceList.filter((s) => s.status === "Present").length;
     const absentCount = attendanceList.filter((s) => s.status === "Absent").length;
     const lateCount = attendanceList.filter((s) => s.status === "Late").length;
+    const leaveCount = attendanceList.filter((s) => s.status === "Leave").length;
 
     return (
         <div className="space-y-6">
@@ -197,6 +198,9 @@ export default function AttendancePage() {
                                 <span className="flex items-center gap-1 text-yellow-600">
                                     <Clock className="h-4 w-4" /> {lateCount}
                                 </span>
+                                <span className="flex items-center gap-1 text-blue-600">
+                                    <CalendarOff className="h-4 w-4" /> {leaveCount}
+                                </span>
                             </div>
                         )}
                     </CardHeader>
@@ -248,6 +252,13 @@ export default function AttendancePage() {
                                             >
                                                 <Clock className="h-4 w-4 mr-1" />
                                                 Late
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem
+                                                value="Leave"
+                                                className="data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 dark:data-[state=on]:bg-blue-900 dark:data-[state=on]:text-blue-200"
+                                            >
+                                                <CalendarOff className="h-4 w-4 mr-1" />
+                                                Leave
                                             </ToggleGroupItem>
                                         </ToggleGroup>
                                     </div>

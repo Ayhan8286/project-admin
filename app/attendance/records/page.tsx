@@ -21,10 +21,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { CalendarIcon, UserCheck, UserX, Clock, Loader2, ArrowLeft } from "lucide-react";
+import { CalendarIcon, UserCheck, UserX, Clock, Loader2, ArrowLeft, CalendarOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type StatusFilter = "all" | "Present" | "Absent" | "Late";
+type StatusFilter = "all" | "Present" | "Absent" | "Late" | "Leave";
 
 export default function AttendanceRecordsPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(subDays(new Date(), 1)); // Default to yesterday
@@ -44,6 +44,7 @@ export default function AttendanceRecordsPage() {
         present: records.filter((r) => r.status === "Present").length,
         absent: records.filter((r) => r.status === "Absent").length,
         late: records.filter((r) => r.status === "Late").length,
+        leave: records.filter((r) => r.status === "Leave").length,
     };
 
     const getStatusBadge = (status: string) => {
@@ -51,6 +52,7 @@ export default function AttendanceRecordsPage() {
             Present: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
             Absent: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
             Late: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+            Leave: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
         };
         return styles[status as keyof typeof styles] || "bg-gray-100 text-gray-800";
     };
@@ -131,7 +133,7 @@ export default function AttendanceRecordsPage() {
                         {isLoading ? (
                             <Loader2 className="h-6 w-6 animate-spin" />
                         ) : (
-                            <div className="grid grid-cols-4 gap-4 text-center">
+                            <div className="grid grid-cols-5 gap-4 text-center">
                                 <div
                                     className={cn(
                                         "rounded-lg p-3 cursor-pointer transition-colors",
@@ -171,6 +173,16 @@ export default function AttendanceRecordsPage() {
                                 >
                                     <p className="text-2xl font-bold text-yellow-600">{summary.late}</p>
                                     <p className="text-xs text-muted-foreground">Late</p>
+                                </div>
+                                <div
+                                    className={cn(
+                                        "rounded-lg p-3 cursor-pointer transition-colors",
+                                        statusFilter === "Leave" ? "bg-blue-100 dark:bg-blue-900" : "bg-muted hover:bg-blue-50"
+                                    )}
+                                    onClick={() => setStatusFilter("Leave")}
+                                >
+                                    <p className="text-2xl font-bold text-blue-600">{summary.leave}</p>
+                                    <p className="text-xs text-muted-foreground">Leave</p>
                                 </div>
                             </div>
                         )}
@@ -238,6 +250,7 @@ export default function AttendanceRecordsPage() {
                                                 {record.status === "Present" && <UserCheck className="h-3 w-3" />}
                                                 {record.status === "Absent" && <UserX className="h-3 w-3" />}
                                                 {record.status === "Late" && <Clock className="h-3 w-3" />}
+                                                {record.status === "Leave" && <CalendarOff className="h-3 w-3" />}
                                                 {record.status}
                                             </span>
                                         </TableCell>
