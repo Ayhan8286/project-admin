@@ -93,6 +93,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                     uk_start_time: classFormData.uk_start_time,
                     uk_end_time: classFormData.uk_end_time,
                     schedule_days: {}, // Default empty for now
+                    course_id: null,
                 });
             }
             return newStudent;
