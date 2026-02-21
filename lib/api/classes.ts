@@ -16,6 +16,27 @@ export async function getTeachers(): Promise<Teacher[]> {
     return data || [];
 }
 
+export async function addTeacher(teacher: Omit<Teacher, "id" | "is_active">): Promise<Teacher> {
+    const newTeacher = {
+        ...teacher,
+        id: crypto.randomUUID(),
+        is_active: true
+    };
+
+    const { data, error } = await supabase
+        .from("teachers")
+        .insert([newTeacher])
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error adding teacher:", error);
+        throw error;
+    }
+
+    return data;
+}
+
 export async function getTeacherById(id: string): Promise<Teacher | null> {
     const { data, error } = await supabase
         .from("teachers")
@@ -29,6 +50,39 @@ export async function getTeacherById(id: string): Promise<Teacher | null> {
     }
 
     return data;
+}
+
+export async function deleteTeacher(id: string): Promise<void> {
+    // 1. Delete associated classes
+    const { error: classesError } = await supabase
+        .from("classes")
+        .delete()
+        .eq("teacher_id", id);
+
+    if (classesError) {
+        console.error("Error deleting teacher classes:", classesError);
+    } // Ignoring if no classes, just logging
+
+    // 2. Delete the availability 
+    const { error: availabilityError } = await supabase
+        .from("teacher_availability")
+        .delete()
+        .eq("teacher_id", id);
+
+    if (availabilityError) {
+        console.error("Error deleting teacher availability:", availabilityError);
+    }
+
+    // 3. Finally delete the teacher
+    const { error } = await supabase
+        .from("teachers")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        console.error("Error deleting teacher:", error);
+        throw error;
+    }
 }
 
 export async function getTeacherClasses(teacherId: string): Promise<(ClassSchedule & { student: { id: string; full_name: string; reg_no: string } })[]> {

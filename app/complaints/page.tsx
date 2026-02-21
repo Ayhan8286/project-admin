@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, MessageSquareWarning, CheckCircle2, Clock } from "lucide-react";
+import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
+import { Plus, MessageSquareWarning } from "lucide-react";
 import { format } from "date-fns";
 import { Complaint } from "@/types/complaint";
 
@@ -37,8 +38,8 @@ export default function ComplaintsPage() {
         <div className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Complaints & Issues</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-3xl font-bold tracking-tight text-gradient">Complaints &amp; Issues</h1>
+                    <p className="text-slate-400">
                         Manage and track student complaints concerning teachers.
                     </p>
                 </div>
@@ -58,13 +59,13 @@ export default function ComplaintsPage() {
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
-                        <div className="flex justify-center py-10">
-                            <Loader2 className="h-8 w-8 animate-spin" />
-                        </div>
+                        <div className="py-8"><LoadingShimmer rows={4} rowHeight="h-10" /></div>
                     ) : complaints.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
-                            <MessageSquareWarning className="h-10 w-10 mb-2 opacity-20" />
-                            <p>No complaints found.</p>
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="w-16 h-16 rounded-full bg-violet-500/10 flex items-center justify-center mb-4">
+                                <MessageSquareWarning className="h-8 w-8 text-violet-400/50" />
+                            </div>
+                            <p className="text-slate-400 text-sm">No complaints logged yet.</p>
                         </div>
                     ) : (
                         <Table>
@@ -89,8 +90,8 @@ export default function ComplaintsPage() {
                                             <div className="text-xs text-muted-foreground">{complaint.student?.reg_no}</div>
                                         </TableCell>
                                         <TableCell>
-                                            <div>{complaint.teacher?.name}</div>
-                                            <div className="text-xs text-muted-foreground">{complaint.teacher?.staff_id}</div>
+                                            <div className="text-slate-200">{complaint.teacher?.name}</div>
+                                            <div className="text-xs text-slate-500">{complaint.teacher?.staff_id}</div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="font-semibold">{complaint.title || "Untitled"}</div>
@@ -99,10 +100,7 @@ export default function ComplaintsPage() {
                                             </p>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge
-                                                variant={complaint.status === "Reviewed" ? "default" : "secondary"}
-                                                className={complaint.status === "Pending" ? "bg-orange-100 text-orange-800 hover:bg-orange-100 dark:bg-orange-900 dark:text-orange-100" : "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-100"}
-                                            >
+                                            <Badge variant={complaint.status === "Pending" ? "pending" : "resolved"}>
                                                 {complaint.status}
                                             </Badge>
                                         </TableCell>
@@ -114,9 +112,9 @@ export default function ComplaintsPage() {
                                                 disabled={updateStatusMutation.isPending}
                                             >
                                                 {complaint.status === "Pending" ? (
-                                                    <span className="text-blue-600 flex items-center gap-1">Mark Reviewed</span>
+                                                    <span className="text-violet-400 flex items-center gap-1">Mark Reviewed</span>
                                                 ) : (
-                                                    <span className="text-muted-foreground flex items-center gap-1">Mark Pending</span>
+                                                    <span className="text-slate-500 flex items-center gap-1">Mark Pending</span>
                                                 )}
                                             </Button>
                                         </TableCell>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getStudentById, getSiblings, updateStudent } from "@/lib/api/students";
 import { getStudentClasses, updateClass, getTeachers } from "@/lib/api/classes";
 import { getAppAccounts } from "@/lib/api/platforms";
+import { getSupervisors } from "@/lib/api/supervisors";
 import { Student, ClassSchedule } from "@/types/student";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,14 +49,19 @@ export default function StudentProfilePage({
     const [isClassEditOpen, setIsClassEditOpen] = useState(false);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
-    const [editForm, setEditForm] = useState({
+    const [editForm, setEditForm] = useState<{
+        full_name: string;
+        reg_no: string;
+        status: string;
+        shift: string;
+        supervisor_id: string;
+    }>({
         full_name: "",
         reg_no: "",
         status: "",
         shift: "",
+        supervisor_id: "",
     });
-
-
 
     const [classForm, setClassForm] = useState<Partial<ClassSchedule>>({
         teacher_id: "",
@@ -93,9 +99,14 @@ export default function StudentProfilePage({
         queryFn: getAppAccounts,
     });
 
+    const { data: supervisors = [] } = useQuery({
+        queryKey: ["supervisors"],
+        queryFn: getSupervisors,
+    });
+
     // Mutations
     const updateMutation = useMutation({
-        mutationFn: (updates: Partial<Pick<Student, "full_name" | "status" | "shift" | "reg_no">>) =>
+        mutationFn: (updates: Partial<Pick<Student, "full_name" | "status" | "shift" | "reg_no" | "supervisor_id">>) =>
             updateStudent(id, updates),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["student", id] });
@@ -122,6 +133,7 @@ export default function StudentProfilePage({
                 reg_no: student.reg_no,
                 status: student.status,
                 shift: student.shift || "",
+                supervisor_id: student.supervisor_id || "",
             });
         }
         setIsEditOpen(true);
@@ -243,6 +255,23 @@ export default function StudentProfilePage({
                                         placeholder="e.g., Morning, Evening, Night"
                                     />
                                 </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit_supervisor">Supervisor</Label>
+                                    <Select
+                                        value={editForm.supervisor_id || "none"}
+                                        onValueChange={(val) => setEditForm({ ...editForm, supervisor_id: val === "none" ? "" : val })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select Supervisor" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            {supervisors.map((s: any) => (
+                                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                             <DialogFooter>
                                 <Button type="submit" disabled={updateMutation.isPending}>
@@ -292,6 +321,10 @@ export default function StudentProfilePage({
                             <div>
                                 <p className="text-sm text-muted-foreground">Shift / Timing</p>
                                 <p className="font-medium">{student.shift || "—"}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Supervisor</p>
+                                <p className="font-medium">{student.supervisor?.name || "—"}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -503,4 +536,3 @@ export default function StudentProfilePage({
         </div>
     );
 }
-

@@ -27,26 +27,37 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="dark"
+            enableSystem={false}
             disableTransitionOnChange
           >
             <div className="flex min-h-screen">
               <Sidebar />
-              <main className="flex-1 md:ml-64">
-                <div className="container mx-auto p-6">
+              {/* Main content — shifts right when sidebar is full (w-64) or icon-only (w-16) */}
+              <main className="flex-1 md:ml-64 min-h-screen overflow-y-auto transition-all duration-300">
+                <div className="container mx-auto p-6 md:p-8 max-w-7xl">
                   {children}
                 </div>
               </main>
             </div>
-            <Toaster />
+            <Toaster
+              theme="dark"
+              toastOptions={{
+                style: {
+                  background: "rgba(15,10,35,0.9)",
+                  backdropFilter: "blur(15px)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#e2e8f0",
+                },
+              }}
+            />
           </ThemeProvider>
         </QueryProvider>
       </body>

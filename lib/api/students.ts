@@ -5,7 +5,8 @@ export async function getStudents(): Promise<Student[]> {
     const { data, error } = await supabase
         .from("students")
         .select(`
-            id, full_name, reg_no, guardian_name, status, shift, guardian_id, shift_id,
+            id, full_name, reg_no, guardian_name, status, shift, guardian_id, shift_id, supervisor_id,
+            supervisor:supervisors(name),
             classes(
                 course:courses(name)
             )
@@ -21,7 +22,8 @@ export async function getStudents(): Promise<Student[]> {
         classes: student.classes?.map((cls: any) => ({
             ...cls,
             course: Array.isArray(cls.course) ? cls.course[0] : cls.course
-        }))
+        })),
+        supervisor: Array.isArray(student.supervisor) ? student.supervisor[0] : student.supervisor
     }));
 }
 
@@ -41,7 +43,10 @@ export async function getStudentsCount(): Promise<number> {
 export async function getStudentById(id: string): Promise<Student | null> {
     const { data, error } = await supabase
         .from("students")
-        .select("*")
+        .select(`
+            *,
+            supervisor:supervisors(name)
+        `)
         .eq("id", id)
         .single();
 
@@ -81,7 +86,7 @@ export async function getSiblings(student: Student): Promise<Student[]> {
 
 export async function updateStudent(
     id: string,
-    updates: Partial<Pick<Student, "full_name" | "status" | "shift" | "reg_no">>
+    updates: Partial<Pick<Student, "full_name" | "status" | "shift" | "reg_no" | "supervisor_id">>
 ): Promise<Student | null> {
     const { data, error } = await supabase
         .from("students")
@@ -101,9 +106,10 @@ export async function updateStudent(
 export async function addStudent(
     student: Omit<Student, "id">
 ): Promise<Student> {
+    const newStudent = { ...student, id: crypto.randomUUID() };
     const { data, error } = await supabase
         .from("students")
-        .insert([student])
+        .insert([newStudent])
         .select()
         .single();
 
@@ -113,4 +119,28 @@ export async function addStudent(
     }
 
     return data;
+}
+
+export async function deleteStudent(id: string): Promise<void> {
+    // 1. Delete associated classes first to avoid foreign key constraints
+    const { error: classesError } = await supabase
+        .from("classes")
+        .delete()
+        .eq("student_id", id);
+
+    if (classesError) {
+        console.error("Error deleting student classes:", classesError);
+        throw classesError;
+    }
+
+    // 2. Delete the student
+    const { error } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        console.error("Error deleting student:", error);
+        throw error;
+    }
 }

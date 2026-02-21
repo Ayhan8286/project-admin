@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addStudent } from "@/lib/api/students";
 import { getTeachers, addClass } from "@/lib/api/classes";
 import { getAppAccounts } from "@/lib/api/platforms";
+import { getSupervisors } from "@/lib/api/supervisors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +43,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
         guardian_name: "",
         status: "Active",
         shift: "",
+        supervisor_id: "",
     });
 
     const [classFormData, setClassFormData] = useState({
@@ -72,15 +74,22 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
         queryFn: getAppAccounts,
     });
 
+    const { data: supervisors = [] } = useQuery({
+        queryKey: ["supervisors"],
+        queryFn: getSupervisors,
+    });
+
     // Mutation
     const addMutation = useMutation({
         mutationFn: async () => {
             // 1. Create Student
-            const newStudent = await addStudent({
+            const studentPayload = {
                 ...formData,
+                supervisor_id: formData.supervisor_id || null, // Fix UUID error
                 guardian_id: null,
                 shift_id: null,
-            });
+            };
+            const newStudent = await addStudent(studentPayload);
 
             // 2. Create Class (if enough info provided)
             if (newStudent && newStudent.id && classFormData.teacher_id) {
@@ -114,6 +123,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
             guardian_name: "",
             status: "Active",
             shift: "",
+            supervisor_id: "",
         });
         setClassFormData({
             teacher_id: defaultTeacherId || "",
@@ -177,34 +187,35 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                                     />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="guardian_name">Guardian Name *</Label>
-                                    <Input
-                                        id="guardian_name"
-                                        name="guardian_name"
-                                        value={formData.guardian_name}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="status">Status *</Label>
-                                    <Select
-                                        value={formData.status}
-                                        onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
-                                    >
-                                        <SelectTrigger id="status">
-                                            <SelectValue placeholder="Select Status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Active">Active</SelectItem>
-                                            <SelectItem value="Inactive">Inactive</SelectItem>
-                                            <SelectItem value="Trial">Trial</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="guardian_name">Guardian Name *</Label>
+                                <Input
+                                    id="guardian_name"
+                                    name="guardian_name"
+                                    value={formData.guardian_name}
+                                    onChange={handleInputChange}
+                                    required
+                                />
                             </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="status">Status *</Label>
+                                <Select
+                                    value={formData.status}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
+                                >
+                                    <SelectTrigger id="status">
+                                        <SelectValue placeholder="Select Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Active">Active</SelectItem>
+                                        <SelectItem value="Inactive">Inactive</SelectItem>
+                                        <SelectItem value="Trial">Trial</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="shift">Shift / Timing</Label>
                                 <Input
@@ -215,7 +226,25 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                                     placeholder="e.g., Morning"
                                 />
                             </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="supervisor">Supervisor</Label>
+                                <Select
+                                    value={formData.supervisor_id || "none"}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, supervisor_id: val === "none" ? "" : val }))}
+                                >
+                                    <SelectTrigger id="supervisor">
+                                        <SelectValue placeholder="Select Supervisor" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        {supervisors.map((s: any) => (
+                                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
+
 
                         {/* Class Details Section */}
                         <div className="space-y-4 border-t pt-4">
@@ -314,7 +343,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                         </Button>
                     </DialogFooter>
                 </form>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     );
 }

@@ -7,7 +7,9 @@ export interface Student {
     shift: string;
     guardian_id: string | null;
     shift_id: string | null;
+    supervisor_id: string | null;
     classes?: { course: { name: string } | null }[];
+    supervisor?: { name: string } | null;
 }
 
 export interface Course {

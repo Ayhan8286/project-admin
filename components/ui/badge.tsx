@@ -1,20 +1,24 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-all duration-200 backdrop-blur-sm",
     {
         variants: {
             variant: {
-                default:
-                    "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-                secondary:
-                    "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                destructive:
-                    "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-                outline: "text-foreground",
+                default: "bg-violet-500/20 text-violet-300 border border-violet-500/30 shadow-[0_0_8px_rgba(139,92,246,0.2)]",
+                secondary: "bg-white/8 text-slate-300 border border-white/10",
+                destructive: "bg-red-500/15 text-red-300 border border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)]",
+                outline: "text-slate-300 border border-white/15",
+                // Neon status pills
+                present: "badge-present",
+                absent: "badge-absent",
+                late: "badge-late",
+                leave: "badge-leave",
+                pending: "badge-pending",
+                resolved: "badge-resolved",
+                warning: "badge-warning",
             },
         },
         defaultVariants: {

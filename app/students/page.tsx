@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { getStudents, addStudent } from "@/lib/api/students";
+import { getStudents, addStudent, deleteStudent } from "@/lib/api/students";
 import { getTeachers, addClass } from "@/lib/api/classes";
 import { getAppAccounts } from "@/lib/api/platforms";
 import { Student } from "@/types/student";
@@ -34,7 +34,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Loader2 } from "lucide-react";
+import { Plus, Search, Loader2, Trash2 } from "lucide-react";
 import { AddStudentDialog } from "@/components/students/AddStudentDialog";
 
 export default function StudentsPage() {
@@ -47,6 +47,19 @@ export default function StudentsPage() {
         queryKey: ["students"],
         queryFn: getStudents,
     });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteStudent,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["students"] });
+        },
+    });
+
+    const handleDelete = (id: string, name: string) => {
+        if (window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) {
+            deleteMutation.mutate(id);
+        }
+    };
 
     const filteredStudents = useMemo(() => {
         if (!searchQuery.trim()) return students;
@@ -104,19 +117,20 @@ export default function StudentsPage() {
                             <TableHead>Subjects</TableHead>
                             <TableHead>Guardian Name</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead className="w-[80px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center py-10">
+                                <TableCell colSpan={6} className="text-center py-10">
                                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     <p className="text-muted-foreground mt-2">Loading students...</p>
                                 </TableCell>
                             </TableRow>
                         ) : filteredStudents.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center py-10">
+                                <TableCell colSpan={6} className="text-center py-10">
                                     <p className="text-muted-foreground">
                                         {searchQuery
                                             ? "No students found matching your search."
@@ -158,6 +172,17 @@ export default function StudentsPage() {
                                         >
                                             {student.status}
                                         </span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/50"
+                                            onClick={() => handleDelete(student.id, student.full_name)}
+                                            disabled={deleteMutation.isPending}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))

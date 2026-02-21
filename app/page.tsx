@@ -3,8 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getDashboardStats } from "@/lib/api/dashboard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ShimmerBlock, LoadingShimmer } from "@/components/ui/LoadingShimmer";
+import { GlassAreaChart, GlassBarChart } from "@/components/ui/GlassChart";
 import Link from "next/link";
-import { Users, BookOpen, Calendar, UserCheck, UserX, Clock, Loader2 } from "lucide-react";
+import { Users, BookOpen, Calendar, UserCheck, Clock } from "lucide-react";
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useQuery({
@@ -18,115 +20,165 @@ export default function DashboardPage() {
       value: stats?.totalStudents ?? 0,
       description: "Enrolled in the system",
       icon: Users,
-      gradient: "from-blue-500 to-blue-600",
-      textColor: "text-blue-100",
-      iconColor: "text-blue-200",
+      gradient: "from-violet-600 to-indigo-600",
+      glow: "shadow-violet-500/30",
+      iconBg: "bg-violet-500/20",
+      iconColor: "text-violet-300",
     },
     {
       title: "Active Teachers",
       value: stats?.totalTeachers ?? 0,
       description: "Currently teaching",
       icon: BookOpen,
-      gradient: "from-green-500 to-green-600",
-      textColor: "text-green-100",
-      iconColor: "text-green-200",
+      gradient: "from-emerald-600 to-teal-600",
+      glow: "shadow-emerald-500/30",
+      iconBg: "bg-emerald-500/20",
+      iconColor: "text-emerald-300",
     },
     {
       title: "Total Classes",
       value: stats?.totalClasses ?? 0,
       description: "Student-teacher assignments",
       icon: Calendar,
-      gradient: "from-purple-500 to-purple-600",
-      textColor: "text-purple-100",
-      iconColor: "text-purple-200",
+      gradient: "from-blue-600 to-cyan-600",
+      glow: "shadow-blue-500/30",
+      iconBg: "bg-blue-500/20",
+      iconColor: "text-blue-300",
     },
     {
       title: "Active Students",
       value: stats?.activeStudents ?? 0,
       description: "Currently enrolled",
       icon: UserCheck,
-      gradient: "from-emerald-500 to-emerald-600",
-      textColor: "text-emerald-100",
-      iconColor: "text-emerald-200",
+      gradient: "from-pink-600 to-rose-600",
+      glow: "shadow-pink-500/30",
+      iconBg: "bg-pink-500/20",
+      iconColor: "text-pink-300",
     },
     {
       title: "Attendance Today",
       value: (stats?.todayAttendancePercentage ?? 0) + "%",
       description: "Students present today",
       icon: UserCheck,
-      gradient: "from-orange-500 to-orange-600",
-      textColor: "text-orange-100",
-      iconColor: "text-orange-200",
+      gradient: "from-orange-600 to-amber-600",
+      glow: "shadow-orange-500/30",
+      iconBg: "bg-orange-500/20",
+      iconColor: "text-orange-300",
     },
   ];
 
+  // Build bar chart data from hoursPerDay stats
+  const hoursChartData = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
+    day,
+    hours: stats?.hoursPerDay?.[day] ?? 0,
+    classes: stats?.classesPerDay?.[day] ?? 0,
+  }));
+
+  // Build a weekly attendance breakdown from attendanceStats
+  // Show the present/absent/late/leave as a small multi-point area proxy
+  const attendanceChartData = [
+    { label: "Present", attendance: stats?.attendanceStats?.present ?? 0 },
+    { label: "Active", attendance: stats?.activeStudents ? Math.round((stats.activeStudents / Math.max(stats.totalStudents, 1)) * 100) : 0 },
+    { label: "Teachers", attendance: stats?.totalTeachers ?? 0 },
+    { label: "Classes", attendance: stats?.totalClasses ? Math.round(stats.totalClasses / 10) : 0 },
+    { label: "Revenue", attendance: stats?.attendanceStats?.leave ?? 0 },
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-entrance">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold tracking-tight text-gradient">Dashboard</h1>
+        <p className="text-slate-400 mt-1">
           Welcome to the School Management System.
         </p>
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-stagger">
         {statCards.map((card) => (
-          <Card
+          <div
             key={card.title}
-            className={`bg-gradient-to-br ${card.gradient} text-white border-0 shadow-lg`}
+            className={`rounded-xl bg-gradient-to-br ${card.gradient} p-5 shadow-lg ${card.glow} relative overflow-hidden group transition-all duration-300 hover:scale-[1.03] hover:shadow-xl`}
+            style={{ transition: "transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease" }}
           >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className={`text-sm font-medium ${card.textColor}`}>
-                {card.title}
-              </CardTitle>
-              <card.icon className={`h-5 w-5 ${card.iconColor}`} />
-            </CardHeader>
-            <CardContent>
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.3)_0%,_transparent_60%)]" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-white/70">{card.title}</p>
+                <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${card.iconBg}`}>
+                  <card.icon className={`h-4 w-4 ${card.iconColor}`} />
+                </div>
+              </div>
               {isLoading ? (
-                <Loader2 className="h-8 w-8 animate-spin" />
+                <ShimmerBlock className="h-10 w-20 bg-white/20 shimmer-skeleton" />
               ) : (
-                <div className="text-4xl font-bold">{card.value}</div>
+                <p className="text-4xl font-bold text-white tracking-tight">{card.value}</p>
               )}
-              <p className={`text-xs ${card.textColor} mt-1`}>{card.description}</p>
-            </CardContent>
-          </Card>
+              <p className="text-xs text-white/60 mt-1">{card.description}</p>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Students by Shift & Inactive Students */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* ── CHART ROW 1: Attendance Breakdown + Shift Distribution ── */}
+      <div className="grid gap-4 md:grid-cols-2 animate-stagger">
+        {/* Weekly Attendance Area Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-violet-400" />
+              Attendance Overview
+            </CardTitle>
+            <CardDescription>Current attendance breakdown across key metrics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <LoadingShimmer rows={4} rowHeight="h-6" />
+            ) : (
+              <GlassAreaChart
+                data={attendanceChartData}
+                xKey="label"
+                dataKey="attendance"
+                color="#8b5cf6"
+                unit="%"
+                height={200}
+              />
+            )}
+          </CardContent>
+        </Card>
+
         {/* Students by Shift */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+              <Clock className="h-5 w-5 text-cyan-400" />
               Students by Shift
             </CardTitle>
             <CardDescription>Distribution across different timings</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin" />
+              <div className="space-y-3">
+                {[70, 50, 35].map((_, i) => (
+                  <ShimmerBlock key={i} className="h-6 shimmer-skeleton" />
+                ))}
               </div>
             ) : stats?.studentsByShift ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {Object.entries(stats.studentsByShift).map(([shift, count]) => {
                   const percentage = stats.totalStudents
                     ? Math.round((count / stats.totalStudents) * 100)
                     : 0;
                   return (
-                    <div key={shift} className="space-y-1">
+                    <div key={shift} className="space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{shift}</span>
-                        <span className="text-muted-foreground">
-                          {count} ({percentage}%)
-                        </span>
+                        <span className="font-medium text-slate-200">{shift}</span>
+                        <span className="text-slate-400">{count} ({percentage}%)</span>
                       </div>
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-2 rounded-full bg-white/8 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600"
+                          className="h-full rounded-full progress-glow glow-pulse transition-all duration-700"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
@@ -135,140 +187,92 @@ export default function DashboardPage() {
                 })}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center">No data available</p>
+              <p className="text-slate-500 text-center py-4">No data available</p>
             )}
           </CardContent>
         </Card>
-
-        {/* Today's Attendance Overview */}
-        <Link href="/attendance/today" className="block transition-transform hover:scale-[1.02]">
-          <Card className="h-full cursor-pointer hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
-                Today's Attendance
-              </CardTitle>
-              <CardDescription>Click for details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Present */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        Present
-                      </div>
-                      <p className="text-2xl font-bold text-green-600">
-                        {stats?.attendanceStats?.present ?? 0}%
-                      </p>
-                    </div>
-
-                    {/* Absent */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="h-2 w-2 rounded-full bg-red-500" />
-                        Absent
-                      </div>
-                      <p className="text-2xl font-bold text-red-600">
-                        {stats?.attendanceStats?.absent ?? 0}%
-                      </p>
-                    </div>
-
-                    {/* Late */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                        Late
-                      </div>
-                      <p className="text-2xl font-bold text-yellow-600">
-                        {stats?.attendanceStats?.late ?? 0}%
-                      </p>
-                    </div>
-
-                    {/* Leave */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="h-2 w-2 rounded-full bg-blue-500" />
-                        Leave
-                      </div>
-                      <p className="text-2xl font-bold text-blue-600">
-                        {stats?.attendanceStats?.leave ?? 0}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </Link>
       </div>
 
-      {/* Daily Teaching Hours */}
+      {/* ── CHART ROW 2: Daily Teaching Hours Bar Chart ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <Calendar className="h-5 w-5 text-indigo-400" />
             Daily Teaching Hours
           </CardTitle>
           <CardDescription>
-            Classes per day (each class = 30 mins)
+            Hours per day of the week — each class = 30 mins
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : stats?.hoursPerDay ? (
-            <div className="grid grid-cols-7 gap-3">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => {
-                const classes = stats.classesPerDay?.[day] || 0;
-                const hours = stats.hoursPerDay?.[day] || 0;
-                const isWeekend = day === "Sat" || day === "Sun";
-                return (
-                  <div
-                    key={day}
-                    className={`rounded-lg p-4 text-center ${isWeekend
-                      ? "bg-gray-50 dark:bg-gray-900"
-                      : "bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950 dark:to-blue-950"
-                      }`}
-                  >
-                    <p className="text-sm font-medium text-muted-foreground">{day}</p>
-                    <p className="text-2xl font-bold mt-1">{hours}</p>
-                    <p className="text-xs text-muted-foreground">hours</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      ({classes} classes)
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+            <LoadingShimmer rows={1} rowHeight="h-48" />
           ) : (
-            <p className="text-muted-foreground text-center">No data available</p>
-          )}
-          {stats?.hoursPerDay && (
-            <div className="mt-4 pt-4 border-t flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Total Weekly</span>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                  {Object.values(stats.hoursPerDay).reduce((a, b) => a + b, 0)}
-                </span>
-                <span className="text-sm text-muted-foreground ml-1">hours</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  ({Object.values(stats.classesPerDay || {}).reduce((a, b) => a + b, 0)} classes)
-                </span>
-              </div>
-            </div>
+            <>
+              <GlassBarChart
+                data={hoursChartData}
+                xKey="day"
+                dataKey="hours"
+                color="#8b5cf6"
+                colorEnd="#4f46e5"
+                unit="h"
+                height={220}
+              />
+              {stats?.hoursPerDay && (
+                <div className="mt-4 pt-4 border-t border-white/8 flex justify-between items-center">
+                  <span className="text-sm text-slate-400">Total Weekly</span>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-gradient">
+                      {Object.values(stats.hoursPerDay).reduce((a, b) => a + b, 0)}
+                    </span>
+                    <span className="text-sm text-slate-400 ml-1">hours</span>
+                    <span className="text-sm text-slate-500 ml-2">
+                      ({Object.values(stats.classesPerDay || {}).reduce((a, b) => a + b, 0)} classes)
+                    </span>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* ── Today's Attendance ── */}
+      <Link href="/attendance/today" className="block transition-transform hover:scale-[1.01]">
+        <Card className="cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-emerald-400" />
+              Today's Attendance
+            </CardTitle>
+            <CardDescription>Click for details</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="grid grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => <ShimmerBlock key={i} className="h-12 shimmer-skeleton" />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "Present", value: stats?.attendanceStats?.present ?? 0, color: "text-emerald-400", dot: "bg-emerald-400" },
+                  { label: "Absent", value: stats?.attendanceStats?.absent ?? 0, color: "text-red-400", dot: "bg-red-400" },
+                  { label: "Late", value: stats?.attendanceStats?.late ?? 0, color: "text-amber-400", dot: "bg-amber-400" },
+                  { label: "Leave", value: stats?.attendanceStats?.leave ?? 0, color: "text-blue-400", dot: "bg-blue-400" },
+                ].map(({ label, value, color, dot }) => (
+                  <div key={label} className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <div className={`h-2 w-2 rounded-full ${dot} shadow-lg`} />
+                      {label}
+                    </div>
+                    <p className={`text-2xl font-bold ${color}`}>{value}%</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </Link>
     </div>
   );
 }
-

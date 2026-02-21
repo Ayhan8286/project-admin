@@ -23,7 +23,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CalendarIcon, Check, Loader2, UserCheck, UserX, Clock, History, CalendarOff } from "lucide-react";
+import { CalendarIcon, Check, UserCheck, UserX, Clock, History, CalendarOff } from "lucide-react";
+import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 import { cn } from "@/lib/utils";
 
 type AttendanceStatus = "Present" | "Absent" | "Late" | "Leave";
@@ -117,8 +118,8 @@ export default function AttendancePage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Attendance Manager</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-3xl font-bold tracking-tight text-gradient">Attendance Manager</h1>
+                    <p className="text-slate-400">
                         Mark and submit daily attendance for students.
                     </p>
                 </div>
@@ -206,9 +207,7 @@ export default function AttendancePage() {
                     </CardHeader>
                     <CardContent>
                         {studentsLoading ? (
-                            <div className="flex items-center justify-center py-10">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                            </div>
+                            <div className="py-6"><LoadingShimmer rows={5} rowHeight="h-14" /></div>
                         ) : attendanceList.length === 0 ? (
                             <p className="text-muted-foreground text-center py-10">
                                 No students found for this teacher.
@@ -218,11 +217,11 @@ export default function AttendancePage() {
                                 {attendanceList.map((student) => (
                                     <div
                                         key={student.student_id}
-                                        className="flex items-center justify-between rounded-lg border p-4"
+                                        className="flex items-center justify-between rounded-xl glass-card px-4 py-3"
                                     >
                                         <div>
-                                            <p className="font-medium">{student.full_name}</p>
-                                            <p className="text-sm text-muted-foreground">{student.reg_no}</p>
+                                            <p className="font-medium text-slate-100">{student.full_name}</p>
+                                            <p className="text-sm text-slate-400">{student.reg_no}</p>
                                         </div>
                                         <ToggleGroup
                                             type="single"
@@ -234,28 +233,28 @@ export default function AttendancePage() {
                                         >
                                             <ToggleGroupItem
                                                 value="Present"
-                                                className="data-[state=on]:bg-green-100 data-[state=on]:text-green-800 dark:data-[state=on]:bg-green-900 dark:data-[state=on]:text-green-200"
+                                                className="data-[state=on]:bg-emerald-500/20 data-[state=on]:text-emerald-300 data-[state=on]:shadow-[0_0_10px_rgba(16,185,129,0.25)] data-[state=on]:border-emerald-500/30 border border-white/10"
                                             >
                                                 <UserCheck className="h-4 w-4 mr-1" />
                                                 Present
                                             </ToggleGroupItem>
                                             <ToggleGroupItem
                                                 value="Absent"
-                                                className="data-[state=on]:bg-red-100 data-[state=on]:text-red-800 dark:data-[state=on]:bg-red-900 dark:data-[state=on]:text-red-200"
+                                                className="data-[state=on]:bg-red-500/20 data-[state=on]:text-red-300 data-[state=on]:shadow-[0_0_10px_rgba(239,68,68,0.25)] data-[state=on]:border-red-500/30 border border-white/10"
                                             >
                                                 <UserX className="h-4 w-4 mr-1" />
                                                 Absent
                                             </ToggleGroupItem>
                                             <ToggleGroupItem
                                                 value="Late"
-                                                className="data-[state=on]:bg-yellow-100 data-[state=on]:text-yellow-800 dark:data-[state=on]:bg-yellow-900 dark:data-[state=on]:text-yellow-200"
+                                                className="data-[state=on]:bg-amber-500/20 data-[state=on]:text-amber-300 data-[state=on]:shadow-[0_0_10px_rgba(245,158,11,0.25)] data-[state=on]:border-amber-500/30 border border-white/10"
                                             >
                                                 <Clock className="h-4 w-4 mr-1" />
                                                 Late
                                             </ToggleGroupItem>
                                             <ToggleGroupItem
                                                 value="Leave"
-                                                className="data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 dark:data-[state=on]:bg-blue-900 dark:data-[state=on]:text-blue-200"
+                                                className="data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-300 data-[state=on]:shadow-[0_0_10px_rgba(99,102,241,0.25)] data-[state=on]:border-indigo-500/30 border border-white/10"
                                             >
                                                 <CalendarOff className="h-4 w-4 mr-1" />
                                                 Leave
@@ -280,7 +279,10 @@ export default function AttendancePage() {
                     >
                         {isSubmitting ? (
                             <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
                                 Submitting...
                             </>
                         ) : (
