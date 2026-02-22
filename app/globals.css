@@ -70,7 +70,7 @@
   --secondary-foreground: oklch(0.9 0.01 265);
 
   --muted: oklch(0.22 0.03 265 / 50%);
-  --muted-foreground: oklch(0.65 0.05 265);
+  --muted-foreground: oklch(0.75 0.05 265);
 
   --accent: oklch(0.55 0.2 280 / 20%);
   --accent-foreground: oklch(0.9 0.05 280);
@@ -114,7 +114,7 @@
   --secondary: oklch(0.2 0.04 265 / 60%);
   --secondary-foreground: oklch(0.9 0.01 265);
   --muted: oklch(0.22 0.03 265 / 50%);
-  --muted-foreground: oklch(0.65 0.05 265);
+  --muted-foreground: oklch(0.75 0.05 265);
   --accent: oklch(0.55 0.2 280 / 20%);
   --accent-foreground: oklch(0.9 0.05 280);
   --destructive: oklch(0.6 0.22 25);
@@ -147,12 +147,8 @@
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
   100% {
-    background-position: 200% 0;
+    transform: translateX(100%);
   }
 }
 
@@ -258,13 +254,22 @@
 
 /* Shimmer skeleton */
 .shimmer-skeleton {
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0.04) 25%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.04) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.6s infinite;
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.05);
   border-radius: var(--radius);
+}
+
+.shimmer-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 75%);
+  animation: shimmer 1.5s infinite;
 }
 
 /* Entrance animation */

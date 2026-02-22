@@ -202,7 +202,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
                 })}
               </div>
             ) : (
-              <p className="text-slate-400 text-center py-4">No data available</p>
+              <p className="text-slate-300 text-center py-4">No data available</p>
             )}
           </CardContent>
         </Card>
@@ -241,7 +241,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
                       {Object.values(stats.hoursPerDay).reduce((a, b) => a + b, 0)}
                     </span>
                     <span className="text-sm text-slate-300 ml-1">hours</span>
-                    <span className="text-sm text-slate-400 ml-2">
+                    <span className="text-sm text-slate-300 ml-2">
                       ({Object.values(stats.classesPerDay || {}).reduce((a, b) => a + b, 0)} classes)
                     </span>
                   </div>
