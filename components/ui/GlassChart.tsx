@@ -37,7 +37,7 @@ function GlassTooltip({ active, payload, label }: GlassTooltipProps) {
                 boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
             }}
         >
-            <p style={{ color: "#94a3b8", fontSize: "0.72rem", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <p style={{ color: "#cbd5e1", fontSize: "0.72rem", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 {label}
             </p>
             {payload.map((entry) => (
@@ -47,7 +47,7 @@ function GlassTooltip({ active, payload, label }: GlassTooltipProps) {
                         {entry.value}
                         {entry.name === "attendance" ? "%" : ""}
                     </span>
-                    <span style={{ color: "#64748b", fontSize: "0.72rem" }}>{entry.name}</span>
+                    <span style={{ color: "#94a3b8", fontSize: "0.72rem" }}>{entry.name}</span>
                 </div>
             ))}
         </div>

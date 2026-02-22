@@ -104,7 +104,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-gradient">Dashboard</h1>
-        <p className="text-slate-400 mt-1">
+        <p className="text-slate-300 mt-1">
           Welcome to the School Management System.
         </p>
       </div>
@@ -120,7 +120,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.3)_0%,_transparent_60%)]" />
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-white/70">{card.title}</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-white/90">{card.title}</p>
                 <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${card.iconBg}`}>
                   <card.icon className={`h-4 w-4 ${card.iconColor}`} />
                 </div>
@@ -130,7 +130,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
               ) : (
                 <p className="text-4xl font-bold text-white tracking-tight">{card.value}</p>
               )}
-              <p className="text-xs text-white/60 mt-1">{card.description}</p>
+              <p className="text-xs text-white/80 mt-1">{card.description}</p>
             </div>
           </div>
         ))}
@@ -188,8 +188,8 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
                   return (
                     <div key={shift} className="space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-200">{shift}</span>
-                        <span className="text-slate-400">{count} ({percentage}%)</span>
+                        <span className="font-medium text-slate-100">{shift}</span>
+                        <span className="text-slate-300">{count} ({percentage}%)</span>
                       </div>
                       <div className="h-2 rounded-full bg-white/8 overflow-hidden">
                         <div
@@ -202,7 +202,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
                 })}
               </div>
             ) : (
-              <p className="text-slate-500 text-center py-4">No data available</p>
+              <p className="text-slate-400 text-center py-4">No data available</p>
             )}
           </CardContent>
         </Card>
@@ -235,13 +235,13 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
               />
               {stats?.hoursPerDay && (
                 <div className="mt-4 pt-4 border-t border-white/8 flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Total Weekly</span>
+                  <span className="text-sm text-slate-300">Total Weekly</span>
                   <div className="text-right">
                     <span className="text-2xl font-bold text-gradient">
                       {Object.values(stats.hoursPerDay).reduce((a, b) => a + b, 0)}
                     </span>
-                    <span className="text-sm text-slate-400 ml-1">hours</span>
-                    <span className="text-sm text-slate-500 ml-2">
+                    <span className="text-sm text-slate-300 ml-1">hours</span>
+                    <span className="text-sm text-slate-400 ml-2">
                       ({Object.values(stats.classesPerDay || {}).reduce((a, b) => a + b, 0)} classes)
                     </span>
                   </div>
@@ -276,7 +276,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
                   { label: "Leave", value: stats?.attendanceStats?.leave ?? 0, color: "text-blue-400", dot: "bg-blue-400" },
                 ].map(({ label, value, color, dot }) => (
                   <div key={label} className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <div className="flex items-center gap-2 text-sm text-slate-300">
                       <div className={`h-2 w-2 rounded-full ${dot} shadow-lg`} />
                       {label}
                     </div>
