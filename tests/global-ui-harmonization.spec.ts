@@ -189,7 +189,7 @@ test.describe("Design Token Verification", () => {
     test("Body has animated mesh gradient background", async ({ page }) => {
         await openPage(page, "/");
         const bgImage = await page.evaluate(() =>
-            getComputedStyle(document.body).backgroundImage
+            getComputedStyle(document.body, "::before").backgroundImage
         );
         expect(bgImage).toContain("radial-gradient");
     });
