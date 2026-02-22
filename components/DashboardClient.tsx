@@ -100,7 +100,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
   ];
 
   return (
-    <div className="space-y-8 animate-entrance">
+    <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-gradient">Dashboard</h1>
@@ -110,7 +110,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-stagger">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {statCards.map((card) => (
           <div
             key={card.title}
@@ -137,7 +137,7 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
       </div>
 
       {/* ── CHART ROW 1: Attendance Breakdown + Shift Distribution ── */}
-      <div className="grid gap-4 md:grid-cols-2 animate-stagger">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Weekly Attendance Area Chart */}
         <Card>
           <CardHeader>
