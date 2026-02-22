@@ -1,0 +1,28 @@
+opencollection: 1.0.0
+
+info:
+  name: LMS API Tests
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  headers:
+    - name: apikey
+      value: "{{SUPABASE_ANON_KEY}}"
+    - name: Authorization
+      value: Bearer {{SUPABASE_ANON_KEY}}
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
