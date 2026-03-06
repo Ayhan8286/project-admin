@@ -331,7 +331,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="submit" disabled={addMutation.isPending}>
+                        <button type="submit" disabled={addMutation.isPending} className="flex items-center justify-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all disabled:opacity-50">
                             {addMutation.isPending ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -340,7 +340,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                             ) : (
                                 "Save Student"
                             )}
-                        </Button>
+                        </button>
                     </DialogFooter>
                 </form>
             </DialogContent >

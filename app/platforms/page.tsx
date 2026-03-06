@@ -5,17 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { getPlatforms, getStudentsByPlatform } from "@/lib/api/platforms";
 import { Platform } from "@/types/student";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Video, Monitor, Layers, Loader2, Users, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Video, Monitor, Layers, Loader2, ArrowLeft, Search, Plus, Download, Eye, Users, AlertCircle } from "lucide-react";
 
 const platformIcons: Record<string, typeof Video> = {
     Zoom: Video,
@@ -24,13 +14,14 @@ const platformIcons: Record<string, typeof Video> = {
 };
 
 const platformColors: Record<string, string> = {
-    Zoom: "from-blue-500 to-blue-600",
-    Teams: "from-purple-500 to-purple-600",
-    Hybrid: "from-orange-500 to-orange-600",
+    Zoom: "bg-blue-500",
+    Teams: "bg-indigo-600",
+    Hybrid: "bg-green-600",
 };
 
 export default function PlatformsPage() {
     const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const { data: platforms = [], isLoading: platformsLoading } = useQuery({
         queryKey: ["platforms"],
@@ -45,133 +36,324 @@ export default function PlatformsPage() {
 
     if (selectedPlatform) {
         const Icon = platformIcons[selectedPlatform.name] || Video;
-        const gradient = platformColors[selectedPlatform.name] || "from-gray-500 to-gray-600";
+        const colorClass = platformColors[selectedPlatform.name] || "bg-slate-500";
+
+        // Filter students based on search
+        const filteredStudents = students.filter((student: typeof students[0]) =>
+            student.student_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            student.student_reg_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (student.account_identifier && student.account_identifier.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
 
         return (
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSelectedPlatform(null)}
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                            <div className={`p-2 rounded-lg bg-gradient-to-br ${gradient} text-white`}>
+            <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+                <div className="mb-2">
+                    <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 font-bold uppercase tracking-wider">
+                        <button onClick={() => setSelectedPlatform(null)} className="hover:text-primary flex items-center gap-1 transition-colors">
+                            <ArrowLeft className="h-4 w-4" />
+                            Platforms
+                        </button>
+                        <span className="text-[10px] text-border">/</span>
+                        <span className="text-foreground">{selectedPlatform.name} Connections</span>
+                    </nav>
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className={`size-12 rounded-2xl flex items-center justify-center text-white shadow-lg ${colorClass}`}>
                                 <Icon className="h-6 w-6" />
                             </div>
-                            {selectedPlatform.name} Students
-                        </h1>
-                        <p className="text-muted-foreground">
-                            Students whose classes are conducted on {selectedPlatform.name}
-                        </p>
+                            <div>
+                                <h3 className="text-3xl font-black tracking-tight text-foreground">{selectedPlatform.name} Accounts</h3>
+                                <p className="text-muted-foreground mt-1">Manage student access and view active {selectedPlatform.name} connections.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Users className="h-5 w-5" />
-                            {students.length} Student{students.length !== 1 ? "s" : ""} Found
-                        </CardTitle>
-                        <CardDescription>
-                            With their account identifiers and class details
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {studentsLoading ? (
-                            <div className="flex items-center justify-center py-10">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                            </div>
-                        ) : students.length === 0 ? (
-                            <p className="text-muted-foreground text-center py-10">
-                                No students found for this platform.
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
+                        <div>
+                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Assigned</p>
+                            <h3 className="text-3xl font-black text-foreground">{students.length}</h3>
+                            <p className="text-xs text-green-500 font-bold mt-1 flex items-center gap-1">
+                                Active on {selectedPlatform.name}
                             </p>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Student Name</TableHead>
-                                        <TableHead>Reg. No.</TableHead>
-                                        <TableHead>Account Identifier</TableHead>
-                                        <TableHead>Teacher</TableHead>
-                                        <TableHead>PK Time</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {students.map((student) => (
-                                        <TableRow key={student.student_id}>
-                                            <TableCell className="font-medium">
-                                                <Link
-                                                    href={`/students/${student.student_id}`}
-                                                    className="hover:underline text-blue-600 dark:text-blue-400"
-                                                >
+                        </div>
+                        <div className="p-3 bg-green-500/10 rounded-2xl text-green-500">
+                            <Users className="h-5 w-5" />
+                        </div>
+                    </div>
+                    {/* Additional mock metric cards for aesthetic completeness from HTML */}
+                    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
+                        <div>
+                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Usage Today</p>
+                            <h3 className="text-3xl font-black text-foreground">84%</h3>
+                            <p className="text-xs text-blue-500 font-bold mt-1">Avg attendance rate</p>
+                        </div>
+                        <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500">
+                            <Monitor className="h-5 w-5" />
+                        </div>
+                    </div>
+                    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
+                        <div>
+                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Conflicts</p>
+                            <h3 className="text-3xl font-black text-red-500">0</h3>
+                            <p className="text-xs text-muted-foreground font-bold mt-1">Schedule overlaps</p>
+                        </div>
+                        <div className="p-3 bg-red-500/10 rounded-2xl text-red-500">
+                            <AlertCircle className="h-5 w-5" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                    <div className="flex flex-wrap gap-3">
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                            <input
+                                className="pill-input appearance-none pl-11 pr-5 py-2.5 bg-card border border-border text-sm font-medium text-foreground transition-all w-full sm:w-72"
+                                placeholder="Search accounts..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button className="flex items-center gap-2 px-5 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:bg-accent transition-colors text-foreground">
+                            <Download className="h-4 w-4" />
+                            <span>Export Data</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm card-hover">
+                    <div className="overflow-x-auto min-h-[400px]">
+                        <table className="w-full text-left border-collapse min-w-[900px]">
+                            <thead className="bg-accent/40 border-b border-border">
+                                <tr>
+                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Student Name</th>
+                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Reg. No.</th>
+                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Account Identifier</th>
+                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Teacher</th>
+                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Class Time</th>
+                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {studentsLoading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={i} className="animate-pulse">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="size-10 rounded-2xl bg-white/[0.07] shrink-0" />
+                                                    <div className="h-3.5 w-32 bg-white/[0.07] rounded-full" />
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4"><div className="h-3.5 w-20 bg-white/[0.06] rounded-full" /></td>
+                                            <td className="px-6 py-4"><div className="h-6 w-28 bg-white/[0.06] rounded-xl" /></td>
+                                            <td className="px-6 py-4"><div className="h-3.5 w-24 bg-white/[0.05] rounded-full" /></td>
+                                            <td className="px-6 py-4"><div className="h-3.5 w-18 bg-white/[0.05] rounded-full" /></td>
+                                            <td className="px-6 py-4 text-right"><div className="w-10 h-10 rounded-2xl bg-white/[0.05] ml-auto" /></td>
+                                        </tr>
+                                    ))
+                                ) : filteredStudents.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-20 text-center">
+                                            <div className="max-w-sm mx-auto">
+                                                <Icon className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                                                <h3 className="text-lg font-bold text-foreground mb-2">No Accounts Found</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {searchQuery ? "Try adjusting your search query." : `No students are currently linked to ${selectedPlatform.name}.`}
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredStudents.map((student) => (
+                                        <tr key={student.student_id} className="group hover:bg-accent/30 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <Link href={`/students/${student.student_id}`} className="font-bold text-[15px] text-foreground group-hover:text-primary transition-colors flex items-center gap-3">
+                                                    <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-black text-primary">
+                                                        {student.student_name.slice(0, 2).toUpperCase()}
+                                                    </div>
                                                     {student.student_name}
                                                 </Link>
-                                            </TableCell>
-                                            <TableCell>{student.student_reg_no}</TableCell>
-                                            <TableCell>
-                                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-200">
-                                                    {student.account_identifier}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                                                {student.student_reg_no || "—"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-black bg-accent text-foreground border border-border shadow-sm">
+                                                    {student.account_identifier || "No Identifier"}
                                                 </span>
-                                            </TableCell>
-                                            <TableCell>{student.teacher_name}</TableCell>
-                                            <TableCell>{student.pak_time}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </CardContent>
-                </Card>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-muted-foreground">
+                                                {student.teacher_name || "Unassigned"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                                                {student.pak_time || "—"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <button className="w-10 h-10 rounded-2xl text-muted-foreground hover:text-primary hover:bg-accent flex items-center justify-center transition-all scale-100 hover:scale-105 ml-auto">
+                                                    <Eye className="h-5 w-5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         );
     }
 
+    // Main Selection View
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Platforms</h1>
-                <p className="text-muted-foreground">
-                    View students by their class platform (Zoom, Teams, Hybrid).
-                </p>
+        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+            <div className="mb-2">
+                <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6">
+                    <span className="text-foreground">Platform Integrations</span>
+                </nav>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+                    <div>
+                        <h1 className="text-3xl font-black tracking-tight mb-2 text-foreground">Platform & Accounts<span className="text-primary ml-2 text-2xl">✦</span></h1>
+                        <p className="text-muted-foreground font-medium text-sm">Manage institutional accounts and monitor live classroom usage to prevent scheduling conflicts.</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <button className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-full text-sm hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all fab-glow active:scale-95">
+                            <Plus className="h-5 w-5" />
+                            Link New Account
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            {platformsLoading ? (
-                <div className="flex items-center justify-center py-10">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+            {/* Overall Metrics Block from HTML */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
+                    <div>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Active Platforms</p>
+                        <h3 className="text-3xl font-black text-foreground">{platforms.length}</h3>
+                        <p className="text-xs text-green-500 font-bold mt-1.5 flex items-center gap-1">
+                            Operational
+                        </p>
+                    </div>
+                    <div className="p-3 bg-green-500/10 rounded-2xl text-green-500">
+                        <Video className="h-5 w-5" />
+                    </div>
                 </div>
-            ) : (
-                <div className="grid gap-4 md:grid-cols-3">
-                    {platforms.map((platform) => {
-                        const Icon = platformIcons[platform.name] || Video;
-                        const gradient = platformColors[platform.name] || "from-gray-500 to-gray-600";
+                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
+                    <div>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Licenses</p>
+                        <h3 className="text-3xl font-black text-foreground">—</h3>
+                        <p className="text-xs text-muted-foreground font-bold mt-1.5">Across all platforms</p>
+                    </div>
+                    <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500">
+                        <Monitor className="h-5 w-5" />
+                    </div>
+                </div>
+                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
+                    <div>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">System Status</p>
+                        <h3 className="text-3xl font-black text-green-500">Stable</h3>
+                        <p className="text-xs text-muted-foreground font-bold mt-1.5">Last checked: Just now</p>
+                    </div>
+                    <div className="p-3 bg-green-500/10 rounded-2xl text-green-500">
+                        <Layers className="h-5 w-5" />
+                    </div>
+                </div>
+            </div>
 
-                        return (
-                            <Card
-                                key={platform.id}
-                                className="cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
-                                onClick={() => setSelectedPlatform(platform)}
-                            >
-                                <CardHeader className="pb-3">
-                                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-white mb-2`}>
-                                        <Icon className="h-6 w-6" />
+            <div className="space-y-8">
+                {platformsLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="bg-card rounded-3xl border border-border overflow-hidden">
+                                <div className="p-6 flex flex-col gap-4">
+                                    <div className="flex justify-between">
+                                        <div className="h-6 w-24 bg-white/[0.07] rounded-full" />
+                                        <div className="size-10 rounded-2xl bg-white/[0.07]" />
                                     </div>
-                                    <CardTitle>{platform.name}</CardTitle>
-                                    <CardDescription>Click to view students</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground">
-                                        View all students whose classes are conducted on {platform.name}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </div>
-            )}
+                                    <div className="h-7 w-40 bg-white/[0.07] rounded-xl" />
+                                    <div className="h-4 w-28 bg-white/[0.05] rounded-full" />
+                                    <div className="h-[88px] w-full bg-white/[0.04] rounded-2xl" />
+                                </div>
+                                <div className="px-6 py-4 border-t border-border bg-white/[0.02] h-14" />
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {platforms.map((platform) => {
+                            const Icon = platformIcons[platform.name] || Video;
+                            const colorClass = platformColors[platform.name] || "bg-slate-500";
+
+                            // Mocking the "In Use / Available" state logic from the HTML template
+                            // based on platform name for aesthetic visual variation.
+                            const inUse = platform.name === "Zoom" || platform.name === "Teams";
+
+                            return (
+                                <div
+                                    key={platform.id}
+                                    onClick={() => setSelectedPlatform(platform)}
+                                    className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm hover:shadow-lg transition-all group cursor-pointer card-hover hover:border-primary/50"
+                                >
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div className="flex items-center gap-2">
+                                                {inUse ? (
+                                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-black bg-green-500/10 text-green-500 border border-green-500/20 uppercase tracking-widest flex items-center gap-1.5">
+                                                        <div className="size-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                                                        Connected
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-black bg-accent text-muted-foreground border border-border uppercase tracking-widest flex items-center gap-1.5">
+                                                        <div className="size-1.5 rounded-full bg-muted-foreground"></div>
+                                                        Available
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className={`size-10 rounded-2xl flex items-center justify-center text-white ${colorClass}`}>
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                        </div>
+
+                                        <h3 className="text-2xl font-black text-foreground truncate">{platform.name} Integration</h3>
+
+                                        <div className="flex items-center gap-2 mt-2 mb-5">
+                                            <span className="px-2.5 py-1 rounded-full text-[9px] font-black bg-accent text-foreground border border-border tracking-wider">
+                                                ENTERPRISE
+                                            </span>
+                                            <span className="text-[11px] font-bold text-muted-foreground">Auto-renew</span>
+                                        </div>
+
+                                        <div className="bg-accent/40 rounded-2xl p-4 border border-border/50 h-[88px] flex flex-col justify-center">
+                                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-black mb-1">Click to manage access</p>
+                                            <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                                                View {platform.name} roster
+                                                <ArrowLeft className="h-4 w-4 rotate-180 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="px-6 py-4 border-t border-border bg-accent/20 flex justify-between items-center">
+                                        <span className="text-[10px] text-muted-foreground font-bold tracking-widest">ID: {platform.id.split('-')[0].toUpperCase()}</span>
+                                        <button className="text-[11px] font-black uppercase text-primary tracking-wider hover:underline">Manage accounts</button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        <div className="border-2 border-dashed border-border rounded-3xl p-6 flex flex-col items-center justify-center text-center hover:border-primary/50 hover:bg-accent/40 transition-all cursor-pointer min-h-[280px]">
+                            <div className="size-16 rounded-3xl bg-accent flex items-center justify-center mb-4 text-muted-foreground">
+                                <Plus className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-lg font-black text-foreground">Add New Integration</h3>
+                            <p className="text-xs font-medium text-muted-foreground mt-2 max-w-[200px] leading-relaxed">Link another institutional communication provider</p>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

@@ -7,10 +7,10 @@ const badgeVariants = cva(
     {
         variants: {
             variant: {
-                default: "bg-violet-500/20 text-violet-300 border border-violet-500/30 shadow-[0_0_8px_rgba(139,92,246,0.2)]",
-                secondary: "bg-white/8 text-slate-300 border border-white/10",
+                default: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]",
+                secondary: "bg-white/8 text-muted-foreground border border-border",
                 destructive: "bg-red-500/15 text-red-300 border border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)]",
-                outline: "text-slate-300 border border-white/15",
+                outline: "text-muted-foreground border border-border",
                 // Neon status pills
                 present: "badge-present",
                 absent: "badge-absent",

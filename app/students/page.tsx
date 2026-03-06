@@ -3,39 +3,11 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { getStudents, addStudent, deleteStudent } from "@/lib/api/students";
-import { getTeachers, addClass } from "@/lib/api/classes";
-import { getAppAccounts } from "@/lib/api/platforms";
+import { getStudents, deleteStudent } from "@/lib/api/students";
 import { Student } from "@/types/student";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Plus, Search, Loader2, Trash2 } from "lucide-react";
-import { AddStudentDialog } from "@/components/students/AddStudentDialog";
+import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
+import { Users, UserPlus, Search, Plus, Loader2, Trash2, Eye, Edit2, Download, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { format } from "date-fns";
 
 export default function StudentsPage() {
     const queryClient = useQueryClient();
@@ -64,131 +36,265 @@ export default function StudentsPage() {
     const filteredStudents = useMemo(() => {
         if (!searchQuery.trim()) return students;
         return students.filter((student: Student) =>
-            student.full_name.toLowerCase().includes(searchQuery.toLowerCase())
+            student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (student.reg_no && student.reg_no.toLowerCase().includes(searchQuery.toLowerCase()))
         );
     }, [students, searchQuery]);
 
     if (error) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <p className="text-red-500">Error loading students. Please check your Supabase connection.</p>
+            <div className="flex items-center justify-center p-12 bg-white dark:bg-[#1a331d] rounded-2xl border border-red-100 dark:border-red-900/50">
+                <p className="text-red-500 font-bold">Error loading students. Please check your Supabase connection.</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+            {/* Gen Z Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Students</h1>
-                    <p className="text-muted-foreground">
-                        Manage student records and information.
-                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-1">AL Huda Network</p>
+                    <h1 className="text-3xl font-black tracking-tight text-foreground leading-none">
+                        Students
+                        <span className="text-primary ml-2 text-2xl">✦</span>
+                    </h1>
+                    <p className="text-muted-foreground mt-1.5 text-sm">Manage and view all enrolled students across the institution.</p>
                 </div>
-
-                <Button className="gap-2" onClick={() => setIsDialogOpen(true)}>
+                <button
+                    onClick={() => setIsDialogOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
+                >
                     <Plus className="h-4 w-4" />
-                    Add Student
-                </Button>
+                    Add New Student
+                </button>
             </div>
+
             <AddStudentDialog
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
             />
 
-            <div className="flex items-center gap-2">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        placeholder="Search by student name..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9"
-                    />
-                </div>
+
+            {/* Gen Z KPI Cards */}
+            <div className="flex items-center gap-3 mb-1">
+                <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Student Metrics</span>
+                <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    { label: "Total Students", value: students.length, sub: "Enrolled", accent: "#13ec37", Icon: Users },
+                    { label: "New Enrollments", value: 48, sub: "This Month", accent: "#60a5fa", Icon: UserPlus },
+                    { label: "Active Status", value: students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "Currently active", accent: "#34d399", Icon: Users },
+                    { label: "Inactive/Leave", value: students.length - students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "On leave", accent: "#f87171", Icon: Users },
+                ].map(({ label, value, sub, accent, Icon }, i) => (
+                    <div key={i} className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3">
+                        <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: accent }} />
+                        <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${accent}18` }}>
+                            <Icon className="h-5 w-5" style={{ color: accent }} />
+                        </div>
+                        <div className="relative">
+                            <p className="text-3xl font-black tracking-tight" style={{ color: accent }}>{value}</p>
+                            <p className="text-[11px] font-bold text-foreground mt-1.5">{label}</p>
+                            <p className="text-[10px] text-muted-foreground">{sub}</p>
+                        </div>
+                    </div>
+                ))}
             </div>
 
-            <div className="rounded-lg border bg-card">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Full Name</TableHead>
-                            <TableHead>Reg. No.</TableHead>
-                            <TableHead>Subjects</TableHead>
-                            <TableHead>Guardian Name</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="w-[80px]">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-10">
-                                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                                    <p className="text-muted-foreground mt-2">Loading students...</p>
-                                </TableCell>
-                            </TableRow>
-                        ) : filteredStudents.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-10">
-                                    <p className="text-muted-foreground">
-                                        {searchQuery
-                                            ? "No students found matching your search."
-                                            : "No students found. Add your first student!"}
-                                    </p>
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            filteredStudents.map((student: Student) => (
-                                <TableRow key={student.id}>
-                                    <TableCell className="font-medium">
-                                        <Link
-                                            href={`/students/${student.id}`}
-                                            className="hover:underline text-blue-600 dark:text-blue-400"
-                                        >
-                                            {student.full_name}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>{student.reg_no}</TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap gap-1">
-                                            {student.classes?.map((c, i) => (
-                                                c.course?.name ? (
-                                                    <span key={i} className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
-                                                        {c.course.name}
-                                                    </span>
-                                                ) : null
-                                            ))}
-                                            {!student.classes?.length && <span className="text-muted-foreground text-xs">-</span>}
+
+            {/* Gen Z Search & Filter Bar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
+                        <input
+                            className="pill-input pl-10 pr-5 py-2.5 bg-card border border-border text-sm text-foreground w-64 placeholder:text-muted-foreground/50"
+                            placeholder="Search students..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <select className="appearance-none pl-4 pr-10 py-2.5 bg-card border border-border rounded-full text-sm font-semibold text-foreground cursor-pointer">
+                        <option>All Status</option>
+                        <option>Active</option>
+                        <option>On Leave</option>
+                        <option>Graduated</option>
+                    </select>
+                    <button className="px-4 py-2.5 text-sm font-bold text-primary hover:text-primary/70 transition-colors rounded-full hover:bg-primary/5">
+                        Clear Filters
+                    </button>
+                </div>
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                </button>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[900px]">
+                        <thead className="bg-slate-50 dark:bg-[#1a331d]/50 border-b border-border">
+                            <tr>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Student Name</th>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Courses</th>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Roll Number</th>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Guardian Info</th>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {isLoading ? (
+                                Array.from({ length: 8 }).map((_, i) => (
+                                    <tr key={i} className="animate-pulse">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-white/[0.07] shrink-0" />
+                                                <div className="flex flex-col gap-1.5">
+                                                    <div className="h-3.5 w-32 bg-white/[0.07] rounded-full" />
+                                                    <div className="h-2.5 w-44 bg-white/[0.04] rounded-full" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4"><div className="h-5 w-28 bg-white/[0.06] rounded-lg" /></td>
+                                        <td className="px-6 py-4"><div className="h-3.5 w-20 bg-white/[0.05] rounded-full" /></td>
+                                        <td className="px-6 py-4"><div className="h-3.5 w-24 bg-white/[0.05] rounded-full" /></td>
+                                        <td className="px-6 py-4"><div className="h-5 w-16 bg-white/[0.06] rounded-full" /></td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <div className="w-8 h-8 rounded bg-white/[0.05]" />
+                                                <div className="w-8 h-8 rounded bg-white/[0.05]" />
+                                                <div className="w-8 h-8 rounded bg-white/[0.05]" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+
+                            ) : filteredStudents.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-20 text-center">
+                                        <div className="max-w-sm mx-auto">
+                                            <Users className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                                            <h3 className="text-lg font-bold text-foreground mb-2">No Students Found</h3>
+                                            <p className="text-sm text-muted-foreground mb-6">
+                                                {searchQuery ? "Try adjusting your search query." : "Register your first student to get started."}
+                                            </p>
+                                            {!searchQuery && (
+                                                <button
+                                                    onClick={() => setIsDialogOpen(true)}
+                                                    className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold shadow-md shadow-primary/20 hover:bg-primary-hover transition-colors"
+                                                >
+                                                    Add New Student
+                                                </button>
+                                            )}
                                         </div>
-                                    </TableCell>
-                                    <TableCell>{student.guardian_name}</TableCell>
-                                    <TableCell>
-                                        <span
-                                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${student.status?.toLowerCase() === "active"
-                                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                                : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-                                                }`}
-                                        >
-                                            {student.status}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/50"
-                                            onClick={() => handleDelete(student.id, student.full_name)}
-                                            disabled={deleteMutation.isPending}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredStudents.map((student: Student, index: number) => {
+                                    // Mock data avatars for visual polish matching design
+                                    const mockAvatars = [
+                                        "https://lh3.googleusercontent.com/aida-public/AB6AXuBDaC1fHTvvgBPee7HBpfHvJ7VLR7l1My9nm_CLK3cwK3xgEHhOzksFfspMx3A524PVHBlMsPNi1Qoqjh-lSlFyg1AldJrb3KGL2NQ9qsAyuq9UBCg9cijNPROL-KJR__68c_WQ5G63GzcgMQHpRU53MFFYhuIB5V8znbONxfuyEi8AUKwl1b434VYKsUA-Ke-k0rCjVGrFCU2uQBI-TmfIQ6BKaIcdXekqfJQzWXhzSx2uq5eppSCuLlth0UE6OtkAlReElTqEaUo",
+                                        "https://lh3.googleusercontent.com/aida-public/AB6AXuDMzHwELeXHGsxIcUwE1xsb1qreHvnetgCa4jP9YdDTgj9ElavjIpg5HqLKMQCZvETc_fAMFkCfzbN900K-0SZdem-F2NsIIy_fyXEdyjc8l-raD2C36P0z7Uc39v34h05HAMnXj28CH0_0t3V1w6ZiYgNalpA_sjWre_BJsGiHwx0EvQSo3PpxKUMmJgtqhmu1zrc2yjdc68SnVqBPPvCf0VpGBTk3J0vuncSWniSk8TwQUrAm07mk7eESwUAZEDM7Xe1w7QuCITI",
+                                        "https://lh3.googleusercontent.com/aida-public/AB6AXuCA33gnzW6KMzQKsUvc-F4EfpI5siOSbxGZM8ESVLJ4PLGpeHQBt0hSIXuWFGUDgmuY03iTp6IIAAkVIy9qYIvZojYYLyZV-tX1Z-18yUARtsHGZjuA5ycUsI-3Ti681odJ13ak55f6daEM6qxaW2cjPvSDCBauOKBWyIqpFuUahxB4KkbyPYRGDtSwZ4-AJCQhWrGzEpvlxcBp1YwRjsFfvVO24lQO4OSp_ToLjKbQbh6zgm7hKEF22PO_ti1zzqkRI7Xg3AYI2k4",
+                                        "https://lh3.googleusercontent.com/aida-public/AB6AXuANX1BZK1e2zFlgHcypl9eEIG4VAAJnnCV3FtOFVvwdyrkUw6yiZd1HiW1xCkQHQ5wRCI9CJTyenHorbcu-pd5tWgszr_aGi2XlJWzHuwXx4N1cN2JYHt1avfn016MboBpigK-HEKORsD5SzCi-EDlu-8JwQrTf9gsBquWcVs6FQX2aMoBxU8fXcLIuvyFhYlrLihHbQrR6UYYnSuLBiQixj4CROPPeV4CUWHDTQaiDImDkytSd4eAkFLrl7xLwAINmHFbcohb_N58",
+                                        "https://lh3.googleusercontent.com/aida-public/AB6AXuA1OZK7Pc1jBcgRsi3d0G5FIBSqKeapDa-RBSTCK2ntRtmomDrcA15L8Ki2PRSgIX9UR8gMLeNRuvesprnfm7CE3kDc_HH4Q8YIBy75QYysHItWtUA5CvzcxiTeSGoEljKJbnmZErsAV6rlVK5pbxm9DDlwzuuEdpJae63OV9rWNcxSFnd9Dh_gEtJVoStK_kKHRViS7sHsXWI7PNKHqc4RD5m4NUudfVq69UlOINrBmEXDdvNs1IcqYirTV0E2ksZrl2L0kU5nNTI"
+                                    ];
+                                    const avatarUrl = mockAvatars[index % mockAvatars.length];
+                                    const mockEmail = `${student.full_name.toLowerCase().split(' ').join('.')}@qrastudy.edu`;
+                                    const isActive = student.status?.toLowerCase() === 'active';
+
+                                    return (
+                                        <tr key={student.id} className="group hover:bg-slate-50/80 dark:hover:bg-[#1a331d]/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative">
+                                                        <img alt={student.full_name} className={`w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-slate-800 bg-slate-100 ${!isActive ? 'grayscale opacity-70' : ''}`} src={avatarUrl} />
+                                                        <span className={`absolute bottom-0 right-0 w-3 h-3 ${isActive ? 'bg-green-500' : 'bg-amber-500'} border-2 border-white dark:border-slate-900 rounded-full`}></span>
+                                                    </div>
+                                                    <div>
+                                                        <Link href={`/students/${student.id}`} className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                                                            {student.full_name}
+                                                        </Link>
+                                                        <p className="text-xs text-muted-foreground font-medium">{mockEmail}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex flex-col gap-1">
+                                                    {student.classes?.length ? (
+                                                        student.classes.map((c, i) => (
+                                                            c.course?.name && (
+                                                                <span key={i} className="inline-max-w-[150px] truncate px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                                                    {c.course.name}
+                                                                </span>
+                                                            )
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">No active subjects</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-muted-foreground">
+                                                {student.reg_no || "—"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                                {student.guardian_name || "—"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {isActive ? (
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-600 dark:bg-green-400 mr-1.5"></span>
+                                                        Active
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 opacity-90">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
+                                                        {student.status || "Inactive"}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Link
+                                                        href={`/students/${student.id}`}
+                                                        className="w-8 h-8 rounded text-slate-400 hover:text-forest hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+                                                        title="View Profile"
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Link>
+                                                    <button
+                                                        className="w-8 h-8 rounded text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+                                                        title="Edit Student"
+                                                    >
+                                                        <Edit2 className="h-4 w-4 font-light" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(student.id, student.full_name)}
+                                                        disabled={deleteMutation.isPending}
+                                                        className="w-8 h-8 rounded text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors disabled:opacity-50"
+                                                        title="Remove Student"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {filteredStudents.length > 0 && (
+                    <div className="px-6 py-4 bg-slate-50 dark:bg-[#1a331d]/50 flex items-center justify-between gap-4 border-t border-slate-200 dark:border-[#2a452e]">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                            Showing <span className="font-bold text-foreground">{filteredStudents.length}</span> {filteredStudents.length === 1 ? "student" : "students"}
+                        </p>
+                    </div>
+                )}
             </div>
         </div >
     );

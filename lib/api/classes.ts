@@ -216,3 +216,34 @@ export async function deleteClass(id: string): Promise<void> {
         throw error;
     }
 }
+
+export async function getTeachersBySupervisor(supervisorId: string): Promise<Teacher[]> {
+    const { data, error } = await supabase
+        .from("teachers")
+        .select("*")
+        .eq("supervisor_id", supervisorId)
+        .eq("is_active", true)
+        .order("name");
+
+    if (error) {
+        console.error("Error fetching teachers by supervisor:", error);
+        throw error;
+    }
+
+    return data || [];
+}
+
+export async function updateTeacherSupervisor(
+    teacherId: string,
+    supervisorId: string | null
+): Promise<void> {
+    const { error } = await supabase
+        .from("teachers")
+        .update({ supervisor_id: supervisorId })
+        .eq("id", teacherId);
+
+    if (error) {
+        console.error("Error updating teacher supervisor:", error);
+        throw error;
+    }
+}

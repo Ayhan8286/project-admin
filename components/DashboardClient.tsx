@@ -2,292 +2,231 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getDashboardStats, DashboardStats } from "@/lib/api/dashboard";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShimmerBlock, LoadingShimmer } from "@/components/ui/LoadingShimmer";
-import dynamic from "next/dynamic";
+import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 import Link from "next/link";
-import { Users, BookOpen, Calendar, UserCheck, Clock } from "lucide-react";
-
-const GlassAreaChart = dynamic(() => import("@/components/ui/GlassChart").then(mod => mod.GlassAreaChart), {
-  ssr: false,
-  loading: () => <LoadingShimmer rows={4} rowHeight="h-6" className="mt-4" />
-});
-
-const GlassBarChart = dynamic(() => import("@/components/ui/GlassChart").then(mod => mod.GlassBarChart), {
-  ssr: false,
-  loading: () => <LoadingShimmer rows={1} rowHeight="h-48" className="mt-4" />
-});
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
+import {
+  Users, UserCheck, Search, Bell,
+  Clock, ChevronDown, Moon, Sun, BookOpen, Calendar,
+  UserPlus, GraduationCap, ClipboardList, BarChart3,
+  ArrowUpRight, CheckCircle, AlertCircle, Activity, Zap
+} from "lucide-react";
 
 export default function DashboardClient({ initialStats }: { initialStats: DashboardStats }) {
-  const { data: stats, isLoading: isQueryLoading } = useQuery({
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const { data: stats } = useQuery({
     queryKey: ["dashboardStats"],
     queryFn: getDashboardStats,
     initialData: initialStats,
   });
 
-  // If initialData is provided, isLoading shouldn't technically be true,
-  // but we keep the same logic to prevent type issues.
-  const isLoading = isQueryLoading && !stats;
-
-  const statCards = [
+  const kpiCards = [
     {
-      title: "Total Students",
+      label: "Students",
       value: stats?.totalStudents ?? 0,
-      description: "Enrolled in the system",
+      sub: "Enrolled",
       icon: Users,
-      gradient: "from-violet-600 to-indigo-600",
-      glow: "shadow-violet-500/30",
-      iconBg: "bg-violet-500/20",
-      iconColor: "text-violet-300",
+      accent: "#13ec37",
+      accentMuted: "rgba(19,236,55,0.12)",
     },
     {
-      title: "Active Teachers",
-      value: stats?.totalTeachers ?? 0,
-      description: "Currently teaching",
-      icon: BookOpen,
-      gradient: "from-emerald-600 to-teal-600",
-      glow: "shadow-emerald-500/30",
-      iconBg: "bg-emerald-500/20",
-      iconColor: "text-emerald-300",
-    },
-    {
-      title: "Total Classes",
-      value: stats?.totalClasses ?? 0,
-      description: "Student-teacher assignments",
-      icon: Calendar,
-      gradient: "from-blue-600 to-cyan-600",
-      glow: "shadow-blue-500/30",
-      iconBg: "bg-blue-500/20",
-      iconColor: "text-blue-300",
-    },
-    {
-      title: "Active Students",
+      label: "Active",
       value: stats?.activeStudents ?? 0,
-      description: "Currently enrolled",
+      sub: "Currently enrolled",
       icon: UserCheck,
-      gradient: "from-pink-600 to-rose-600",
-      glow: "shadow-pink-500/30",
-      iconBg: "bg-pink-500/20",
-      iconColor: "text-pink-300",
+      accent: "#34d399",
+      accentMuted: "rgba(52,211,153,0.12)",
     },
     {
-      title: "Attendance Today",
-      value: (stats?.todayAttendancePercentage ?? 0) + "%",
-      description: "Students present today",
-      icon: UserCheck,
-      gradient: "from-orange-600 to-amber-600",
-      glow: "shadow-orange-500/30",
-      iconBg: "bg-orange-500/20",
-      iconColor: "text-orange-300",
+      label: "Teachers",
+      value: stats?.totalTeachers ?? 0,
+      sub: "In network",
+      icon: BookOpen,
+      accent: "#2dd4bf",
+      accentMuted: "rgba(45,212,191,0.12)",
+    },
+    {
+      label: "Classes",
+      value: stats?.totalClasses ?? 0,
+      sub: "Active pairs",
+      icon: Calendar,
+      accent: "#a78bfa",
+      accentMuted: "rgba(167,139,250,0.12)",
+    },
+    {
+      label: "Attendance",
+      value: `${stats?.todayAttendancePercentage ?? 0}%`,
+      sub: "Today",
+      icon: Clock,
+      accent: "#fb923c",
+      accentMuted: "rgba(251,146,60,0.12)",
     },
   ];
 
-  // Build bar chart data from hoursPerDay stats
-  const hoursChartData = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
-    day,
-    hours: stats?.hoursPerDay?.[day] ?? 0,
-    classes: stats?.classesPerDay?.[day] ?? 0,
-  }));
-
-  // Build a weekly attendance breakdown from attendanceStats
-  // Show the present/absent/late/leave as a small multi-point area proxy
-  const attendanceChartData = [
-    { label: "Present", attendance: stats?.attendanceStats?.present ?? 0 },
-    { label: "Active", attendance: stats?.activeStudents ? Math.round((stats.activeStudents / Math.max(stats.totalStudents, 1)) * 100) : 0 },
-    { label: "Teachers", attendance: stats?.totalTeachers ?? 0 },
-    { label: "Classes", attendance: stats?.totalClasses ? Math.round(stats.totalClasses / 10) : 0 },
-    { label: "Revenue", attendance: stats?.attendanceStats?.leave ?? 0 },
+  const quickActions = [
+    { label: "Add Student", desc: "Register", icon: UserPlus, href: "/students", accent: "#13ec37" },
+    { label: "Teachers", desc: "Faculty roster", icon: GraduationCap, href: "/teachers", accent: "#34d399" },
+    { label: "Attendance", desc: "Mark today", icon: ClipboardList, href: "/attendance", accent: "#2dd4bf" },
+    { label: "Platforms", desc: "Analytics", icon: BarChart3, href: "/platforms", accent: "#a78bfa" },
   ];
 
   return (
-    <div className="space-y-8 animate-entrance">
+    <div className="relative flex-1 flex flex-col">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gradient">Dashboard</h1>
-        <p className="text-slate-400 mt-1">
-          Welcome to the School Management System.
-        </p>
-      </div>
-
-      {/* Main Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-stagger">
-        {statCards.map((card) => (
-          <div
-            key={card.title}
-            className={`rounded-xl bg-gradient-to-br ${card.gradient} p-5 shadow-lg ${card.glow} relative overflow-hidden group transition-all duration-300 hover:scale-[1.03] hover:shadow-xl`}
-            style={{ transition: "transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease" }}
-          >
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.3)_0%,_transparent_60%)]" />
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-white/70">{card.title}</p>
-                <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${card.iconBg}`}>
-                  <card.icon className={`h-4 w-4 ${card.iconColor}`} />
-                </div>
-              </div>
-              {isLoading ? (
-                <ShimmerBlock className="h-10 w-20 bg-white/20 shimmer-skeleton" />
-              ) : (
-                <p className="text-4xl font-bold text-white tracking-tight">{card.value}</p>
-              )}
-              <p className="text-xs text-white/60 mt-1">{card.description}</p>
-            </div>
+      <header className="sticky top-0 z-20 backdrop-blur-xl bg-[#f4f6f4]/80 dark:bg-[#0c1a0d]/80 border-b border-border/50 px-6 lg:px-8 py-4 flex justify-between items-center gap-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-0.5">AL Huda Network</p>
+          <h1 className="text-2xl font-black tracking-tight text-foreground leading-none">
+            Dashboard
+            <span className="text-primary ml-2 text-lg">✦</span>
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* User chip */}
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-2xl border border-border bg-card hover:border-primary/20 transition-colors cursor-pointer">
+            <div className="w-7 h-7 rounded-xl bg-primary/20 border border-primary/25 text-[11px] font-black text-primary flex items-center justify-center">AR</div>
+            <span className="hidden md:block text-sm font-bold text-foreground">A. Rahman</span>
+            <ChevronDown className="h-3 w-3 text-muted-foreground" />
           </div>
-        ))}
-      </div>
+        </div>
+      </header>
 
-      {/* ── CHART ROW 1: Attendance Breakdown + Shift Distribution ── */}
-      <div className="grid gap-4 md:grid-cols-2 animate-stagger">
-        {/* Weekly Attendance Area Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-violet-400" />
-              Attendance Overview
-            </CardTitle>
-            <CardDescription>Current attendance breakdown across key metrics</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <LoadingShimmer rows={4} rowHeight="h-6" />
-            ) : (
-              <GlassAreaChart
-                data={attendanceChartData}
-                xKey="label"
-                dataKey="attendance"
-                color="#8b5cf6"
-                unit="%"
-                height={200}
-              />
-            )}
-          </CardContent>
-        </Card>
+      {/* Page body */}
+      <div className="flex-1 p-6 lg:p-8 flex flex-col gap-10">
 
-        {/* Students by Shift */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-cyan-400" />
-              Students by Shift
-            </CardTitle>
-            <CardDescription>Distribution across different timings</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[70, 50, 35].map((_, i) => (
-                  <ShimmerBlock key={i} className="h-6 shimmer-skeleton" />
-                ))}
-              </div>
-            ) : stats?.studentsByShift ? (
-              <div className="space-y-4">
-                {Object.entries(stats.studentsByShift).map(([shift, count]) => {
-                  const percentage = stats.totalStudents
-                    ? Math.round((count / stats.totalStudents) * 100)
-                    : 0;
-                  return (
-                    <div key={shift} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-200">{shift}</span>
-                        <span className="text-slate-400">{count} ({percentage}%)</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-white/8 overflow-hidden">
-                        <div
-                          className="h-full rounded-full progress-glow glow-pulse transition-all duration-700"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-slate-500 text-center py-4">No data available</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── CHART ROW 2: Daily Teaching Hours Bar Chart ── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-indigo-400" />
-            Daily Teaching Hours
-          </CardTitle>
-          <CardDescription>
-            Hours per day of the week — each class = 30 mins
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <LoadingShimmer rows={1} rowHeight="h-48" />
-          ) : (
-            <>
-              <GlassBarChart
-                data={hoursChartData}
-                xKey="day"
-                dataKey="hours"
-                color="#8b5cf6"
-                colorEnd="#4f46e5"
-                unit="h"
-                height={220}
-              />
-              {stats?.hoursPerDay && (
-                <div className="mt-4 pt-4 border-t border-white/8 flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Total Weekly</span>
-                  <div className="text-right">
-                    <span className="text-2xl font-bold text-gradient">
-                      {Object.values(stats.hoursPerDay).reduce((a, b) => a + b, 0)}
-                    </span>
-                    <span className="text-sm text-slate-400 ml-1">hours</span>
-                    <span className="text-sm text-slate-500 ml-2">
-                      ({Object.values(stats.classesPerDay || {}).reduce((a, b) => a + b, 0)} classes)
-                    </span>
+        {/* Hero KPI row */}
+        <section className="fade-slide-up">
+          {/* Section eyebrow */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex items-center gap-2">
+              <Zap className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Live Metrics</span>
+            </div>
+            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {kpiCards.map((card, i) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={i}
+                  className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3"
+                >
+                  {/* Accent glow blob */}
+                  <div
+                    className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ background: card.accent }}
+                  />
+                  {/* Icon */}
+                  <div
+                    className="relative w-10 h-10 rounded-2xl flex items-center justify-center"
+                    style={{ background: card.accentMuted }}
+                  >
+                    <Icon className="h-5 w-5" style={{ color: card.accent }} />
+                  </div>
+                  {/* Number */}
+                  <div className="relative">
+                    <p
+                      className="text-3xl font-black tracking-tight leading-none"
+                      style={{ color: card.accent }}
+                    >
+                      {card.value}
+                    </p>
+                    <p className="text-[11px] font-bold text-foreground mt-1.5">{card.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{card.sub}</p>
                   </div>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+              );
+            })}
+          </div>
+        </section>
 
-      {/* ── Today's Attendance ── */}
-      <Link href="/attendance/today" className="block transition-transform hover:scale-[1.01]">
-        <Card className="cursor-pointer">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-emerald-400" />
-              Today's Attendance
-            </CardTitle>
-            <CardDescription>Click for details</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="grid grid-cols-2 gap-4">
-                {[1, 2, 3, 4].map((i) => <ShimmerBlock key={i} className="h-12 shimmer-skeleton" />)}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: "Present", value: stats?.attendanceStats?.present ?? 0, color: "text-emerald-400", dot: "bg-emerald-400" },
-                  { label: "Absent", value: stats?.attendanceStats?.absent ?? 0, color: "text-red-400", dot: "bg-red-400" },
-                  { label: "Late", value: stats?.attendanceStats?.late ?? 0, color: "text-amber-400", dot: "bg-amber-400" },
-                  { label: "Leave", value: stats?.attendanceStats?.leave ?? 0, color: "text-blue-400", dot: "bg-blue-400" },
-                ].map(({ label, value, color, dot }) => (
-                  <div key={label} className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                      <div className={`h-2 w-2 rounded-full ${dot} shadow-lg`} />
-                      {label}
-                    </div>
-                    <p className={`text-2xl font-bold ${color}`}>{value}%</p>
+        {/* Quick Actions */}
+        <section className="fade-slide-up" style={{ animationDelay: '0.06s' }}>
+          <div className="flex items-center gap-3 mb-5">
+            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Quick Actions</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {quickActions.map((action, i) => {
+              const Icon = action.icon;
+              return (
+                <Link
+                  key={i}
+                  href={action.href}
+                  className="card-hover bg-card rounded-2xl p-5 border border-border group flex items-center gap-4"
+                >
+                  <div
+                    className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-200"
+                    style={{ background: `${action.accent}18` }}
+                  >
+                    <Icon className="h-5 w-5" style={{ color: action.accent }} />
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </Link>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{action.label}</p>
+                    <p className="text-[11px] text-muted-foreground">{action.desc}</p>
+                  </div>
+                  <ArrowUpRight
+                    className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all duration-200"
+                    style={{ color: action.accent }}
+                  />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Status */}
+        <section className="fade-slide-up" style={{ animationDelay: '0.12s' }}>
+          <div className="flex items-center gap-3 mb-5">
+            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">System Status</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+            <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">● All systems go</span>
+          </div>
+          <div className="bg-card rounded-3xl border border-border overflow-hidden divide-y divide-border">
+            {[
+              { label: "Total Students", value: stats?.totalStudents ?? 0, icon: CheckCircle, good: true },
+              { label: "Active Teachers", value: stats?.totalTeachers ?? 0, icon: CheckCircle, good: true },
+              { label: "Total Classes", value: stats?.totalClasses ?? 0, icon: Activity, good: true },
+              { label: "Attendance Today", value: `${stats?.todayAttendancePercentage ?? 0}%`, icon: (stats?.todayAttendancePercentage ?? 0) > 50 ? CheckCircle : AlertCircle, good: (stats?.todayAttendancePercentage ?? 0) > 50 },
+            ].map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <div key={i} className="flex items-center justify-between px-6 py-4 hover:bg-primary/[0.03] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Icon className={`h-4 w-4 ${item.good ? "text-emerald-500" : "text-amber-500"}`} />
+                    <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                  </div>
+                  <span className={`text-sm font-black ${item.good ? "text-emerald-500" : "text-amber-500"}`}>{item.value}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+      </div>
+
+      {/* Floating Theme Toggle */}
+      {mounted && (
+        <div className="fixed bottom-6 right-6 z-50 bg-card border border-border rounded-2xl p-1.5 shadow-xl flex flex-col gap-1 backdrop-blur-md">
+          <button
+            onClick={() => setTheme('light')}
+            className={`p-2.5 rounded-xl transition-all ${theme === 'light' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-primary/10'}`}
+          >
+            <Sun className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setTheme('dark')}
+            className={`p-2.5 rounded-xl transition-all ${theme === 'dark' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-primary/10'}`}
+          >
+            <Moon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

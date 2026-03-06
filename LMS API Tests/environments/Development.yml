@@ -1,6 +1,0 @@
-name: Development
-variables:
-  - name: SUPABASE_URL
-    value: https://fbhqngcwnokffzznshjr.supabase.co
-  - secret: true
-    name: SUPABASE_ANON_KEY
