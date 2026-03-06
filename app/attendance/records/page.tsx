@@ -5,14 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import Link from "next/link";
 import { getAttendanceByDate, AttendanceWithStudent } from "@/lib/api/attendance";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
 import {
     Table,
     TableBody,
@@ -21,13 +14,19 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { CalendarIcon, UserCheck, UserX, Clock, Loader2, ArrowLeft, CalendarOff } from "lucide-react";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon, UserCheck, UserX, Clock, Loader2, ArrowLeft, CalendarOff, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 
 type StatusFilter = "all" | "Present" | "Absent" | "Late" | "Leave";
 
 export default function AttendanceRecordsPage() {
-    const [selectedDate, setSelectedDate] = useState<Date>(subDays(new Date(), 1)); // Default to yesterday
+    const [selectedDate, setSelectedDate] = useState<Date>(subDays(new Date(), 1));
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
     const { data: records = [], isLoading } = useQuery({
@@ -47,223 +46,209 @@ export default function AttendanceRecordsPage() {
         leave: records.filter((r) => r.status === "Leave").length,
     };
 
-    const getStatusBadge = (status: string) => {
-        const styles = {
-            Present: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-            Absent: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-            Late: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-            Leave: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    const getStatusConfig = (status: string) => {
+        const configs: Record<string, { bg: string; text: string; dot: string; shadow: string }> = {
+            Present: { bg: "bg-green-500/10", text: "text-green-500", dot: "bg-green-500", shadow: "shadow-[0_0_10px_rgba(34,197,94,0.4)]" },
+            Absent: { bg: "bg-red-500/10", text: "text-red-500", dot: "bg-red-500", shadow: "shadow-[0_0_10px_rgba(239,68,68,0.4)]" },
+            Late: { bg: "bg-yellow-500/10", text: "text-yellow-500", dot: "bg-yellow-500", shadow: "shadow-[0_0_10px_rgba(234,179,8,0.4)]" },
+            Leave: { bg: "bg-blue-500/10", text: "text-blue-500", dot: "bg-blue-500", shadow: "shadow-[0_0_10px_rgba(59,130,246,0.4)]" },
         };
-        return styles[status as keyof typeof styles] || "bg-gray-100 text-gray-800";
+        return configs[status] || { bg: "bg-muted", text: "text-muted-foreground", dot: "bg-muted-foreground", shadow: "" };
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Link href="/attendance">
-                    <Button variant="ghost" size="icon">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Attendance Records</h1>
-                    <p className="text-muted-foreground">
-                        View recorded attendance by date
-                    </p>
+        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Link href="/attendance">
+                        <button className="rounded-full border border-border hover:border-primary/30 p-2 transition-all text-muted-foreground hover:text-foreground">
+                            <ArrowLeft className="h-4 w-4" />
+                        </button>
+                    </Link>
+                    <div>
+                        <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-1">History</p>
+                        <h1 className="text-3xl font-black tracking-tight text-foreground leading-none">
+                            Attendance Records
+                            <span className="text-primary ml-2 text-2xl">✦</span>
+                        </h1>
+                        <p className="text-muted-foreground mt-1.5 text-sm">View recorded attendance by date.</p>
+                    </div>
                 </div>
             </div>
 
             {/* Date Picker & Summary */}
-            <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Select Date</CardTitle>
-                        <CardDescription>Choose a date to view attendance</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !selectedDate && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Pick a date"}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={selectedDate}
-                                    onSelect={(date) => date && setSelectedDate(date)}
-                                    initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
+            <div className="grid gap-6 md:grid-cols-2">
+                {/* Date Picker Card */}
+                <div className="bg-card rounded-3xl border border-border p-6 shadow-sm card-hover">
+                    <h3 className="text-lg font-black mb-4 flex items-center gap-2 text-foreground">
+                        <CalendarIcon className="h-5 w-5 text-primary" />
+                        Select Date
+                    </h3>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <button
+                                className={cn(
+                                    "pill-input w-full bg-card border border-border rounded-full px-5 py-3 text-sm font-semibold text-foreground appearance-none focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all cursor-pointer flex items-center gap-2 text-left",
+                                    !selectedDate && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                                {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Pick a date"}
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-card border border-border rounded-2xl shadow-xl" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(date) => date && setSelectedDate(date)}
+                                className="rounded-md"
+                            />
+                        </PopoverContent>
+                    </Popover>
 
-                        {/* Quick date buttons */}
-                        <div className="flex gap-2 mt-4">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedDate(new Date())}
-                            >
-                                Today
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedDate(subDays(new Date(), 1))}
-                            >
-                                Yesterday
-                            </Button>
+                    {/* Quick date buttons */}
+                    <div className="flex gap-2 mt-4">
+                        <button
+                            className="px-4 py-2 rounded-full border border-border bg-card text-sm font-bold hover:border-primary/30 hover:bg-primary/5 transition-all text-foreground"
+                            onClick={() => setSelectedDate(new Date())}
+                        >
+                            Today
+                        </button>
+                        <button
+                            className="px-4 py-2 rounded-full border border-border bg-card text-sm font-bold hover:border-primary/30 hover:bg-primary/5 transition-all text-foreground"
+                            onClick={() => setSelectedDate(subDays(new Date(), 1))}
+                        >
+                            Yesterday
+                        </button>
+                    </div>
+                </div>
+
+                {/* Summary Card */}
+                <div className="bg-card rounded-3xl border border-border p-6 shadow-sm card-hover flex flex-col justify-center">
+                    <h3 className="text-lg font-black mb-4 flex items-center gap-2 text-foreground">
+                        <Filter className="h-5 w-5 text-primary" />
+                        Summary · {format(selectedDate, "MMM d")}
+                    </h3>
+                    {isLoading ? (
+                        <LoadingShimmer rows={2} rowHeight="h-10" />
+                    ) : (
+                        <div className="grid grid-cols-5 gap-3">
+                            {([
+                                { key: "all" as StatusFilter, label: "Total", value: summary.total, color: "text-foreground", activeBg: "bg-primary/10 border-primary/30" },
+                                { key: "Present" as StatusFilter, label: "Present", value: summary.present, color: "text-green-500", activeBg: "bg-green-500/10 border-green-500/30" },
+                                { key: "Absent" as StatusFilter, label: "Absent", value: summary.absent, color: "text-red-500", activeBg: "bg-red-500/10 border-red-500/30" },
+                                { key: "Late" as StatusFilter, label: "Late", value: summary.late, color: "text-yellow-500", activeBg: "bg-yellow-500/10 border-yellow-500/30" },
+                                { key: "Leave" as StatusFilter, label: "Leave", value: summary.leave, color: "text-blue-500", activeBg: "bg-blue-500/10 border-blue-500/30" },
+                            ]).map(({ key, label, value, color, activeBg }) => (
+                                <button
+                                    key={key}
+                                    className={cn(
+                                        "rounded-2xl p-3 cursor-pointer transition-all border text-center",
+                                        statusFilter === key
+                                            ? `${activeBg} border-current`
+                                            : "bg-accent/30 border-transparent hover:bg-accent/60"
+                                    )}
+                                    onClick={() => setStatusFilter(key)}
+                                >
+                                    <p className={cn("text-2xl font-black", color)}>{value}</p>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wide mt-1">{label}</p>
+                                </button>
+                            ))}
                         </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Summary</CardTitle>
-                        <CardDescription>{format(selectedDate, "MMMM d, yyyy")}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading ? (
-                            <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                            <div className="grid grid-cols-5 gap-4 text-center">
-                                <div
-                                    className={cn(
-                                        "rounded-lg p-3 cursor-pointer transition-colors",
-                                        statusFilter === "all" ? "bg-blue-100 dark:bg-blue-900" : "bg-muted hover:bg-blue-50"
-                                    )}
-                                    onClick={() => setStatusFilter("all")}
-                                >
-                                    <p className="text-2xl font-bold">{summary.total}</p>
-                                    <p className="text-xs text-muted-foreground">Total</p>
-                                </div>
-                                <div
-                                    className={cn(
-                                        "rounded-lg p-3 cursor-pointer transition-colors",
-                                        statusFilter === "Present" ? "bg-green-100 dark:bg-green-900" : "bg-muted hover:bg-green-50"
-                                    )}
-                                    onClick={() => setStatusFilter("Present")}
-                                >
-                                    <p className="text-2xl font-bold text-green-600">{summary.present}</p>
-                                    <p className="text-xs text-muted-foreground">Present</p>
-                                </div>
-                                <div
-                                    className={cn(
-                                        "rounded-lg p-3 cursor-pointer transition-colors",
-                                        statusFilter === "Absent" ? "bg-red-100 dark:bg-red-900" : "bg-muted hover:bg-red-50"
-                                    )}
-                                    onClick={() => setStatusFilter("Absent")}
-                                >
-                                    <p className="text-2xl font-bold text-red-600">{summary.absent}</p>
-                                    <p className="text-xs text-muted-foreground">Absent</p>
-                                </div>
-                                <div
-                                    className={cn(
-                                        "rounded-lg p-3 cursor-pointer transition-colors",
-                                        statusFilter === "Late" ? "bg-yellow-100 dark:bg-yellow-900" : "bg-muted hover:bg-yellow-50"
-                                    )}
-                                    onClick={() => setStatusFilter("Late")}
-                                >
-                                    <p className="text-2xl font-bold text-yellow-600">{summary.late}</p>
-                                    <p className="text-xs text-muted-foreground">Late</p>
-                                </div>
-                                <div
-                                    className={cn(
-                                        "rounded-lg p-3 cursor-pointer transition-colors",
-                                        statusFilter === "Leave" ? "bg-blue-100 dark:bg-blue-900" : "bg-muted hover:bg-blue-50"
-                                    )}
-                                    onClick={() => setStatusFilter("Leave")}
-                                >
-                                    <p className="text-2xl font-bold text-blue-600">{summary.leave}</p>
-                                    <p className="text-xs text-muted-foreground">Leave</p>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                    )}
+                </div>
             </div>
 
             {/* Records Table */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        {statusFilter === "all" ? "All Records" : `${statusFilter} Students`}
-                        <span className="text-sm font-normal text-muted-foreground">
-                            ({filteredRecords.length})
+            <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col flex-1 card-hover">
+                <div className="p-5 border-b border-border bg-accent/20 flex flex-wrap gap-4 items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <UserCheck className="h-5 w-5 text-primary" />
+                        <span className="font-black text-foreground uppercase tracking-wide">
+                            {statusFilter === "all" ? "All Records" : `${statusFilter} Students`}
                         </span>
-                    </CardTitle>
+                        <span className="text-sm font-semibold text-muted-foreground">({filteredRecords.length})</span>
+                    </div>
                     {statusFilter !== "all" && (
-                        <Button variant="ghost" size="sm" onClick={() => setStatusFilter("all")}>
+                        <button
+                            className="px-4 py-2 rounded-full border border-border bg-card text-sm font-bold hover:border-primary/30 hover:bg-primary/5 transition-all text-foreground"
+                            onClick={() => setStatusFilter("all")}
+                        >
                             Clear Filter
-                        </Button>
+                        </button>
                     )}
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="overflow-x-auto min-h-[300px]">
                     {isLoading ? (
-                        <div className="flex items-center justify-center py-10">
-                            <Loader2 className="h-6 w-6 animate-spin" />
-                        </div>
+                        <div className="p-6"><LoadingShimmer rows={5} rowHeight="h-14" /></div>
                     ) : filteredRecords.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-10">
+                        <div className="flex items-center justify-center p-12 text-muted-foreground font-semibold">
                             {records.length === 0
                                 ? "No attendance recorded for this date."
                                 : `No ${statusFilter.toLowerCase()} records for this date.`}
-                        </p>
+                        </div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Student Name</TableHead>
-                                    <TableHead>Reg. No.</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Remarks</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredRecords.map((record: AttendanceWithStudent) => (
-                                    <TableRow key={record.id}>
-                                        <TableCell className="font-medium">
-                                            {record.student?.id ? (
-                                                <Link
-                                                    href={`/students/${record.student.id}`}
-                                                    className="hover:underline text-blue-600 dark:text-blue-400"
-                                                >
-                                                    {record.student.full_name}
-                                                </Link>
-                                            ) : (
-                                                "Unknown Student"
-                                            )}
-                                        </TableCell>
-                                        <TableCell>{record.student?.reg_no || "—"}</TableCell>
-                                        <TableCell>
-                                            <span className={cn(
-                                                "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                                                getStatusBadge(record.status)
-                                            )}>
-                                                {record.status === "Present" && <UserCheck className="h-3 w-3" />}
-                                                {record.status === "Absent" && <UserX className="h-3 w-3" />}
-                                                {record.status === "Late" && <Clock className="h-3 w-3" />}
-                                                {record.status === "Leave" && <CalendarOff className="h-3 w-3" />}
-                                                {record.status}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {record.remarks || "—"}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                            <thead className="bg-accent/40 text-muted-foreground text-[10px] uppercase tracking-[0.1em] font-black">
+                                <tr>
+                                    <th className="px-6 py-4 border-b border-border">Student Name</th>
+                                    <th className="px-6 py-4 border-b border-border">Reg. No.</th>
+                                    <th className="px-6 py-4 text-center border-b border-border">Status</th>
+                                    <th className="px-6 py-4 border-b border-border">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {filteredRecords.map((record: AttendanceWithStudent) => {
+                                    const statusCfg = getStatusConfig(record.status);
+                                    return (
+                                        <tr key={record.id} className="group hover:bg-accent/20 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-primary border border-primary/20">
+                                                        {(record.student?.full_name || "U").substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        {record.student?.id ? (
+                                                            <Link
+                                                                href={`/students/${record.student.id}`}
+                                                                className="font-bold text-foreground text-[15px] group-hover:text-primary transition-colors hover:underline"
+                                                            >
+                                                                {record.student.full_name}
+                                                            </Link>
+                                                        ) : (
+                                                            <span className="font-bold text-foreground text-[15px]">Unknown Student</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-muted-foreground font-semibold">
+                                                #{record.student?.reg_no || "—"}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className={cn(
+                                                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold",
+                                                    statusCfg.bg, statusCfg.text
+                                                )}>
+                                                    <span className={cn("w-2 h-2 rounded-full", statusCfg.dot, statusCfg.shadow)}></span>
+                                                    {record.status === "Present" && <UserCheck className="h-3 w-3" />}
+                                                    {record.status === "Absent" && <UserX className="h-3 w-3" />}
+                                                    {record.status === "Late" && <Clock className="h-3 w-3" />}
+                                                    {record.status === "Leave" && <CalendarOff className="h-3 w-3" />}
+                                                    {record.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-muted-foreground font-semibold">
+                                                {record.remarks || "—"}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 }

@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { Sidebar } from "@/components/Sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
+import { Prefetcher } from "@/components/Prefetcher";
 
-const geistSans = Geist({
+const geistSans = Space_Grotesk({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -27,9 +29,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <QueryProvider>
           <ThemeProvider
@@ -38,23 +40,29 @@ export default function RootLayout({
             enableSystem={false}
             disableTransitionOnChange
           >
-            <div className="flex min-h-screen">
+            {/* Main Application Shell */}
+            <div className="flex h-screen overflow-hidden bg-[#f4f6f4] dark:bg-[#0c1a0d] text-foreground transition-colors duration-200 relative">
+              {/* Gradient mesh orbs — personality layer */}
+              <div className="pointer-events-none fixed inset-0 overflow-hidden z-0" aria-hidden="true">
+                <div className="absolute -top-40 -right-40 w-[560px] h-[560px] rounded-full bg-primary/[0.06] dark:bg-primary/[0.05] blur-[120px]" />
+                <div className="absolute -bottom-40 -left-20 w-[440px] h-[440px] rounded-full bg-emerald-500/[0.06] dark:bg-emerald-400/[0.04] blur-[100px]" />
+                <div className="absolute top-1/2 right-1/4 w-[300px] h-[300px] rounded-full bg-teal-400/[0.04] dark:bg-teal-300/[0.025] blur-[80px]" />
+              </div>
+              <Prefetcher />
               <Sidebar />
-              {/* Main content — shifts right when sidebar is full (w-64) or icon-only (w-16) */}
-              <main className="flex-1 md:ml-64 min-h-screen overflow-y-auto transition-all duration-300">
-                <div className="container mx-auto p-6 md:p-8 max-w-7xl">
-                  {children}
-                </div>
+              <main className="flex-1 overflow-y-auto relative z-10 bg-transparent flex flex-col custom-scrollbar">
+                {children}
               </main>
             </div>
             <Toaster
               theme="dark"
               toastOptions={{
                 style: {
-                  background: "rgba(15,10,35,0.9)",
-                  backdropFilter: "blur(15px)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#e2e8f0",
+                  background: "rgba(12, 26, 13, 0.92)",
+                  backdropFilter: "blur(16px)",
+                  border: "1px solid rgba(19, 236, 55, 0.15)",
+                  color: "#e2f5e4",
+                  borderRadius: "1rem",
                 },
               }}
             />

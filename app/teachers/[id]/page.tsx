@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 import { Calendar, Users, Clock, Plus, Edit, Trash2, ArrowLeft, Globe } from "lucide-react";
-import { AddStudentDialog } from "@/components/students/AddStudentDialog";
+import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
 import { cn } from "@/lib/utils";
 
 // ─── Time Helpers ─────────────────────────────────────────────
@@ -318,513 +318,491 @@ export default function TeacherProfilePage() {
     const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
     return (
-        <div className="space-y-6">
-            {/* ── Header ── */}
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" asChild>
+        <div className="flex-1 overflow-y-auto flex flex-col">
+            <div className="p-4 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+                {/* ── Header ── */}
+                <div className="flex items-center gap-4">
                     <Link href="/teachers">
-                        <ArrowLeft className="h-4 w-4" />
-                        <span className="sr-only">Back</span>
+                        <button className="rounded-full border border-border hover:border-primary/30 p-2 transition-all text-muted-foreground hover:text-foreground">
+                            <ArrowLeft className="h-4 w-4" />
+                        </button>
                     </Link>
-                </Button>
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gradient">Teacher Profile</h1>
-                    <p className="text-slate-400">View and manage assigned classes.</p>
-                </div>
-            </div>
-
-            {/* ── Stat Cards ── */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400">Details</CardTitle>
-                        <Users className="h-4 w-4 text-slate-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <div className="text-2xl font-bold text-slate-100">{teacher.name}</div>
-                                <p className="text-xs text-slate-500 font-mono">Staff ID: {teacher.staff_id}</p>
-                            </div>
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                className="h-8"
-                                onClick={handleDeleteTeacher}
-                                disabled={deleteTeacherMutation.isPending}
-                            >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400">Total Students</CardTitle>
-                        <Users className="h-4 w-4 text-slate-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-slate-100">{teacherClasses.length}</div>
-                        <p className="text-xs text-slate-500">Assigned classes</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400">Teaching Days</CardTitle>
-                        <Calendar className="h-4 w-4 text-slate-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-1.5">
-                            {Object.entries(scheduleSummary).length === 0 ? (
-                                <span className="text-sm text-slate-500">No schedule yet</span>
-                            ) : (
-                                Object.entries(scheduleSummary).map(([day, count]) => (
-                                    <Badge key={day} variant="default" className="text-[10px] px-2 py-0.5">
-                                        {SHORT_DAYS[day] || day}: {count}
-                                    </Badge>
-                                ))
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* ── Timetable Section ── */}
-            <Tabs defaultValue="schedule" className="space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                    <TabsList>
-                        <TabsTrigger value="schedule">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Visual Schedule
-                        </TabsTrigger>
-                        <TabsTrigger value="list">
-                            <Clock className="h-4 w-4 mr-2" />
-                            Class List
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <div className="flex gap-2">
-                        {/* Timezone toggle */}
-                        <div className="flex rounded-lg overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm">
-                            <button
-                                className={cn(
-                                    "px-3 py-1.5 text-xs font-semibold transition-all duration-200",
-                                    timezone === "pk"
-                                        ? "bg-violet-500/25 text-violet-300 shadow-[0_0_10px_rgba(139,92,246,0.2)]"
-                                        : "text-slate-400 hover:text-slate-200"
-                                )}
-                                onClick={() => setTimezone("pk")}
-                            >
-                                🇵🇰 PKT
-                            </button>
-                            <button
-                                className={cn(
-                                    "px-3 py-1.5 text-xs font-semibold transition-all duration-200",
-                                    timezone === "uk"
-                                        ? "bg-violet-500/25 text-violet-300 shadow-[0_0_10px_rgba(139,92,246,0.2)]"
-                                        : "text-slate-400 hover:text-slate-200"
-                                )}
-                                onClick={() => setTimezone("uk")}
-                            >
-                                🇬🇧 UKT
-                            </button>
-                        </div>
-
-
-                        <Button variant="outline" size="sm" onClick={() => setIsCreateStudentOpen(true)}>
-                            <Plus className="h-4 w-4 mr-1" />
-                            Create Student
-                        </Button>
-                        <Button size="sm" onClick={() => setIsAddOpen(true)}>
-                            <Plus className="h-4 w-4 mr-1" />
-                            Assign Class
-                        </Button>
+                    <div>
+                        <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-0.5">Teacher Profile</p>
+                        <h1 className="text-3xl font-black tracking-tight text-foreground leading-none">
+                            {teacher.name}
+                            <span className="text-primary ml-2 text-2xl">✦</span>
+                        </h1>
+                        <p className="text-muted-foreground mt-1 text-sm">Staff ID: {teacher.staff_id} · View and manage assigned classes.</p>
+                    </div>
+                    <div className="ml-auto">
+                        <button
+                            onClick={handleDeleteTeacher}
+                            disabled={deleteTeacherMutation.isPending}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 font-bold rounded-full text-sm transition-all disabled:opacity-50"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Delete Teacher
+                        </button>
                     </div>
                 </div>
 
-                {/* ══════ TAB: Visual Schedule ══════ */}
-                <TabsContent value="schedule">
-                    <Card className="overflow-hidden">
-                        <CardContent className="p-0">
-                            {classesLoading ? (
-                                <div className="p-6"><LoadingShimmer rows={7} rowHeight="h-12" /></div>
-                            ) : teacherClasses.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-                                    <Calendar className="h-10 w-10 mb-3 opacity-40" />
-                                    <p className="text-lg font-medium">No classes assigned</p>
-                                    <p className="text-sm mt-1">Click "Assign Class" to get started.</p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <div style={{ minWidth: `${TOTAL_WIDTH + 140}px` }}>
-                                        {/* ── Timeline Header ── */}
-                                        <div className="flex border-b border-white/8 glass-table-header">
-                                            <div className="w-[140px] flex-shrink-0 p-3 text-xs font-semibold uppercase tracking-wider text-slate-400 border-r border-white/6 flex items-center gap-1.5">
-                                                <Globe className="h-3.5 w-3.5" />
-                                                {timezone === "pk" ? "PKT" : "UKT"}
+                {/* ── Stat Cards ── */}
+                <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Overview</span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                    {[
+                        { label: "Total Students", value: teacherClasses.length, sub: "Assigned classes", accent: "#13ec37", Icon: Users },
+                        { label: "Teaching Days", value: Object.keys(scheduleSummary).length, sub: Object.entries(scheduleSummary).map(([day, count]) => `${SHORT_DAYS[day] || day}: ${count}`).join(', ') || 'No schedule yet', accent: "#a855f7", Icon: Calendar },
+                        { label: "Hours/Week", value: teacherClasses.length * 1, sub: "Estimated weekly hours", accent: "#3b82f6", Icon: Clock },
+                    ].map(({ label, value, sub, accent, Icon }, i) => (
+                        <div key={i} className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3">
+                            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: accent }} />
+                            <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${accent}18` }}>
+                                <Icon className="h-5 w-5" style={{ color: accent }} />
+                            </div>
+                            <div className="relative">
+                                <p className="text-3xl font-black tracking-tight" style={{ color: accent }}>{value}</p>
+                                <p className="text-[11px] font-bold text-foreground mt-1.5">{label}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">{sub}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* ── Timetable Section ── */}
+                <Tabs defaultValue="schedule" className="space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                        <TabsList className="bg-slate-100 dark:bg-[#1a331d] p-1 rounded-xl">
+                            <TabsTrigger value="schedule" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-foreground">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                Visual Schedule
+                            </TabsTrigger>
+                            <TabsTrigger value="list" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-foreground">
+                                <Clock className="h-4 w-4 mr-2" />
+                                Class List
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <div className="flex gap-2">
+                            {/* Timezone toggle */}
+                            <div className="flex rounded-full overflow-hidden border border-border bg-card p-1">
+                                <button
+                                    className={cn(
+                                        "px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200",
+                                        timezone === "pk"
+                                            ? "bg-primary/15 text-primary shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    onClick={() => setTimezone("pk")}
+                                >
+                                    🇵🇰 PKT
+                                </button>
+                                <button
+                                    className={cn(
+                                        "px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200",
+                                        timezone === "uk"
+                                            ? "bg-primary/15 text-primary shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    onClick={() => setTimezone("uk")}
+                                >
+                                    🇬🇧 UKT
+                                </button>
+                            </div>
+
+
+                            <button onClick={() => setIsCreateStudentOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
+                                <Plus className="h-4 w-4" />
+                                Create Student
+                            </button>
+                            <button onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0">
+                                <Plus className="h-4 w-4" />
+                                Assign Class
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ══════ TAB: Visual Schedule ══════ */}
+                    <TabsContent value="schedule">
+                        <div className="bg-card rounded-3xl border border-border overflow-hidden">
+                            <div className="p-0">
+                                {classesLoading ? (
+                                    <div className="p-6"><LoadingShimmer rows={7} rowHeight="h-12" /></div>
+                                ) : teacherClasses.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                                        <Calendar className="h-10 w-10 mb-3 opacity-40" />
+                                        <p className="text-lg font-medium">No classes assigned</p>
+                                        <p className="text-sm mt-1">Click "Assign Class" to get started.</p>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <div style={{ minWidth: `${TOTAL_WIDTH + 140}px` }}>
+                                            {/* ── Timeline Header ── */}
+                                            <div className="flex border-b border-white/8 glass-table-header">
+                                                <div className="w-[140px] flex-shrink-0 p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border flex items-center gap-1.5">
+                                                    <Globe className="h-3.5 w-3.5" />
+                                                    {timezone === "pk" ? "PKT" : "UKT"}
+                                                </div>
+                                                <div className="flex-1 flex">
+                                                    {hours.map((hour) => (
+                                                        <div
+                                                            key={hour}
+                                                            style={{ width: `${HOUR_WIDTH}px` }}
+                                                            className="flex-shrink-0 p-2 text-[10px] font-medium text-center text-muted-foreground border-r border-border/50 last:border-r-0 uppercase"
+                                                        >
+                                                            {formatDisplayHour(hour)}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="flex-1 flex">
-                                                {hours.map((hour) => (
+
+                                            {/* ── Day Rows ── */}
+                                            {ALL_DAYS.map((day) => {
+                                                const dayClasses = classesByDay[day];
+                                                const hasClasses = dayClasses.length > 0;
+
+                                                return (
                                                     <div
-                                                        key={hour}
-                                                        style={{ width: `${HOUR_WIDTH}px` }}
-                                                        className="flex-shrink-0 p-2 text-[10px] font-medium text-center text-slate-500 border-r border-white/5 last:border-r-0 uppercase"
-                                                    >
-                                                        {formatDisplayHour(hour)}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* ── Day Rows ── */}
-                                        {ALL_DAYS.map((day) => {
-                                            const dayClasses = classesByDay[day];
-                                            const hasClasses = dayClasses.length > 0;
-
-                                            return (
-                                                <div
-                                                    key={day}
-                                                    className={cn(
-                                                        "flex h-[52px] border-b border-white/5 last:border-b-0 transition-colors",
-                                                        hasClasses
-                                                            ? "hover:bg-white/[0.02]"
-                                                            : "opacity-40"
-                                                    )}
-                                                >
-                                                    {/* Day label */}
-                                                    <div className="w-[140px] flex-shrink-0 px-3 flex items-center border-r border-white/6">
-                                                        <span className={cn(
-                                                            "text-xs font-semibold uppercase tracking-wide",
-                                                            hasClasses ? "text-slate-200" : "text-slate-600"
-                                                        )}>
-                                                            {day}
-                                                        </span>
-                                                        {hasClasses && (
-                                                            <span className="ml-auto text-[10px] text-slate-500 font-mono">
-                                                                {dayClasses.length}
-                                                            </span>
+                                                        key={day}
+                                                        className={cn(
+                                                            "flex h-[52px] border-b border-border last:border-b-0 transition-colors",
+                                                            hasClasses && "hover:bg-accent/50"
                                                         )}
-                                                    </div>
-
-                                                    {/* Timeline area */}
-                                                    <div className="flex-1 relative">
-                                                        {/* Hour grid lines */}
-                                                        <div className="absolute inset-0 flex pointer-events-none">
-                                                            {hours.map((hour) => (
-                                                                <div
-                                                                    key={hour}
-                                                                    style={{ width: `${HOUR_WIDTH}px` }}
-                                                                    className="flex-shrink-0 border-r border-white/[0.03] last:border-r-0"
-                                                                />
-                                                            ))}
+                                                    >
+                                                        {/* Day label */}
+                                                        <div className="w-[140px] flex-shrink-0 px-3 flex items-center border-r border-border">
+                                                            <span className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                                                                {day}
+                                                            </span>
+                                                            {hasClasses && (
+                                                                <span className="ml-auto text-[10px] text-muted-foreground font-mono">
+                                                                    {dayClasses.length}
+                                                                </span>
+                                                            )}
                                                         </div>
 
-                                                        {/* Class blocks */}
-                                                        {dayClasses.map((cls) => {
-                                                            // Fall back to PK times if UK times are missing
-                                                            const hasPkTime = !!cls.pak_start_time && !!cls.pak_end_time;
-                                                            const hasUkTime = !!cls.uk_start_time && !!cls.uk_end_time;
-                                                            const useUk = timezone === "uk" && hasUkTime;
-                                                            const startTime = useUk ? cls.uk_start_time : cls.pak_start_time;
-                                                            const endTime = useUk ? cls.uk_end_time : cls.pak_end_time;
-                                                            const isFallback = timezone === "uk" && !hasUkTime;
-                                                            const start = timeToDecimal(startTime);
-                                                            const end = timeToDecimal(endTime);
+                                                        {/* Timeline area */}
+                                                        <div className="flex-1 relative">
+                                                            {/* Hour grid lines */}
+                                                            <div className="absolute inset-0 flex pointer-events-none">
+                                                                {hours.map((hour) => (
+                                                                    <div
+                                                                        key={hour}
+                                                                        style={{ width: `${HOUR_WIDTH}px` }}
+                                                                        className="flex-shrink-0 border-r border-border/30 last:border-r-0"
+                                                                    />
+                                                                ))}
+                                                            </div>
 
-                                                            if (!startTime || !endTime || end <= START_HOUR || start >= END_HOUR) return null;
+                                                            {/* Class blocks */}
+                                                            {dayClasses.map((cls) => {
+                                                                // Fall back to PK times if UK times are missing
+                                                                const hasPkTime = !!cls.pak_start_time && !!cls.pak_end_time;
+                                                                const hasUkTime = !!cls.uk_start_time && !!cls.uk_end_time;
+                                                                const useUk = timezone === "uk" && hasUkTime;
+                                                                const startTime = useUk ? cls.uk_start_time : cls.pak_start_time;
+                                                                const endTime = useUk ? cls.uk_end_time : cls.pak_end_time;
+                                                                const isFallback = timezone === "uk" && !hasUkTime;
+                                                                const start = timeToDecimal(startTime);
+                                                                const end = timeToDecimal(endTime);
 
-                                                            const leftPx = Math.max(0, (start - START_HOUR)) * HOUR_WIDTH;
-                                                            const widthPx = Math.max(30, (end - start) * HOUR_WIDTH);
-                                                            const color = studentColorMap.get(cls.student_id) || BLOCK_COLORS[0];
-                                                            const studentName = cls.student?.full_name || "Unknown";
+                                                                if (!startTime || !endTime || end <= START_HOUR || start >= END_HOUR) return null;
 
-                                                            return (
-                                                                <div
-                                                                    key={`${day}-${cls.id}`}
-                                                                    className="absolute top-1.5 bottom-1.5 rounded-md z-10 hover:z-50 hover:scale-[1.03] transition-all duration-200 cursor-pointer flex items-center px-2.5 overflow-hidden group/block backdrop-blur-sm"
-                                                                    onClick={() => cls.student?.id && router.push(`/students/${cls.student.id}`)}
-                                                                    style={{
-                                                                        left: `${leftPx}px`,
-                                                                        width: `${widthPx}px`,
-                                                                        background: color.bg,
-                                                                        borderLeft: `3px solid ${color.border}`,
-                                                                        boxShadow: `0 0 12px ${color.glow}`,
-                                                                    }}
-                                                                >
-                                                                    <div className="flex flex-col min-w-0">
-                                                                        <span className="text-[11px] font-bold truncate leading-tight" style={{ color: color.text }}>
-                                                                            {studentName}
-                                                                        </span>
-                                                                        {widthPx > 80 && (
-                                                                            <span className="text-[9px] text-slate-400 truncate">
-                                                                                {startTime} – {endTime}{isFallback ? " (PK)" : ""}
+                                                                const leftPx = Math.max(0, (start - START_HOUR)) * HOUR_WIDTH;
+                                                                const widthPx = Math.max(30, (end - start) * HOUR_WIDTH);
+                                                                const color = studentColorMap.get(cls.student_id) || BLOCK_COLORS[0];
+                                                                const studentName = cls.student?.full_name || "Unknown";
+
+                                                                return (
+                                                                    <div
+                                                                        key={`${day}-${cls.id}`}
+                                                                        className="absolute top-1.5 bottom-1.5 rounded-md z-10 hover:z-50 hover:scale-[1.03] transition-all duration-200 cursor-pointer flex items-center px-2.5 overflow-hidden group/block backdrop-blur-sm"
+                                                                        onClick={() => cls.student?.id && router.push(`/students/${cls.student.id}`)}
+                                                                        style={{
+                                                                            left: `${leftPx}px`,
+                                                                            width: `${widthPx}px`,
+                                                                            background: color.bg,
+                                                                            borderLeft: `3px solid ${color.border}`,
+                                                                            boxShadow: `0 0 12px ${color.glow}`,
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex flex-col min-w-0">
+                                                                            <span className="text-[11px] font-bold truncate leading-tight" style={{ color: color.text }}>
+                                                                                {studentName}
                                                                             </span>
-                                                                        )}
-                                                                    </div>
+                                                                            {widthPx > 80 && (
+                                                                                <span className="text-[9px] text-muted-foreground truncate">
+                                                                                    {startTime} – {endTime}{isFallback ? " (PK)" : ""}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
 
-                                                                    {/* ── Hover Tooltip ── */}
-                                                                    <div className="absolute opacity-0 group-hover/block:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 w-[220px] p-3 rounded-lg shadow-2xl pointer-events-none transition-opacity duration-200 z-[100] glass-popover">
-                                                                        <div className="flex items-center justify-between border-b border-white/8 pb-2 mb-2">
-                                                                            <span className="font-bold text-sm" style={{ color: color.text }}>{studentName}</span>
-                                                                            <Clock className="w-3 h-3 text-slate-500" />
+                                                                        {/* ── Hover Tooltip ── */}
+                                                                        <div className="absolute opacity-0 group-hover/block:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 w-[220px] p-3 rounded-lg shadow-2xl pointer-events-none transition-opacity duration-200 z-[100] bg-card border border-border">
+                                                                            <div className="flex items-center justify-between border-b border-border pb-2 mb-2">
+                                                                                <span className="font-bold text-sm" style={{ color: color.text }}>{studentName}</span>
+                                                                                <Clock className="w-3 h-3 text-muted-foreground" />
+                                                                            </div>
+                                                                            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+                                                                                <span className="text-muted-foreground">Reg No</span>
+                                                                                <span className="font-mono text-foreground">{cls.student?.reg_no || "—"}</span>
+                                                                                <span className="text-muted-foreground">🇵🇰 PK</span>
+                                                                                <span className="text-foreground">{cls.pak_start_time} – {cls.pak_end_time}</span>
+                                                                                <span className="text-muted-foreground">🇬🇧 UK</span>
+                                                                                <span className="text-foreground">{cls.uk_start_time} – {cls.uk_end_time}</span>
+                                                                                <span className="text-muted-foreground">Days</span>
+                                                                                <span className="text-foreground">{cls.schedule_days ? Object.keys(cls.schedule_days).join(", ") : "—"}</span>
+                                                                            </div>
+                                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-card"></div>
                                                                         </div>
-                                                                        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-                                                                            <span className="text-slate-500">Reg No</span>
-                                                                            <span className="font-mono text-slate-300">{cls.student?.reg_no || "—"}</span>
-                                                                            <span className="text-slate-500">🇵🇰 PK</span>
-                                                                            <span className="text-slate-300">{cls.pak_start_time} – {cls.pak_end_time}</span>
-                                                                            <span className="text-slate-500">🇬🇧 UK</span>
-                                                                            <span className="text-slate-300">{cls.uk_start_time} – {cls.uk_end_time}</span>
-                                                                            <span className="text-slate-500">Days</span>
-                                                                            <span className="text-slate-300">{cls.schedule_days ? Object.keys(cls.schedule_days).join(", ") : "—"}</span>
-                                                                        </div>
-                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-[rgba(12,8,32,0.92)]"></div>
                                                                     </div>
-                                                                </div>
-                                                            );
-                                                        })}
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    {/* ══════ TAB: Class List (existing CRUD table) ══════ */}
+                    <TabsContent value="list">
+                        <div className="bg-card rounded-3xl border border-border overflow-hidden">
+                            <div className="p-6">
+                                {classesLoading ? (
+                                    <LoadingShimmer rows={5} rowHeight="h-14" />
+                                ) : teacherClasses.length === 0 ? (
+                                    <p className="text-muted-foreground text-center py-10">No classes assigned to this teacher.</p>
+                                ) : (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="text-[11px] font-black uppercase tracking-wider">Student</TableHead>
+                                                <TableHead className="text-[11px] font-black uppercase tracking-wider">Reg. No.</TableHead>
+                                                <TableHead className="text-[11px] font-black uppercase tracking-wider">PK Time</TableHead>
+                                                <TableHead className="text-[11px] font-black uppercase tracking-wider">UK Time</TableHead>
+                                                <TableHead className="text-[11px] font-black uppercase tracking-wider">Schedule Days</TableHead>
+                                                <TableHead className="w-[80px] text-[11px] font-black uppercase tracking-wider">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {teacherClasses.map((cls: ClassSchedule & { student: { id: string; full_name: string; reg_no: string } }) => (
+                                                <TableRow key={cls.id}>
+                                                    <TableCell className="font-medium">
+                                                        <Link href={`/students/${cls.student?.id}`} className="hover:underline text-primary font-bold">
+                                                            {cls.student?.full_name || "Unknown"}
+                                                        </Link>
+                                                    </TableCell>
+                                                    <TableCell className="font-mono text-sm text-muted-foreground">{cls.student?.reg_no || "—"}</TableCell>
+                                                    <TableCell className="text-sm font-semibold text-foreground">{cls.pak_start_time} – {cls.pak_end_time}</TableCell>
+                                                    <TableCell className="text-sm font-semibold text-foreground">{cls.uk_start_time} – {cls.uk_end_time}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {cls.schedule_days && Object.keys(cls.schedule_days).map((day) => (
+                                                                <Badge key={day} variant="default" className="text-[10px]">
+                                                                    {SHORT_DAYS[day] || day}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-1">
+                                                            <button className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all" onClick={() => handleEditClick(cls)}>
+                                                                <Edit className="h-4 w-4" />
+                                                            </button>
+                                                            <button className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all" onClick={() => handleDeleteClick(cls.id)}>
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                )}
+                            </div>
+                        </div>
+                    </TabsContent>
+                </Tabs>
+
+                {/* ══════ Add Class Dialog ══════ */}
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Assign Student to Class</DialogTitle>
+                            <DialogDescription>Add a new class schedule for {teacher.name}</DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleAddSubmit}>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="student">Student</Label>
+                                    <Select onValueChange={(val) => setAddForm({ ...addForm, student_id: val })}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select Student" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {students.map((student: any) => (
+                                                <SelectItem key={student.id} value={student.id}>
+                                                    {student.full_name} ({student.reg_no})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>PK Start</Label>
+                                        <Input value={addForm.pak_start_time} onChange={e => {
+                                            const pk = e.target.value;
+                                            setAddForm(f => ({ ...f, pak_start_time: pk, uk_start_time: convertPkToUk(pk) || f.uk_start_time }));
+                                        }} placeholder="e.g. 2:00 PM" required />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>PK End</Label>
+                                        <Input value={addForm.pak_end_time} onChange={e => {
+                                            const pk = e.target.value;
+                                            setAddForm(f => ({ ...f, pak_end_time: pk, uk_end_time: convertPkToUk(pk) || f.uk_end_time }));
+                                        }} placeholder="e.g. 3:00 PM" required />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>UK Start <span className="text-[10px] text-emerald-400/60 font-normal">⚡ auto</span></Label>
+                                        <Input value={addForm.uk_start_time} onChange={e => setAddForm({ ...addForm, uk_start_time: e.target.value })} placeholder="e.g. 9:00 AM" />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>UK End <span className="text-[10px] text-emerald-400/60 font-normal">⚡ auto</span></Label>
+                                        <Input value={addForm.uk_end_time} onChange={e => setAddForm({ ...addForm, uk_end_time: e.target.value })} placeholder="e.g. 10:00 AM" />
+                                    </div>
+                                </div>
+                                {/* ── Day Chips ── */}
+                                <div className="grid gap-2">
+                                    <Label>Schedule Days</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {ALL_DAYS.map((day) => {
+                                            const selected = addForm.selectedDays.has(day);
+                                            return (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = new Set(addForm.selectedDays);
+                                                        if (selected) next.delete(day); else next.add(day);
+                                                        setAddForm({ ...addForm, selectedDays: next });
+                                                    }}
+                                                    className={cn(
+                                                        "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200",
+                                                        selected
+                                                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                                                            : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/8 hover:text-slate-300"
+                                                    )}
+                                                >
+                                                    {SHORT_DAYS[day]}
+                                                </button>
                                             );
                                         })}
                                     </div>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                            </div>
+                            <DialogFooter>
+                                <button type="submit" disabled={addClassMutation.isPending} className="flex items-center justify-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all disabled:opacity-50">
+                                    {addClassMutation.isPending ? "Adding..." : "Assign Student"}
+                                </button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
 
-                {/* ══════ TAB: Class List (existing CRUD table) ══════ */}
-                <TabsContent value="list">
-                    <Card>
-                        <CardContent className="pt-6">
-                            {classesLoading ? (
-                                <LoadingShimmer rows={5} rowHeight="h-14" />
-                            ) : teacherClasses.length === 0 ? (
-                                <p className="text-slate-500 text-center py-10">No classes assigned to this teacher.</p>
-                            ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Student</TableHead>
-                                            <TableHead>Reg. No.</TableHead>
-                                            <TableHead>PK Time</TableHead>
-                                            <TableHead>UK Time</TableHead>
-                                            <TableHead>Schedule Days</TableHead>
-                                            <TableHead className="w-[80px]">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {teacherClasses.map((cls: ClassSchedule & { student: { id: string; full_name: string; reg_no: string } }) => (
-                                            <TableRow key={cls.id}>
-                                                <TableCell className="font-medium">
-                                                    <Link href={`/students/${cls.student?.id}`} className="hover:underline text-violet-400">
-                                                        {cls.student?.full_name || "Unknown"}
-                                                    </Link>
-                                                </TableCell>
-                                                <TableCell className="font-mono text-sm text-slate-400">{cls.student?.reg_no || "—"}</TableCell>
-                                                <TableCell className="text-sm">{cls.pak_start_time} – {cls.pak_end_time}</TableCell>
-                                                <TableCell className="text-sm">{cls.uk_start_time} – {cls.uk_end_time}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {cls.schedule_days && Object.keys(cls.schedule_days).map((day) => (
-                                                            <Badge key={day} variant="default" className="text-[10px]">
-                                                                {SHORT_DAYS[day] || day}
-                                                            </Badge>
-                                                        ))}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-1">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-violet-400 hover:text-violet-300" onClick={() => handleEditClick(cls)}>
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-300" onClick={() => handleDeleteClick(cls.id)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                {/* ══════ Edit Class Dialog ══════ */}
+                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Edit Class Schedule</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleEditSubmit}>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>PK Start</Label>
+                                        <Input value={editForm.pak_start_time} onChange={e => {
+                                            const pk = e.target.value;
+                                            setEditForm(f => ({ ...f, pak_start_time: pk, uk_start_time: convertPkToUk(pk) || f.uk_start_time }));
+                                        }} required />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>PK End</Label>
+                                        <Input value={editForm.pak_end_time} onChange={e => {
+                                            const pk = e.target.value;
+                                            setEditForm(f => ({ ...f, pak_end_time: pk, uk_end_time: convertPkToUk(pk) || f.uk_end_time }));
+                                        }} required />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>UK Start <span className="text-[10px] text-emerald-400/60 font-normal">⚡ auto</span></Label>
+                                        <Input value={editForm.uk_start_time} onChange={e => setEditForm({ ...editForm, uk_start_time: e.target.value })} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>UK End <span className="text-[10px] text-emerald-400/60 font-normal">⚡ auto</span></Label>
+                                        <Input value={editForm.uk_end_time} onChange={e => setEditForm({ ...editForm, uk_end_time: e.target.value })} />
+                                    </div>
+                                </div>
+                                {/* ── Day Chips ── */}
+                                <div className="grid gap-2">
+                                    <Label>Schedule Days</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {ALL_DAYS.map((day) => {
+                                            const selected = editForm.selectedDays.has(day);
+                                            return (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = new Set(editForm.selectedDays);
+                                                        if (selected) next.delete(day); else next.add(day);
+                                                        setEditForm({ ...editForm, selectedDays: next });
+                                                    }}
+                                                    className={cn(
+                                                        "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200",
+                                                        selected
+                                                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                                                            : "bg-accent text-muted-foreground border-border hover:bg-accent/80 hover:text-foreground"
+                                                    )}
+                                                >
+                                                    {SHORT_DAYS[day]}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <button type="submit" disabled={updateClassMutation.isPending} className="flex items-center justify-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all disabled:opacity-50">
+                                    {updateClassMutation.isPending ? "Saving..." : "Save Changes"}
+                                </button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
 
-            {/* ══════ Add Class Dialog ══════ */}
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Assign Student to Class</DialogTitle>
-                        <DialogDescription>Add a new class schedule for {teacher.name}</DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleAddSubmit}>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="student">Student</Label>
-                                <Select onValueChange={(val) => setAddForm({ ...addForm, student_id: val })}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Student" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {students.map((student: any) => (
-                                            <SelectItem key={student.id} value={student.id}>
-                                                {student.full_name} ({student.reg_no})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label>PK Start</Label>
-                                    <Input value={addForm.pak_start_time} onChange={e => {
-                                        const pk = e.target.value;
-                                        setAddForm(f => ({ ...f, pak_start_time: pk, uk_start_time: convertPkToUk(pk) || f.uk_start_time }));
-                                    }} placeholder="e.g. 2:00 PM" required />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>PK End</Label>
-                                    <Input value={addForm.pak_end_time} onChange={e => {
-                                        const pk = e.target.value;
-                                        setAddForm(f => ({ ...f, pak_end_time: pk, uk_end_time: convertPkToUk(pk) || f.uk_end_time }));
-                                    }} placeholder="e.g. 3:00 PM" required />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label>UK Start <span className="text-[10px] text-emerald-400/60 font-normal">⚡ auto</span></Label>
-                                    <Input value={addForm.uk_start_time} onChange={e => setAddForm({ ...addForm, uk_start_time: e.target.value })} placeholder="e.g. 9:00 AM" />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>UK End <span className="text-[10px] text-emerald-400/60 font-normal">⚡ auto</span></Label>
-                                    <Input value={addForm.uk_end_time} onChange={e => setAddForm({ ...addForm, uk_end_time: e.target.value })} placeholder="e.g. 10:00 AM" />
-                                </div>
-                            </div>
-                            {/* ── Day Chips ── */}
-                            <div className="grid gap-2">
-                                <Label>Schedule Days</Label>
-                                <div className="flex flex-wrap gap-2">
-                                    {ALL_DAYS.map((day) => {
-                                        const selected = addForm.selectedDays.has(day);
-                                        return (
-                                            <button
-                                                key={day}
-                                                type="button"
-                                                onClick={() => {
-                                                    const next = new Set(addForm.selectedDays);
-                                                    if (selected) next.delete(day); else next.add(day);
-                                                    setAddForm({ ...addForm, selectedDays: next });
-                                                }}
-                                                className={cn(
-                                                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200",
-                                                    selected
-                                                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
-                                                        : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/8 hover:text-slate-300"
-                                                )}
-                                            >
-                                                {SHORT_DAYS[day]}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="submit" disabled={addClassMutation.isPending}>
-                                {addClassMutation.isPending ? "Adding..." : "Assign Student"}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-            {/* ══════ Edit Class Dialog ══════ */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit Class Schedule</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleEditSubmit}>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label>PK Start</Label>
-                                    <Input value={editForm.pak_start_time} onChange={e => {
-                                        const pk = e.target.value;
-                                        setEditForm(f => ({ ...f, pak_start_time: pk, uk_start_time: convertPkToUk(pk) || f.uk_start_time }));
-                                    }} required />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>PK End</Label>
-                                    <Input value={editForm.pak_end_time} onChange={e => {
-                                        const pk = e.target.value;
-                                        setEditForm(f => ({ ...f, pak_end_time: pk, uk_end_time: convertPkToUk(pk) || f.uk_end_time }));
-                                    }} required />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label>UK Start <span className="text-[10px] text-emerald-400/60 font-normal">⚡ auto</span></Label>
-                                    <Input value={editForm.uk_start_time} onChange={e => setEditForm({ ...editForm, uk_start_time: e.target.value })} />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>UK End <span className="text-[10px] text-emerald-400/60 font-normal">⚡ auto</span></Label>
-                                    <Input value={editForm.uk_end_time} onChange={e => setEditForm({ ...editForm, uk_end_time: e.target.value })} />
-                                </div>
-                            </div>
-                            {/* ── Day Chips ── */}
-                            <div className="grid gap-2">
-                                <Label>Schedule Days</Label>
-                                <div className="flex flex-wrap gap-2">
-                                    {ALL_DAYS.map((day) => {
-                                        const selected = editForm.selectedDays.has(day);
-                                        return (
-                                            <button
-                                                key={day}
-                                                type="button"
-                                                onClick={() => {
-                                                    const next = new Set(editForm.selectedDays);
-                                                    if (selected) next.delete(day); else next.add(day);
-                                                    setEditForm({ ...editForm, selectedDays: next });
-                                                }}
-                                                className={cn(
-                                                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200",
-                                                    selected
-                                                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
-                                                        : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/8 hover:text-slate-300"
-                                                )}
-                                            >
-                                                {SHORT_DAYS[day]}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="submit" disabled={updateClassMutation.isPending}>
-                                {updateClassMutation.isPending ? "Saving..." : "Save Changes"}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-            <AddStudentDialog
-                open={isCreateStudentOpen}
-                onOpenChange={setIsCreateStudentOpen}
-                defaultTeacherId={teacherId}
-                onSuccess={() => {
-                    queryClient.invalidateQueries({ queryKey: ["teacherClasses", teacherId] });
-                    queryClient.invalidateQueries({ queryKey: ["allClasses"] });
-                    queryClient.invalidateQueries({ queryKey: ["students"] });
-                }}
-            />
+                <AddStudentDialog
+                    open={isCreateStudentOpen}
+                    onOpenChange={setIsCreateStudentOpen}
+                    defaultTeacherId={teacherId}
+                    onSuccess={() => {
+                        queryClient.invalidateQueries({ queryKey: ["teacherClasses", teacherId] });
+                        queryClient.invalidateQueries({ queryKey: ["allClasses"] });
+                        queryClient.invalidateQueries({ queryKey: ["students"] });
+                    }}
+                />
+            </div>
         </div>
     );
 }
