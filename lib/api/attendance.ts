@@ -10,13 +10,24 @@ export interface AttendanceWithStudent extends AttendanceRecord {
 }
 
 export async function submitAttendance(records: AttendanceRecord[]): Promise<void> {
+    console.log("Submitting attendance records:", records.length, "records");
+
     const { error } = await supabase
         .from("attendance")
-        .insert(records);
+        .upsert(records, { onConflict: 'student_id, date' });
 
     if (error) {
-        console.error("Error submitting attendance:", error);
-        throw error;
+        // Supabase errors have non-enumerable props — extract them explicitly
+        const details = {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+        };
+        console.error("Supabase attendance error:", details);
+        throw new Error(
+            error.message || "Failed to submit attendance. Check Supabase RLS policies for the 'attendance' table."
+        );
     }
 }
 

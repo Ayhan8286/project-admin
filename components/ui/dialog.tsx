@@ -56,9 +56,9 @@ function DialogContent({
           "w-full max-w-[calc(100%-2rem)] sm:max-w-lg",
           "grid gap-4 p-6 outline-none",
           // Glass styling
-          "bg-[rgba(12,8,32,0.92)] backdrop-blur-xl",
-          "border border-white/10 rounded-xl",
-          "shadow-[0_24px_64px_rgba(0,0,0,0.6)]",
+          "bg-card backdrop-blur-xl",
+          "border border-border rounded-xl",
+          "shadow-[0_24px_64px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.6)]",
           // Use Radix built-in spring animations — scale only, no translate in keyframes
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -72,7 +72,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-slate-200 hover:bg-white/8 transition-all duration-200 focus:outline-none disabled:pointer-events-none"
+            className="absolute top-4 right-4 flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 focus:outline-none disabled:pointer-events-none"
           >
             <XIcon className="h-4 w-4" />
             <span className="sr-only">Close</span>
@@ -98,7 +98,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-2 border-t border-white/6",
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-2 border-t border-border",
         className
       )}
       {...props}
@@ -110,7 +110,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-gradient text-lg leading-none font-semibold", className)}
+      className={cn("text-foreground text-lg leading-none font-semibold", className)}
       {...props}
     />
   )
@@ -120,7 +120,7 @@ function DialogDescription({ className, ...props }: React.ComponentProps<typeof 
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-slate-400 text-sm", className)}
+      className={cn("text-muted-foreground text-sm", className)}
       {...props}
     />
   )
