@@ -89,7 +89,7 @@ export default function SupervisorDetailPage({ params }: PageProps) {
     };
 
     const getClassCountForTeacher = (teacherId: string) => {
-        return allClasses.filter((c: any) => c.teacher_id === teacherId).length;
+        return allClasses.filter((c: { teacher_id: string }) => c.teacher_id === teacherId).length;
     };
 
     if (isLoadingSupervisor || isLoadingTeachers) {
@@ -285,43 +285,52 @@ function AssignTeacherDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Assign Teacher</DialogTitle>
-                    <DialogDescription>
-                        Select a teacher to assign to this supervisor.
-                    </DialogDescription>
+            <DialogContent className="sm:max-w-[480px] rounded-3xl border-border bg-card">
+                <DialogHeader className="pb-2">
+                    <DialogTitle className="text-xl font-black text-foreground">Assign Teacher</DialogTitle>
+                    <p className="text-xs text-muted-foreground font-medium">Select a teacher to assign to this supervisor.</p>
                 </DialogHeader>
                 {availableTeachers.length > 0 ? (
-                    <form onSubmit={handleSubmit}>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="teacher">Teacher</Label>
+                    <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Selection</p>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="teacher" className="text-xs font-bold text-foreground">Teacher Profile</Label>
                                 <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium focus:ring-2 focus:ring-primary outline-none">
                                         <SelectValue placeholder="Select a teacher" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="rounded-2xl border-border shadow-xl">
                                         {availableTeachers.map((teacher: Teacher) => (
-                                            <SelectItem key={teacher.id} value={teacher.id}>
-                                                {teacher.name} ({teacher.staff_id})
-                                                {teacher.supervisor_id ? " (Has supervisor)" : ""}
+                                            <SelectItem key={teacher.id} value={teacher.id} className="rounded-xl focus:bg-primary/10">
+                                                <div className="flex flex-col py-0.5">
+                                                    <span className="font-bold text-sm">{teacher.name}</span>
+                                                    <span className="text-[10px] text-muted-foreground font-medium">
+                                                        {teacher.staff_id} {teacher.supervisor_id ? "· Currently Assigned" : "· Unassigned"}
+                                                    </span>
+                                                </div>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
-                        <DialogFooter>
-                            <button type="submit" disabled={!selectedTeacherId || isPending} className="flex items-center justify-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all disabled:opacity-50">
-                                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Assign
+                        <div className="flex justify-end pt-2">
+                            <button 
+                                type="submit" 
+                                disabled={!selectedTeacherId || isPending} 
+                                className="flex items-center justify-center gap-2 px-8 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm fab-glow hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20"
+                            >
+                                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                                Assign to Supervisor
                             </button>
-                        </DialogFooter>
+                        </div>
                     </form>
                 ) : (
-                    <div className="py-6 text-center text-muted-foreground">
-                        No teachers available to assign.
+                    <div className="py-12 text-center rounded-2xl bg-accent/20 border border-dashed border-border mt-2">
+                        <Users className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-30" />
+                        <p className="text-sm font-bold text-foreground">No teachers available</p>
+                        <p className="text-xs text-muted-foreground mt-1">All teachers are already assigned.</p>
                     </div>
                 )}
             </DialogContent>

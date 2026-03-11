@@ -17,7 +17,9 @@ import {
     MessageSquareWarning, UserCheck, Search, Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { FormInput } from "@/components/ui/form-input";
+import { exportToCSV } from "@/lib/utils/csv";
+import { STALE_LONG } from "@/lib/query-config";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -126,19 +128,26 @@ export default function SettingsPage() {
             if (error) throw error;
             if (!data || data.length === 0) { toast.error("No data to export"); return; }
 
-            const cols = table === "students"
-                ? ["full_name", "reg_no", "guardian_name", "status", "shift"]
-                : ["name", "staff_id", "is_active"];
-
-            const csv = [cols.join(","), ...data.map((row: any) => cols.map(c => `"${row[c] ?? ""}"`).join(","))].join("\n");
-
-            const blob = new Blob([csv], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${table}_export_${Date.now()}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
+            const fileName = `${table}_export_${new Date().toISOString().slice(0, 10)}`;
+            
+            if (table === "students") {
+                exportToCSV(data.map((s: any) => ({
+                    Name: s.full_name,
+                    "Reg No": s.reg_no,
+                    Guardian: s.guardian_name,
+                    Status: s.status,
+                    Shift: s.shift
+                })), fileName);
+            } else {
+                exportToCSV(data.map((t: any) => ({
+                    Name: t.name,
+                    "Staff ID": t.staff_id,
+                    Status: t.is_active ? "Active" : "Inactive",
+                    Email: t.email || "",
+                    Phone: t.phone || "",
+                    Timing: t.timing || ""
+                })), fileName);
+            }
             toast.success(`Exported ${data.length} ${table}`);
         } catch (err) {
             console.error(err);
@@ -499,16 +508,16 @@ export default function SettingsPage() {
                                                     .from("classes")
                                                     .select("id, pak_start_time, pak_end_time, uk_start_time, uk_end_time, student_id, teacher_id");
                                                 if (error) throw error;
-                                                if (!data?.length) { toast.error("No data"); return; }
-                                                const headers = Object.keys(data[0]);
-                                                const csv = [headers.join(","), ...data.map(r => headers.map(h => `"${(r as Record<string, unknown>)[h] ?? ""}"`).join(","))].join("\n");
-                                                const blob = new Blob([csv], { type: "text/csv" });
-                                                const url = URL.createObjectURL(blob);
-                                                const a = document.createElement("a");
-                                                a.href = url;
-                                                a.download = `classes_export_${Date.now()}.csv`;
-                                                a.click();
-                                                URL.revokeObjectURL(url);
+                                                const fileName = `classes_export_${new Date().toISOString().slice(0, 10)}`;
+                                                exportToCSV(data.map((r: any) => ({
+                                                    "Class ID": r.id,
+                                                    "PK Start": r.pak_start_time,
+                                                    "PK End": r.pak_end_time,
+                                                    "UK Start": r.uk_start_time,
+                                                    "UK End": r.uk_end_time,
+                                                    "Student ID": r.student_id,
+                                                    "Teacher ID": r.teacher_id
+                                                })), fileName);
                                                 toast.success(`Exported ${data.length} classes`);
                                             } catch { toast.error("Export failed"); }
                                             finally { setIsExporting(false); }
