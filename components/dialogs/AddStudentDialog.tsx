@@ -20,8 +20,11 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Save } from "lucide-react";
+import { FormInput } from "@/components/ui/form-input";
+import { Teacher, AppAccount } from "@/types/student";
+import { Supervisor } from "@/types/supervisor";
 
-const inputClass = "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
+
 
 interface AddStudentDialogProps {
     open: boolean;
@@ -161,19 +164,31 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                     <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student Info</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Full Name *</label>
-                                <input name="full_name" value={formData.full_name} onChange={handleInputChange} required className={inputClass} placeholder="e.g. Ahmed Ali" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Registration No *</label>
-                                <input name="reg_no" value={formData.reg_no} onChange={handleInputChange} required className={inputClass} placeholder="e.g. REG-001" />
-                            </div>
+                            <FormInput
+                                label="Full Name *"
+                                name="full_name"
+                                value={formData.full_name}
+                                onChange={handleInputChange}
+                                required
+                                placeholder="e.g. Ahmed Ali"
+                            />
+                            <FormInput
+                                label="Registration No *"
+                                name="reg_no"
+                                value={formData.reg_no}
+                                onChange={handleInputChange}
+                                required
+                                placeholder="e.g. REG-001"
+                            />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-foreground">Guardian Name *</label>
-                            <input name="guardian_name" value={formData.guardian_name} onChange={handleInputChange} required className={inputClass} placeholder="e.g. Ali Khan" />
-                        </div>
+                        <FormInput
+                            label="Guardian Name *"
+                            name="guardian_name"
+                            value={formData.guardian_name}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="e.g. Ali Khan"
+                        />
                     </div>
 
                     {/* Assignment */}
@@ -193,10 +208,13 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Shift / Timing</label>
-                                <input name="shift" value={formData.shift} onChange={handleInputChange} className={inputClass} placeholder="e.g. Morning" />
-                            </div>
+                            <FormInput
+                                label="Shift / Timing"
+                                name="shift"
+                                value={formData.shift}
+                                onChange={handleInputChange}
+                                placeholder="e.g. Morning"
+                            />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-foreground">Supervisor</label>
@@ -206,7 +224,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl">
                                     <SelectItem value="none">None</SelectItem>
-                                    {supervisors.map((s: any) => (
+                                    {supervisors.map((s: Supervisor) => (
                                         <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -226,7 +244,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl">
                                         <SelectItem value="none">None</SelectItem>
-                                        {teachers.map((t: any) => (
+                                        {teachers.map((t: Teacher) => (
                                             <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -240,7 +258,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl">
                                         <SelectItem value="none">None</SelectItem>
-                                        {appAccounts.map((a: any) => (
+                                        {appAccounts.map((a: AppAccount) => (
                                             <SelectItem key={a.id} value={a.id}>{a.platform} — {a.account_identifier}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -248,24 +266,36 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">🇵🇰 PK Start Time</label>
-                                <input name="pak_start_time" value={classFormData.pak_start_time} onChange={handleClassInputChange} className={inputClass} placeholder="e.g. 2:00 PM" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">🇵🇰 PK End Time</label>
-                                <input name="pak_end_time" value={classFormData.pak_end_time} onChange={handleClassInputChange} className={inputClass} placeholder="e.g. 3:00 PM" />
-                            </div>
+                            <FormInput
+                                label="🇵🇰 PK Start Time"
+                                name="pak_start_time"
+                                value={classFormData.pak_start_time}
+                                onChange={handleClassInputChange}
+                                placeholder="e.g. 2:00 PM"
+                            />
+                            <FormInput
+                                label="🇵🇰 PK End Time"
+                                name="pak_end_time"
+                                value={classFormData.pak_end_time}
+                                onChange={handleClassInputChange}
+                                placeholder="e.g. 3:00 PM"
+                            />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">🇬🇧 UK Start Time</label>
-                                <input name="uk_start_time" value={classFormData.uk_start_time} onChange={handleClassInputChange} className={inputClass} placeholder="e.g. 9:00 AM" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">🇬🇧 UK End Time</label>
-                                <input name="uk_end_time" value={classFormData.uk_end_time} onChange={handleClassInputChange} className={inputClass} placeholder="e.g. 10:00 AM" />
-                            </div>
+                            <FormInput
+                                label="🇬🇧 UK Start Time"
+                                name="uk_start_time"
+                                value={classFormData.uk_start_time}
+                                onChange={handleClassInputChange}
+                                placeholder="e.g. 9:00 AM"
+                            />
+                            <FormInput
+                                label="🇬🇧 UK End Time"
+                                name="uk_end_time"
+                                value={classFormData.uk_end_time}
+                                onChange={handleClassInputChange}
+                                placeholder="e.g. 10:00 AM"
+                            />
                         </div>
                     </div>
 

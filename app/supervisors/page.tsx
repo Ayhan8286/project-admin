@@ -25,6 +25,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { FormInput } from "@/components/ui/form-input";
+import { exportToCSV } from "@/lib/utils/csv";
+import { STALE_LONG } from "@/lib/query-config";
 
 // Placeholder data arrays to enrich the API data for the UI
 const placeholderRoles = [
@@ -44,25 +47,7 @@ const placeholderAvatars = [
     "https://lh3.googleusercontent.com/aida-public/AB6AXuBWSDAba86vGuxkf3y5Z-l3uU1rJLxWpf397WPYilLyuVyLSexFhxDQzkqcIBuYqITpE3vNoCsa_T4n2iYCh-BVdUN9nDAjKCrhBfQTPMz2lTyQavNSsI9VUW-CRraaEW1nHgBEXQf7P1JT0-gq0vk6xCgMBwS_RQrz9J5ikZIVBMVO7i1wBV18jsRTl4wAo0AmF1vvSL97ua4Pp4jS07wljkyBPWO5WjvUmqxYNti_UTy8wESI4h4q0Vd4-Ug5rI4M-6W_OBVAjdg"
 ];
 
-function exportSupervisorsCSV(supervisors: Supervisor[]) {
-    const headers = ["Name", "Email", "Phone", "Timing"];
-    const rows = supervisors.map(s => [
-        s.name,
-        s.email || "",
-        s.phone || "",
-        s.timing || "",
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `supervisors_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
+
 
 export default function SupervisorsPage() {
     const [search, setSearch] = useState("");
@@ -96,11 +81,13 @@ export default function SupervisorsPage() {
     const { data: supervisors = [], isLoading } = useQuery({
         queryKey: ["supervisors"],
         queryFn: getSupervisors,
+        ...STALE_LONG,
     });
 
     const { data: supervisorStats = {} } = useQuery({
         queryKey: ["supervisorStats"],
         queryFn: getSupervisorStats,
+        ...STALE_LONG,
     });
 
     const filteredSupervisors = supervisors.filter((supervisor) =>
@@ -124,7 +111,15 @@ export default function SupervisorsPage() {
                     </div>
                     <div className="flex gap-3">
                         <button
-                            onClick={() => exportSupervisorsCSV(filteredSupervisors)}
+                            onClick={() => exportToCSV(
+                                filteredSupervisors.map(s => ({
+                                    Name: s.name,
+                                    Email: s.email || "",
+                                    Phone: s.phone || "",
+                                    Timing: s.timing || ""
+                                })),
+                                `supervisors_${new Date().toISOString().slice(0, 10)}`
+                            )}
                             className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground"
                         >
                             <Download className="h-4 w-4" />
@@ -278,7 +273,7 @@ export default function SupervisorsPage() {
     );
 }
 
-const inputClass = "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
+
 
 function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const queryClient = useQueryClient();
@@ -318,22 +313,33 @@ function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                 <form onSubmit={handleSubmit} className="space-y-4 pt-2">
                     <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Identity</p>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-foreground">Name *</label>
-                            <input name="name" value={formData.name} onChange={handleChange} required className={inputClass} placeholder="e.g. Dr. Ahmad" />
-                        </div>
+                        <FormInput
+                            label="Name *"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                            placeholder="e.g. Dr. Ahmad"
+                        />
                     </div>
                     <div className="space-y-3 border-t border-border pt-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Email</label>
-                                <input name="email" type="email" value={formData.email} onChange={handleChange} className={inputClass} placeholder="e.g. ahmad@school.com" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Phone</label>
-                                <input name="phone" value={formData.phone} onChange={handleChange} className={inputClass} placeholder="e.g. +92 300 1234567" />
-                            </div>
+                            <FormInput
+                                label="Email"
+                                name="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="e.g. ahmad@school.com"
+                            />
+                            <FormInput
+                                label="Phone"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                placeholder="e.g. +92 300 1234567"
+                            />
                         </div>
                     </div>
                     <div className="space-y-3 border-t border-border pt-4">
@@ -426,22 +432,33 @@ function EditSupervisorDialog({ supervisor, open, onOpenChange }: { supervisor: 
                 <form onSubmit={handleSubmit} className="space-y-4 pt-2">
                     <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Identity</p>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-foreground">Name *</label>
-                            <input name="name" value={formData.name} onChange={handleChange} required className={inputClass} placeholder="e.g. Dr. Ahmad" />
-                        </div>
+                        <FormInput
+                            label="Name *"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                            placeholder="e.g. Dr. Ahmad"
+                        />
                     </div>
                     <div className="space-y-3 border-t border-border pt-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Email</label>
-                                <input name="email" type="email" value={formData.email} onChange={handleChange} className={inputClass} placeholder="e.g. ahmad@school.com" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Phone</label>
-                                <input name="phone" value={formData.phone} onChange={handleChange} className={inputClass} placeholder="e.g. +92 300 1234567" />
-                            </div>
+                            <FormInput
+                                label="Email"
+                                name="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="e.g. ahmad@school.com"
+                            />
+                            <FormInput
+                                label="Phone"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                placeholder="e.g. +92 300 1234567"
+                            />
                         </div>
                     </div>
                     <div className="space-y-3 border-t border-border pt-4">

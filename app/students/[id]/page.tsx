@@ -6,8 +6,9 @@ import Link from "next/link";
 import { getStudentById, getSiblings, updateStudent } from "@/lib/api/students";
 import { getStudentClasses, updateClass, getTeachers } from "@/lib/api/classes";
 import { getAppAccounts } from "@/lib/api/platforms";
-import { getSupervisors } from "@/lib/api/supervisors";
-import { Student, ClassSchedule } from "@/types/student";
+import { getSupervisors } from "@/lib/api/supervisors"; // Keep this import as it's used
+import { Student, ClassSchedule, Teacher, AppAccount } from "@/types/student";
+import { Supervisor } from "@/types/supervisor";
 import {
     Dialog,
     DialogContent,
@@ -23,6 +24,9 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Edit, Edit2, Users, Calendar, Loader2, Clock, Save, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FormInput } from "@/components/ui/form-input";
+import { ErrorState } from "@/components/ui/error-state";
+import { STALE_SHORT } from "@/lib/query-config";
 
 export default function StudentProfilePage({
     params,
@@ -35,14 +39,7 @@ export default function StudentProfilePage({
     const [isClassEditOpen, setIsClassEditOpen] = useState(false);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
-    const [editForm, setEditForm] = useState<{
-        full_name: string;
-        reg_no: string;
-        guardian_name: string;
-        status: string;
-        shift: string;
-        supervisor_id: string;
-    }>({
+    const [editForm, setEditForm] = useState<Partial<Student>>({
         full_name: "",
         reg_no: "",
         guardian_name: "",
@@ -61,20 +58,23 @@ export default function StudentProfilePage({
     });
 
     // Queries
-    const { data: student, isLoading: studentLoading } = useQuery({
+    const { data: student, isLoading: studentLoading, error: studentError, refetch: refetchStudent } = useQuery({
         queryKey: ["student", id],
         queryFn: () => getStudentById(id),
+        ...STALE_SHORT,
     });
 
     const { data: siblings = [] } = useQuery({
         queryKey: ["siblings", id],
         queryFn: () => (student ? getSiblings(student) : Promise.resolve([])),
         enabled: !!student,
+        ...STALE_SHORT,
     });
 
     const { data: classes = [] } = useQuery({
         queryKey: ["studentClasses", id],
         queryFn: () => getStudentClasses(id),
+        ...STALE_SHORT,
     });
 
     const { data: teachers = [] } = useQuery({
@@ -151,7 +151,7 @@ export default function StudentProfilePage({
         updateClassMutation.mutate(classForm);
     };
 
-    const inputClass = "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
+
 
     if (studentLoading) {
         return (
@@ -164,16 +164,8 @@ export default function StudentProfilePage({
         );
     }
 
-    if (!student) {
-        return (
-            <div className="w-full mx-auto p-6 space-y-4">
-                <Link href="/students" className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold text-sm transition-colors">
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to Students
-                </Link>
-                <p className="text-red-500 font-bold">Student not found.</p>
-            </div>
-        );
+    if (studentError || !student) {
+        return <ErrorState message="Student profile not found or could not be loaded." onRetry={() => refetchStudent()} />;
     }
 
     const isActive = student.status?.toLowerCase() === "active";
@@ -380,36 +372,30 @@ export default function StudentProfilePage({
                         <div className="space-y-3">
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student Info</p>
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-foreground">Full Name *</label>
-                                    <input
-                                        value={editForm.full_name}
-                                        onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                                        required
-                                        className={inputClass}
-                                        placeholder="e.g. Ahmed Khan"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-foreground">Registration No *</label>
-                                    <input
-                                        value={editForm.reg_no}
-                                        onChange={(e) => setEditForm({ ...editForm, reg_no: e.target.value })}
-                                        required
-                                        className={inputClass}
-                                        placeholder="e.g. AHN-0001"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Guardian Name</label>
-                                <input
-                                    value={editForm.guardian_name}
-                                    onChange={(e) => setEditForm({ ...editForm, guardian_name: e.target.value })}
-                                    className={inputClass}
-                                    placeholder="e.g. Mohammad Khan"
+                                <FormInput
+                                    label="Full Name *"
+                                    name="full_name"
+                                    value={editForm.full_name}
+                                    onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                                    required
+                                    placeholder="e.g. Ahmed Khan"
+                                />
+                                <FormInput
+                                    label="Registration No *"
+                                    name="reg_no"
+                                    value={editForm.reg_no}
+                                    onChange={(e) => setEditForm({ ...editForm, reg_no: e.target.value })}
+                                    required
+                                    placeholder="e.g. AHN-0001"
                                 />
                             </div>
+                            <FormInput
+                                label="Guardian Name"
+                                name="guardian_name"
+                                value={editForm.guardian_name}
+                                onChange={(e) => setEditForm({ ...editForm, guardian_name: e.target.value })}
+                                placeholder="e.g. Mohammad Khan"
+                            />
                         </div>
                         <div className="space-y-3 border-t border-border pt-4">
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Enrollment Info</p>
@@ -430,15 +416,13 @@ export default function StudentProfilePage({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-foreground">Shift / Timing</label>
-                                    <input
-                                        value={editForm.shift}
-                                        onChange={(e) => setEditForm({ ...editForm, shift: e.target.value })}
-                                        className={inputClass}
-                                        placeholder="e.g. Morning"
-                                    />
-                                </div>
+                                <FormInput
+                                    label="Shift / Timing"
+                                    name="shift"
+                                    value={editForm.shift}
+                                    onChange={(e) => setEditForm({ ...editForm, shift: e.target.value })}
+                                    placeholder="e.g. Morning"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-foreground">Supervisor</label>
@@ -451,7 +435,7 @@ export default function StudentProfilePage({
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl">
                                         <SelectItem value="none">None</SelectItem>
-                                        {supervisors.map((s: any) => (
+                                        {supervisors.map((s: Supervisor) => (
                                             <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -493,7 +477,7 @@ export default function StudentProfilePage({
                                     <SelectValue placeholder="Select teacher" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl">
-                                    {teachers.map((teacher: any) => (
+                                    {teachers.map((teacher: Teacher) => (
                                         <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -510,7 +494,7 @@ export default function StudentProfilePage({
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl">
                                     <SelectItem value="none">None</SelectItem>
-                                    {appAccounts.map((account: any) => (
+                                    {appAccounts.map((account: AppAccount) => (
                                         <SelectItem key={account.id} value={account.id}>
                                             {account.platform} - {account.account_identifier}
                                         </SelectItem>
@@ -519,22 +503,34 @@ export default function StudentProfilePage({
                             </Select>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">PK Start</label>
-                                <input value={classForm.pak_start_time} onChange={(e) => setClassForm({ ...classForm, pak_start_time: e.target.value })} className={inputClass} placeholder="e.g. 14:00" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">PK End</label>
-                                <input value={classForm.pak_end_time} onChange={(e) => setClassForm({ ...classForm, pak_end_time: e.target.value })} className={inputClass} placeholder="e.g. 15:00" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">UK Start</label>
-                                <input value={classForm.uk_start_time} onChange={(e) => setClassForm({ ...classForm, uk_start_time: e.target.value })} className={inputClass} placeholder="e.g. 09:00" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">UK End</label>
-                                <input value={classForm.uk_end_time} onChange={(e) => setClassForm({ ...classForm, uk_end_time: e.target.value })} className={inputClass} placeholder="e.g. 10:00" />
-                            </div>
+                            <FormInput
+                                label="PK Start"
+                                name="pak_start_time"
+                                value={classForm.pak_start_time || ""}
+                                onChange={(e) => setClassForm({ ...classForm, pak_start_time: e.target.value })}
+                                placeholder="e.g. 14:00"
+                            />
+                            <FormInput
+                                label="PK End"
+                                name="pak_end_time"
+                                value={classForm.pak_end_time || ""}
+                                onChange={(e) => setClassForm({ ...classForm, pak_end_time: e.target.value })}
+                                placeholder="e.g. 15:00"
+                            />
+                            <FormInput
+                                label="UK Start"
+                                name="uk_start_time"
+                                value={classForm.uk_start_time || ""}
+                                onChange={(e) => setClassForm({ ...classForm, uk_start_time: e.target.value })}
+                                placeholder="e.g. 09:00"
+                            />
+                            <FormInput
+                                label="UK End"
+                                name="uk_end_time"
+                                value={classForm.uk_end_time || ""}
+                                onChange={(e) => setClassForm({ ...classForm, uk_end_time: e.target.value })}
+                                placeholder="e.g. 10:00"
+                            />
                         </div>
                         <div className="flex justify-end pt-2">
                             <button

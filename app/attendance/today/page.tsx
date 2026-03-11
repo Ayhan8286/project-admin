@@ -9,6 +9,8 @@ import { Loader2, UserCheck, UserX, Clock, CalendarOff, Clock3, Globe } from "lu
 import { toast } from "sonner";
 import { AttendanceRecord } from "@/types/student";
 import { cn } from "@/lib/utils";
+import { STALE_SHORT } from "@/lib/query-config";
+import { ErrorState, EmptyState } from "@/components/ui/error-state";
 
 type StatusFilter = "all" | "Present" | "Absent" | "Late" | "Leave";
 
@@ -29,20 +31,22 @@ export default function TodayAttendancePage() {
     const [timeZone, setTimeZone] = useState<'PKT' | 'UKT'>('PKT');
     const [tab, setTab] = useState<StatusFilter>("all");
 
-    const { data: attendanceData = [], isLoading: isAttendanceLoading } = useQuery({
-        queryKey: ["attendance", today],
+    const { data: records = [], isLoading: isAttendanceLoading } = useQuery({
+        queryKey: ["attendanceRecords", today],
         queryFn: () => getAttendanceByDate(today),
+        ...STALE_SHORT,
     });
 
-    const { data: classesData = [], isLoading: isClassesLoading } = useQuery({
-        queryKey: ["classes"],
+    const { data: classes = [], isLoading: isClassesLoading } = useQuery({
+        queryKey: ["allClasses"],
         queryFn: getAllClasses,
+        ...STALE_SHORT,
     });
 
     const attendanceMutation = useMutation({
         mutationFn: submitAttendance,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["attendance", today] });
+            queryClient.invalidateQueries({ queryKey: ["attendanceRecords", today] });
             toast.success("Attendance marked successfully");
             setIsSlotDialogOpen(false);
         },
@@ -50,14 +54,14 @@ export default function TodayAttendancePage() {
     });
 
     const summary = {
-        total: attendanceData.length,
-        present: attendanceData.filter(r => r.status === 'Present').length,
-        absent: attendanceData.filter(r => r.status === 'Absent').length,
-        late: attendanceData.filter(r => r.status === 'Late').length,
-        leave: attendanceData.filter(r => r.status === 'Leave').length,
+        total: records.length,
+        present: records.filter(r => r.status === 'Present').length,
+        absent: records.filter(r => r.status === 'Absent').length,
+        late: records.filter(r => r.status === 'Late').length,
+        leave: records.filter(r => r.status === 'Leave').length,
     };
 
-    const todaysClasses = classesData.filter((cls: any) => cls.schedule_days && cls.schedule_days[currentDay]);
+    const todaysClasses = classes.filter((cls: any) => cls.schedule_days && cls.schedule_days[currentDay]);
     const classesByTime: Record<string, any[]> = {};
     todaysClasses.forEach((cls: any) => {
         const time = timeZone === 'PKT' ? (cls.pak_start_time || "Unscheduled") : (cls.uk_start_time || "Unscheduled");
@@ -65,12 +69,13 @@ export default function TodayAttendancePage() {
         classesByTime[time].push(cls);
     });
     const sortedTimes = Object.keys(classesByTime).sort((a, b) => a.localeCompare(b));
+    const slots = sortedTimes; // Defined slots for the EmptyState check
 
     const handleMarkAttendance = (studentId: string, status: AttendanceRecord['status']) => {
         attendanceMutation.mutate([{ student_id: studentId, date: today, status }]);
     };
 
-    const filteredData = tab === "all" ? attendanceData : attendanceData.filter(r => r.status === tab);
+    const filteredData = tab === "all" ? records : records.filter((r: AttendanceRecord) => r.status === tab);
 
     const TABS: { key: StatusFilter; label: string; count: number }[] = [
         { key: "all", label: "All", count: summary.total },
@@ -155,13 +160,14 @@ export default function TodayAttendancePage() {
                             </div>
                         </div>
 
-                        {sortedTimes.length === 0 ? (
-                            <div className="text-center py-10 bg-card rounded-3xl border border-border">
-                                <Globe className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-40" />
-                                <p className="font-bold text-foreground">No classes scheduled for today ({currentDay}) in {timeZone}</p>
-                            </div>
+                        {slots.length === 0 ? (
+                            <EmptyState
+                                icon={Globe}
+                                title="No classes scheduled for today."
+                                description="You can manage class schedules in the Teachers or Students profile pages."
+                            />
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {sortedTimes.map((time) => (
                                     <button
                                         key={time}
@@ -281,7 +287,7 @@ export default function TodayAttendancePage() {
                         </DialogHeader>
                         <div className="space-y-3 pt-2">
                             {selectedSlot && classesByTime[selectedSlot]?.map((cls: any) => {
-                                const studentAttendance = attendanceData.find(r => r.student_id === cls.student_id);
+                                const studentAttendance = records.find((r: AttendanceRecord) => r.student_id === cls.student_id);
                                 const cfg = studentAttendance ? (STATUS_CONFIG[studentAttendance.status] || null) : null;
                                 return (
                                     <div key={cls.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-accent/30 rounded-2xl border border-border gap-4">

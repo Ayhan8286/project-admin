@@ -9,27 +9,11 @@ import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
 import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
 import { Users, UserPlus, Search, Plus, Loader2, Trash2, Eye, Edit2, Download, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { format } from "date-fns";
+import { exportToCSV } from "@/lib/utils/csv";
+import { STALE_LONG } from "@/lib/query-config";
+import { ErrorState } from "@/components/ui/error-state";
 
-function exportStudentsCSV(students: Student[]) {
-    const headers = ["Full Name", "Reg No", "Guardian Name", "Status", "Shift"];
-    const rows = students.map(s => [
-        s.full_name,
-        s.reg_no || "",
-        s.guardian_name || "",
-        s.status || "",
-        s.shift || "",
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `students_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
+
 
 export default function StudentsPage() {
     const queryClient = useQueryClient();
@@ -44,9 +28,10 @@ export default function StudentsPage() {
     };
 
     // Queries
-    const { data: students = [], isLoading, error } = useQuery({
+    const { data: students = [], isLoading, error, refetch } = useQuery({
         queryKey: ["students"],
         queryFn: getStudents,
+        ...STALE_LONG,
     });
 
     const deleteMutation = useMutation({
@@ -71,11 +56,7 @@ export default function StudentsPage() {
     }, [students, searchQuery]);
 
     if (error) {
-        return (
-            <div className="flex items-center justify-center p-12 bg-white dark:bg-[#1a331d] rounded-2xl border border-red-100 dark:border-red-900/50">
-                <p className="text-red-500 font-bold">Error loading students. Please check your Supabase connection.</p>
-            </div>
-        );
+        return <ErrorState message="Failed to load students. Please check your Supabase connection." onRetry={() => refetch()} />;
     }
 
     return (
@@ -160,7 +141,16 @@ export default function StudentsPage() {
                     </button>
                 </div>
                 <button
-                    onClick={() => exportStudentsCSV(filteredStudents)}
+                    onClick={() => exportToCSV(
+                        filteredStudents.map(s => ({
+                            "Full Name": s.full_name,
+                            "Reg No": s.reg_no || "",
+                            "Guardian Name": s.guardian_name || "",
+                            "Status": s.status || "",
+                            "Shift": s.shift || ""
+                        })),
+                        `students_${new Date().toISOString().slice(0, 10)}`
+                    )}
                     className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground"
                 >
                     <Download className="h-4 w-4" />

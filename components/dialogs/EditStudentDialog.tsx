@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Save } from "lucide-react";
 import { Student } from "@/types/student";
+import { Supervisor } from "@/types/supervisor";
+import { FormInput } from "@/components/ui/form-input";
 
 interface EditStudentDialogProps {
     student: Student | null;
@@ -84,8 +86,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const getFieldClass = () =>
-        "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
+
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,39 +107,30 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                     <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student Info</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Full Name *</label>
-                                <input
-                                    name="full_name"
-                                    value={formData.full_name}
-                                    onChange={handleChange}
-                                    required
-                                    className={getFieldClass()}
-                                    placeholder="e.g. Ahmed Khan"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Registration No *</label>
-                                <input
-                                    name="reg_no"
-                                    value={formData.reg_no}
-                                    onChange={handleChange}
-                                    required
-                                    className={getFieldClass()}
-                                    placeholder="e.g. AHN-0001"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-foreground">Guardian Name</label>
-                            <input
-                                name="guardian_name"
-                                value={formData.guardian_name}
+                            <FormInput
+                                label="Full Name *"
+                                name="full_name"
+                                value={formData.full_name}
                                 onChange={handleChange}
-                                className={getFieldClass()}
-                                placeholder="e.g. Mohammad Khan"
+                                required
+                                placeholder="e.g. Ahmed Khan"
+                            />
+                            <FormInput
+                                label="Registration No *"
+                                name="reg_no"
+                                value={formData.reg_no}
+                                onChange={handleChange}
+                                required
+                                placeholder="e.g. AHN-0001"
                             />
                         </div>
+                        <FormInput
+                            label="Guardian Name"
+                            name="guardian_name"
+                            value={formData.guardian_name}
+                            onChange={handleChange}
+                            placeholder="e.g. Mohammad Khan"
+                        />
                     </div>
 
                     {/* Enrollment Info Section */}
@@ -161,16 +153,13 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Shift / Timing</label>
-                                <input
-                                    name="shift"
-                                    value={formData.shift}
-                                    onChange={handleChange}
-                                    className={getFieldClass()}
-                                    placeholder="e.g. Morning"
-                                />
-                            </div>
+                            <FormInput
+                                label="Shift / Timing"
+                                name="shift"
+                                value={formData.shift}
+                                onChange={handleChange}
+                                placeholder="e.g. Morning"
+                            />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-foreground">Supervisor</label>
@@ -185,7 +174,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl">
                                     <SelectItem value="none">None</SelectItem>
-                                    {supervisors.map((s: any) => (
+                                    {supervisors.map((s: Supervisor) => (
                                         <SelectItem key={s.id} value={s.id}>
                                             {s.name}
                                         </SelectItem>

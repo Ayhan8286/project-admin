@@ -18,6 +18,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Save } from "lucide-react";
+import { FormInput } from "@/components/ui/form-input";
+import { Supervisor } from "@/types/supervisor";
 
 interface AddTeacherDialogProps {
     open: boolean;
@@ -25,7 +27,7 @@ interface AddTeacherDialogProps {
     onSuccess?: () => void;
 }
 
-const inputClass = "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
+
 
 export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDialogProps) {
     const queryClient = useQueryClient();
@@ -86,14 +88,22 @@ export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDi
                     <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Identity</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Full Name *</label>
-                                <input name="name" value={formData.name} onChange={handleChange} required className={inputClass} placeholder="e.g. John Doe" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Staff ID *</label>
-                                <input name="staff_id" value={formData.staff_id} onChange={handleChange} required className={inputClass} placeholder="e.g. STAFF-123" />
-                            </div>
+                            <FormInput
+                                label="Full Name *"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                placeholder="e.g. John Doe"
+                            />
+                            <FormInput
+                                label="Staff ID *"
+                                name="staff_id"
+                                value={formData.staff_id}
+                                onChange={handleChange}
+                                required
+                                placeholder="e.g. STAFF-123"
+                            />
                         </div>
                     </div>
 
@@ -101,14 +111,21 @@ export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDi
                     <div className="space-y-3 border-t border-border pt-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Email</label>
-                                <input name="email" type="email" value={formData.email} onChange={handleChange} className={inputClass} placeholder="e.g. john@school.com" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Phone</label>
-                                <input name="phone" value={formData.phone} onChange={handleChange} className={inputClass} placeholder="e.g. +92 300 1234567" />
-                            </div>
+                            <FormInput
+                                label="Email"
+                                name="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="e.g. john@school.com"
+                            />
+                            <FormInput
+                                label="Phone"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                placeholder="e.g. +92 300 1234567"
+                            />
                         </div>
                     </div>
 
@@ -138,7 +155,7 @@ export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDi
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl">
                                         <SelectItem value="none">None</SelectItem>
-                                        {supervisors.map((s: any) => (
+                                        {supervisors.map((s: Supervisor) => (
                                             <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                                         ))}
                                     </SelectContent>

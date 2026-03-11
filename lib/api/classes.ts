@@ -296,14 +296,23 @@ export async function getSupervisorStats(): Promise<Record<string, { teachers: n
 
     const stats: Record<string, { teachers: number; students: Set<string> }> = {};
 
-    (data || []).forEach((teacher: any) => {
-        if (!teacher.supervisor_id) return;
-        if (!stats[teacher.supervisor_id]) {
-            stats[teacher.supervisor_id] = { teachers: 0, students: new Set() };
+    interface TeacherWithClasses {
+        id: string;
+        supervisor_id: string | null;
+        is_active: boolean;
+        classes: { student_id: string }[];
+    }
+
+    (data as unknown as TeacherWithClasses[] || []).forEach((teacher) => {
+        const supId = teacher.supervisor_id;
+        if (!supId) return;
+
+        if (!stats[supId]) {
+            stats[supId] = { teachers: 0, students: new Set() };
         }
-        stats[teacher.supervisor_id].teachers += 1;
-        (teacher.classes || []).forEach((cls: any) => {
-            if (cls.student_id) stats[teacher.supervisor_id].students.add(cls.student_id);
+        stats[supId].teachers += 1;
+        (teacher.classes || []).forEach((cls) => {
+            if (cls.student_id) stats[supId].students.add(cls.student_id);
         });
     });
 

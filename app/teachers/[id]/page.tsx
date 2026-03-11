@@ -22,6 +22,10 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 import { Calendar, Users, Clock, Plus, Edit, Trash2, ArrowLeft, Globe } from "lucide-react";
 import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
+import { AddClassDialog } from "@/components/dialogs/AddClassDialog";
+import { EditClassDialog } from "@/components/dialogs/EditClassDialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { STALE_SHORT } from "@/lib/query-config";
 import { cn } from "@/lib/utils";
 
 // ─── Time Helpers ─────────────────────────────────────────────
@@ -126,62 +130,26 @@ export default function TeacherProfilePage() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isCreateStudentOpen, setIsCreateStudentOpen] = useState(false);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+    const [selectedClass, setSelectedClass] = useState<any>(null);
     const [timezone, setTimezone] = useState<"pk" | "uk">("pk");
 
-    // Add form — days as Set
-    const [addForm, setAddForm] = useState({
-        student_id: "",
-        pak_start_time: "",
-        pak_end_time: "",
-        uk_start_time: "",
-        uk_end_time: "",
-        selectedDays: new Set<string>(),
-    });
-
-    // Edit form — days as Set
-    const [editForm, setEditForm] = useState({
-        pak_start_time: "",
-        pak_end_time: "",
-        uk_start_time: "",
-        uk_end_time: "",
-        selectedDays: new Set<string>(),
-    });
-
     // Queries
-    const { data: teacher, isLoading: teacherLoading, error: teacherError } = useQuery({
+    const { data: teacher, isLoading: teacherLoading, error: teacherError, refetch: refetchTeacher } = useQuery({
         queryKey: ["teacher", teacherId],
         queryFn: () => getTeacherById(teacherId),
+        ...STALE_SHORT,
     });
 
-    const { data: teacherClasses = [], isLoading: classesLoading } = useQuery({
+    const { data: teacherClasses = [], isLoading: classesLoading, refetch: refetchClasses } = useQuery({
         queryKey: ["teacherClasses", teacherId],
         queryFn: () => getTeacherClasses(teacherId),
+        ...STALE_SHORT,
     });
 
     const { data: students = [] } = useQuery({
         queryKey: ["students"],
         queryFn: getStudents,
-    });
-
-    // Mutations
-    const addClassMutation = useMutation({
-        mutationFn: (newClass: any) => addClass(newClass),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["teacherClasses", teacherId] });
-            queryClient.invalidateQueries({ queryKey: ["allClasses"] });
-            setIsAddOpen(false);
-            setAddForm({ student_id: "", pak_start_time: "", pak_end_time: "", uk_start_time: "", uk_end_time: "", selectedDays: new Set() });
-        },
-    });
-
-    const updateClassMutation = useMutation({
-        mutationFn: (updates: any) =>
-            selectedClassId ? updateClass(selectedClassId, updates) : Promise.reject("No class selected"),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["teacherClasses", teacherId] });
-            queryClient.invalidateQueries({ queryKey: ["allClasses"] });
-            setIsEditOpen(false);
-        },
+        ...STALE_SHORT,
     });
 
     const deleteClassMutation = useMutation({
@@ -207,43 +175,9 @@ export default function TeacherProfilePage() {
         return obj;
     }
 
-    const handleAddSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        addClassMutation.mutate({
-            teacher_id: teacherId,
-            student_id: addForm.student_id,
-            pak_start_time: addForm.pak_start_time,
-            pak_end_time: addForm.pak_end_time,
-            uk_start_time: addForm.uk_start_time,
-            uk_end_time: addForm.uk_end_time,
-            schedule_days: daysSetToRecord(addForm.selectedDays),
-        });
-    };
-
     const handleEditClick = (cls: any) => {
-        setSelectedClassId(cls.id);
-        const days = new Set<string>(
-            cls.schedule_days ? Object.keys(cls.schedule_days).map(normalizeDay) : []
-        );
-        setEditForm({
-            pak_start_time: cls.pak_start_time,
-            pak_end_time: cls.pak_end_time,
-            uk_start_time: cls.uk_start_time,
-            uk_end_time: cls.uk_end_time,
-            selectedDays: days,
-        });
+        setSelectedClass(cls);
         setIsEditOpen(true);
-    };
-
-    const handleEditSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        updateClassMutation.mutate({
-            pak_start_time: editForm.pak_start_time,
-            pak_end_time: editForm.pak_end_time,
-            uk_start_time: editForm.uk_start_time,
-            uk_end_time: editForm.uk_end_time,
-            schedule_days: daysSetToRecord(editForm.selectedDays),
-        });
     };
 
     const handleDeleteClick = (id: string) => {
@@ -304,14 +238,7 @@ export default function TeacherProfilePage() {
     }
 
     if (teacherError || !teacher) {
-        return (
-            <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
-                <p className="text-xl text-slate-400">Teacher not found</p>
-                <Button variant="outline" asChild>
-                    <Link href="/teachers">Back to Teachers</Link>
-                </Button>
-            </div>
-        );
+        return <ErrorState message="Teacher not found" onRetry={refetchTeacher} />;
     }
 
     // Hours array for grid
@@ -646,162 +573,22 @@ export default function TeacherProfilePage() {
                     </TabsContent>
                 </Tabs>
 
-                {/* ══════ Add Class Dialog ══════ */}
-                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                    <DialogContent className="sm:max-w-[520px] rounded-3xl border-border bg-card">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-black">Assign Student to Class</DialogTitle>
-                            <p className="text-xs text-muted-foreground font-medium mt-0.5">Add a new class schedule for {teacher.name}</p>
-                        </DialogHeader>
-                        <form onSubmit={handleAddSubmit} className="space-y-5 pt-2">
-                            <div className="space-y-3">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student</p>
-                                <Select onValueChange={(val) => setAddForm({ ...addForm, student_id: val })}>
-                                    <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
-                                        <SelectValue placeholder="Select Student" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl">
-                                        {students.map((student: any) => (
-                                            <SelectItem key={student.id} value={student.id}>
-                                                {student.full_name} ({student.reg_no})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-3 border-t border-border pt-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">🇵🇰 Pakistan Time</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-foreground">PK Start</label>
-                                        <input value={addForm.pak_start_time} onChange={e => {
-                                            const pk = e.target.value;
-                                            setAddForm(f => ({ ...f, pak_start_time: pk, uk_start_time: convertPkToUk(pk) || f.uk_start_time }));
-                                        }} placeholder="e.g. 2:00 PM" required className="w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary outline-none transition-all" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-foreground">PK End</label>
-                                        <input value={addForm.pak_end_time} onChange={e => {
-                                            const pk = e.target.value;
-                                            setAddForm(f => ({ ...f, pak_end_time: pk, uk_end_time: convertPkToUk(pk) || f.uk_end_time }));
-                                        }} placeholder="e.g. 3:00 PM" required className="w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary outline-none transition-all" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-3 border-t border-border pt-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">🇬🇧 UK Time <span className="normal-case font-normal text-primary/60">⚡ auto-filled</span></p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-foreground">UK Start</label>
-                                        <input value={addForm.uk_start_time} onChange={e => setAddForm({ ...addForm, uk_start_time: e.target.value })} placeholder="e.g. 9:00 AM" className="w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary outline-none transition-all" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-foreground">UK End</label>
-                                        <input value={addForm.uk_end_time} onChange={e => setAddForm({ ...addForm, uk_end_time: e.target.value })} placeholder="e.g. 10:00 AM" className="w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary outline-none transition-all" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-3 border-t border-border pt-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Schedule Days</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {ALL_DAYS.map((day) => {
-                                        const selected = addForm.selectedDays.has(day);
-                                        return (
-                                            <button key={day} type="button"
-                                                onClick={() => {
-                                                    const next = new Set(addForm.selectedDays);
-                                                    if (selected) next.delete(day); else next.add(day);
-                                                    setAddForm({ ...addForm, selectedDays: next });
-                                                }}
-                                                className={cn("px-3 py-2 rounded-full text-xs font-black border transition-all",
-                                                    selected ? "bg-primary/15 text-primary border-primary/40" : "bg-accent/30 text-muted-foreground border-border hover:bg-accent"
-                                                )}>
-                                                {SHORT_DAYS[day]}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            <div className="flex justify-end pt-2">
-                                <button type="submit" disabled={addClassMutation.isPending}
-                                    className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20">
-                                    {addClassMutation.isPending ? "Assigning..." : "Assign Student"}
-                                </button>
-                            </div>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <AddClassDialog
+                    open={isAddOpen}
+                    onOpenChange={setIsAddOpen}
+                    teacherId={teacherId}
+                    teacherName={teacher.name}
+                    students={students}
+                    convertPkToUk={convertPkToUk}
+                />
 
-                {/* ══════ Edit Class Dialog ══════ */}
-                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                    <DialogContent className="sm:max-w-[520px] rounded-3xl border-border bg-card">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-black">Edit Class Schedule</DialogTitle>
-                            <p className="text-xs text-muted-foreground font-medium mt-0.5">Adjust timings and schedule days.</p>
-                        </DialogHeader>
-                        <form onSubmit={handleEditSubmit} className="space-y-5 pt-2">
-                            <div className="space-y-3">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">🇵🇰 Pakistan Time</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-foreground">PK Start</label>
-                                        <input value={editForm.pak_start_time} onChange={e => {
-                                            const pk = e.target.value;
-                                            setEditForm(f => ({ ...f, pak_start_time: pk, uk_start_time: convertPkToUk(pk) || f.uk_start_time }));
-                                        }} required className="w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary outline-none transition-all" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-foreground">PK End</label>
-                                        <input value={editForm.pak_end_time} onChange={e => {
-                                            const pk = e.target.value;
-                                            setEditForm(f => ({ ...f, pak_end_time: pk, uk_end_time: convertPkToUk(pk) || f.uk_end_time }));
-                                        }} required className="w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary outline-none transition-all" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-3 border-t border-border pt-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">🇬🇧 UK Time <span className="normal-case font-normal text-primary/60">⚡ auto-filled</span></p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-foreground">UK Start</label>
-                                        <input value={editForm.uk_start_time} onChange={e => setEditForm({ ...editForm, uk_start_time: e.target.value })} className="w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary outline-none transition-all" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-foreground">UK End</label>
-                                        <input value={editForm.uk_end_time} onChange={e => setEditForm({ ...editForm, uk_end_time: e.target.value })} className="w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary outline-none transition-all" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-3 border-t border-border pt-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Schedule Days</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {ALL_DAYS.map((day) => {
-                                        const selected = editForm.selectedDays.has(day);
-                                        return (
-                                            <button key={day} type="button"
-                                                onClick={() => {
-                                                    const next = new Set(editForm.selectedDays);
-                                                    if (selected) next.delete(day); else next.add(day);
-                                                    setEditForm({ ...editForm, selectedDays: next });
-                                                }}
-                                                className={cn("px-3 py-2 rounded-full text-xs font-black border transition-all",
-                                                    selected ? "bg-primary/15 text-primary border-primary/40" : "bg-accent/30 text-muted-foreground border-border hover:bg-accent"
-                                                )}>
-                                                {SHORT_DAYS[day]}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            <div className="flex justify-end pt-2">
-                                <button type="submit" disabled={updateClassMutation.isPending}
-                                    className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20">
-                                    {updateClassMutation.isPending ? "Saving..." : "Save Changes"}
-                                </button>
-                            </div>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <EditClassDialog
+                    open={isEditOpen}
+                    onOpenChange={setIsEditOpen}
+                    teacherId={teacherId}
+                    classData={selectedClass}
+                    convertPkToUk={convertPkToUk}
+                />
 
                 <AddStudentDialog
                     open={isCreateStudentOpen}

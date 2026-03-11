@@ -28,6 +28,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Users, Clock, Loader2, CheckCircle2, Plus, Edit, Trash2, Search, Globe, AlertCircle, Star, Award, ShieldCheck, Eye, Edit2, Filter, ChevronLeft, ChevronRight, GraduationCap, MoreVertical, UserPlus, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { STALE_SHORT } from "@/lib/query-config";
+import { ErrorState } from "@/components/ui/error-state";
 
 // Time range: 12 PM (noon) to 6 AM (next day) -> Displayed as 12 to 30
 // 19 hour span (including end hour)
@@ -143,19 +145,22 @@ export default function TeachersPage() {
     const [selectedDay, setSelectedDay] = useState<string>("Monday");
     const [gridTimezone, setGridTimezone] = useState<"pk" | "uk">("pk");
 
-    const { data: teachers = [], isLoading: teachersLoading } = useQuery({
+    const { data: teachers = [], isLoading: teachersLoading, error: teachersError, refetch: refetchTeachers } = useQuery({
         queryKey: ["teachers"],
         queryFn: getTeachers,
+        ...STALE_SHORT,
     });
 
     const { data: allClasses = [], isLoading: allClassesLoading } = useQuery({
         queryKey: ["allClasses"],
         queryFn: getAllClasses,
+        ...STALE_SHORT,
     });
 
     const { data: allAvailability = [], isLoading: availabilityLoading } = useQuery({
         queryKey: ["allAvailability"],
         queryFn: getAllTeacherAvailability,
+        ...STALE_SHORT,
     });
 
     const deleteTeacherMutation = useMutation({
@@ -165,6 +170,10 @@ export default function TeachersPage() {
             queryClient.invalidateQueries({ queryKey: ["allClasses"] });
         }
     });
+
+    if (teachersError) {
+        return <ErrorState message="Failed to load teachers roster. Please check your connection." onRetry={() => refetchTeachers()} />;
+    }
 
     const filteredTeachers = teachers.filter((teacher: Teacher) =>
         teacher.name.toLowerCase().includes(teacherSearchQuery.toLowerCase()) ||
