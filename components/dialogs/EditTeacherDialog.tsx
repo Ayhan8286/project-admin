@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { addTeacher } from "@/lib/api/classes";
+import { updateTeacher } from "@/lib/api/classes";
 import { getSupervisors } from "@/lib/api/supervisors";
 import {
     Dialog,
@@ -18,16 +18,18 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Save } from "lucide-react";
+import { Teacher } from "@/types/student";
+import { toast } from "sonner";
 
-interface AddTeacherDialogProps {
+interface EditTeacherDialogProps {
+    teacher: Teacher | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSuccess?: () => void;
 }
 
 const inputClass = "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
 
-export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDialogProps) {
+export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDialogProps) {
     const queryClient = useQueryClient();
 
     const [formData, setFormData] = useState({
@@ -39,47 +41,69 @@ export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDi
         supervisor_id: "",
     });
 
+    useEffect(() => {
+        if (teacher && open) {
+            setFormData({
+                name: teacher.name || "",
+                staff_id: teacher.staff_id || "",
+                email: teacher.email || "",
+                phone: teacher.phone || "",
+                timing: teacher.timing || "",
+                supervisor_id: teacher.supervisor_id || "",
+            });
+        }
+    }, [teacher, open]);
+
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
         queryFn: getSupervisors,
     });
 
-    const addMutation = useMutation({
+    const updateMutation = useMutation({
         mutationFn: async () => {
-            const payload = {
+            if (!teacher) throw new Error("No teacher selected");
+            return await updateTeacher(teacher.id, {
                 name: formData.name,
                 staff_id: formData.staff_id,
                 email: formData.email || null,
                 phone: formData.phone || null,
                 timing: formData.timing || null,
                 supervisor_id: formData.supervisor_id || null,
-            };
-            return await addTeacher(payload);
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["teachers"] });
-            if (onSuccess) onSuccess();
             onOpenChange(false);
-            setFormData({ name: "", staff_id: "", email: "", phone: "", timing: "", supervisor_id: "" });
+            toast.success("Teacher updated successfully");
+        },
+        onError: () => {
+            toast.error("Failed to update teacher");
         },
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        addMutation.mutate();
+        updateMutation.mutate();
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[520px] rounded-3xl border-border bg-card max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="pb-2">
-                    <DialogTitle className="text-xl font-black text-foreground">Add New Teacher</DialogTitle>
-                    <p className="text-xs text-muted-foreground font-medium">Create a new teacher profile.</p>
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-sm">
+                            {teacher?.name?.slice(0, 2).toUpperCase() || "??"}
+                        </div>
+                        <div>
+                            <DialogTitle className="text-xl font-black">Edit Teacher</DialogTitle>
+                            <p className="text-xs text-muted-foreground font-medium mt-0.5">Update teacher details and assignment.</p>
+                        </div>
+                    </div>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-5 pt-2">
                     {/* Identity */}
@@ -150,13 +174,13 @@ export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDi
                     <div className="flex justify-end pt-2">
                         <button
                             type="submit"
-                            disabled={addMutation.isPending}
+                            disabled={updateMutation.isPending}
                             className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20"
                         >
-                            {addMutation.isPending ? (
+                            {updateMutation.isPending ? (
                                 <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
                             ) : (
-                                <><Save className="h-4 w-4" /> Save Teacher</>
+                                <><Save className="h-4 w-4" /> Save Changes</>
                             )}
                         </button>
                     </div>

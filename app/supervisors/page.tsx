@@ -1,26 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getSupervisors, addSupervisor, deleteSupervisor } from "@/lib/api/supervisors";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { getSupervisors, addSupervisor, updateSupervisor, deleteSupervisor } from "@/lib/api/supervisors";
+import { getSupervisorStats } from "@/lib/api/classes";
+import { Supervisor } from "@/types/supervisor";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
 import {
-    Plus, Search, Loader2, Users, Trash2, ShieldCheck,
-    Bell, HelpCircle, Download, MoreVertical, Mail, Phone,
-    ChevronLeft, ChevronRight
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Plus, Search, Loader2, ShieldCheck,
+    Download, Mail, Phone, Save, Edit2, Trash2,
+    ChevronLeft, ChevronRight, Clock
 } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
 import { toast } from "sonner";
 
 // Placeholder data arrays to enrich the API data for the UI
@@ -40,18 +43,32 @@ const placeholderAvatars = [
     "https://lh3.googleusercontent.com/aida-public/AB6AXuAr3sVQGyBmtXQWu9LgpamkFCN3WmUNBgG_36ZGla_F0NktW_DwIk1xgoqDf1gOm8ok7T5_w5f__aoYRM5Pm-er0g_o1_hrF3BEpym8aNps8bkagFkcEOBG9rlZVextwTTToedLL_mVn5G8we3S0BPrRpYOuIm9ZWJXSSjYb6nlqbwGWGnFCMlsZRSc41ZUmOU0CXigxR2KRuXuvcywlAZCd433I6FDqrpTZZU2sstLc_KA9uXm5qIACUPWdSoArDjB134u3HiKVn0",
     "https://lh3.googleusercontent.com/aida-public/AB6AXuBWSDAba86vGuxkf3y5Z-l3uU1rJLxWpf397WPYilLyuVyLSexFhxDQzkqcIBuYqITpE3vNoCsa_T4n2iYCh-BVdUN9nDAjKCrhBfQTPMz2lTyQavNSsI9VUW-CRraaEW1nHgBEXQf7P1JT0-gq0vk6xCgMBwS_RQrz9J5ikZIVBMVO7i1wBV18jsRTl4wAo0AmF1vvSL97ua4Pp4jS07wljkyBPWO5WjvUmqxYNti_UTy8wESI4h4q0Vd4-Ug5rI4M-6W_OBVAjdg"
 ];
-const placeholderStats = [
-    { teachers: 12, students: 142, statusColor: "bg-green-500" },
-    { teachers: 8, students: 96, statusColor: "bg-green-500" },
-    { teachers: 15, students: 184, statusColor: "bg-amber-500" },
-    { teachers: 6, students: 210, statusColor: "bg-green-500" },
-    { teachers: 4, students: 32, statusColor: "bg-gray-400" },
-    { teachers: 10, students: 128, statusColor: "bg-green-500" }
-];
+
+function exportSupervisorsCSV(supervisors: Supervisor[]) {
+    const headers = ["Name", "Email", "Phone", "Timing"];
+    const rows = supervisors.map(s => [
+        s.name,
+        s.email || "",
+        s.phone || "",
+        s.timing || "",
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `supervisors_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
 
 export default function SupervisorsPage() {
     const [search, setSearch] = useState("");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [selectedSupervisor, setSelectedSupervisor] = useState<Supervisor | null>(null);
     const queryClient = useQueryClient();
 
     const deleteMutation = useMutation({
@@ -71,9 +88,19 @@ export default function SupervisorsPage() {
         }
     };
 
+    const handleEditClick = (supervisor: Supervisor) => {
+        setSelectedSupervisor(supervisor);
+        setIsEditDialogOpen(true);
+    };
+
     const { data: supervisors = [], isLoading } = useQuery({
         queryKey: ["supervisors"],
         queryFn: getSupervisors,
+    });
+
+    const { data: supervisorStats = {} } = useQuery({
+        queryKey: ["supervisorStats"],
+        queryFn: getSupervisorStats,
     });
 
     const filteredSupervisors = supervisors.filter((supervisor) =>
@@ -83,8 +110,6 @@ export default function SupervisorsPage() {
 
     return (
         <div className="flex-1 overflow-y-auto flex flex-col">
-
-            {/* Gen Z Page Body */}
             <div className="p-4 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full">
 
                 {/* Gen Z Header */}
@@ -98,7 +123,10 @@ export default function SupervisorsPage() {
                         <p className="text-muted-foreground mt-1.5 text-sm">Manage department heads and view faculty oversight.</p>
                     </div>
                     <div className="flex gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
+                        <button
+                            onClick={() => exportSupervisorsCSV(filteredSupervisors)}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground"
+                        >
                             <Download className="h-4 w-4" />
                             Export CSV
                         </button>
@@ -112,7 +140,7 @@ export default function SupervisorsPage() {
                     </div>
                 </div>
 
-                {/* Gen Z KPI Cards */}
+                {/* KPI Card */}
                 <div className="flex items-center gap-3">
                     <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Overview</span>
                     <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
@@ -131,7 +159,7 @@ export default function SupervisorsPage() {
                     </div>
                 </div>
 
-                {/* Search + Filter Section */}
+                {/* Search */}
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="relative w-full sm:w-80">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
@@ -143,22 +171,24 @@ export default function SupervisorsPage() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
-
                 </div>
 
                 {filteredSupervisors.length === 0 ? (
-                    <div className="text-center p-12 bg-card rounded-2xl border border-border">
-                        <p className="text-muted-foreground">No supervisors found matching your search.</p>
+                    <div className="text-center p-12 bg-card rounded-3xl border border-border">
+                        <ShieldCheck className="h-12 w-12 mx-auto text-muted-foreground opacity-40 mb-3" />
+                        <p className="font-bold text-foreground">No supervisors found</p>
+                        <p className="text-sm text-muted-foreground mt-1">Try adjusting your search.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredSupervisors.map((supervisor, index) => {
                             const role = placeholderRoles[index % placeholderRoles.length];
                             const avatar = placeholderAvatars[index % placeholderAvatars.length];
-                            const stats = placeholderStats[index % placeholderStats.length];
+                            const stats = supervisorStats[supervisor.id] ?? { teachers: 0, students: 0 };
+                            const statusColor = stats.teachers > 0 ? "bg-green-500" : "bg-gray-400";
 
                             return (
-                                <div key={supervisor.id} className="card-hover bg-card rounded-2xl border border-border overflow-hidden flex flex-col">
+                                <div key={supervisor.id} className="card-hover bg-card rounded-3xl border border-border overflow-hidden flex flex-col">
                                     <div className="p-6 pb-4 flex-1">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="relative">
@@ -167,23 +197,24 @@ export default function SupervisorsPage() {
                                                     alt={supervisor.name}
                                                     src={avatar}
                                                 />
-                                                <div className={`absolute -bottom-2 -right-2 ${stats.statusColor} size-4 rounded-full border-2 border-card`}></div>
+                                                <div className={`absolute -bottom-2 -right-2 ${statusColor} size-4 rounded-full border-2 border-card`} />
                                             </div>
-                                            <div className="flex gap-1">
-                                                <button
-                                                    onClick={() => handleDelete(supervisor.id, supervisor.name)}
-                                                    className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-500/10"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                                <button className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-xl hover:bg-card">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={() => handleDelete(supervisor.id, supervisor.name)}
+                                                className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-500/10"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
                                         </div>
                                         <div>
                                             <h4 className="text-lg font-black text-foreground mb-1">{supervisor.name}</h4>
                                             <p className="text-primary text-sm font-bold mb-3">{role}</p>
+                                            {supervisor.timing && (
+                                                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                                                    <Clock className="h-4 w-4" />
+                                                    <span className="font-bold text-foreground">{supervisor.timing}</span>
+                                                </div>
+                                            )}
                                             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
                                                 <Mail className="h-4 w-4" />
                                                 <span className="truncate">{supervisor.email || "No email"}</span>
@@ -205,8 +236,12 @@ export default function SupervisorsPage() {
                                         </div>
                                     </div>
                                     <div className="p-4 grid grid-cols-2 gap-3">
-                                        <button className="py-2.5 rounded-full text-sm font-bold border border-border text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all">
-                                            Contact
+                                        <button
+                                            onClick={() => handleEditClick(supervisor)}
+                                            className="py-2.5 rounded-full text-sm font-bold border border-border text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Edit2 className="h-3.5 w-3.5" />
+                                            Edit
                                         </button>
                                         <Link href={`/supervisors/${supervisor.id}`} className="py-2.5 flex items-center justify-center rounded-full text-sm font-black bg-forest text-white fab-glow hover:bg-forest/90 transition-all">
                                             View Teachers
@@ -226,7 +261,6 @@ export default function SupervisorsPage() {
                             <ChevronLeft className="h-4 w-4" />
                         </button>
                         <button className="size-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground font-black text-sm">1</button>
-                        <button className="size-9 flex items-center justify-center rounded-full border border-border text-foreground hover:bg-card font-bold text-sm">2</button>
                         <button className="size-9 flex items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-card">
                             <ChevronRight className="h-4 w-4" />
                         </button>
@@ -234,25 +268,28 @@ export default function SupervisorsPage() {
                 </div>
 
                 <AddSupervisorDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+                <EditSupervisorDialog
+                    supervisor={selectedSupervisor}
+                    open={isEditDialogOpen}
+                    onOpenChange={setIsEditDialogOpen}
+                />
             </div>
         </div>
     );
 }
 
+const inputClass = "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
+
 function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const queryClient = useQueryClient();
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        phone: "",
-    });
+    const [formData, setFormData] = useState({ name: "", email: "", phone: "", timing: "" });
 
     const addMutation = useMutation({
         mutationFn: addSupervisor,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["supervisors"] });
             onOpenChange(false);
-            setFormData({ name: "", email: "", phone: "" });
+            setFormData({ name: "", email: "", phone: "", timing: "" });
             toast.success("Supervisor added successfully");
         },
         onError: (error) => {
@@ -263,53 +300,172 @@ function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        addMutation.mutate(formData);
+        addMutation.mutate({ name: formData.name, email: formData.email || null, phone: formData.phone || null, timing: formData.timing || null });
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Add Supervisor</DialogTitle>
-                    <DialogDescription>
-                        Add a new supervisor to the system.
-                    </DialogDescription>
+            <DialogContent className="sm:max-w-[480px] rounded-3xl border-border bg-card">
+                <DialogHeader className="pb-2">
+                    <DialogTitle className="text-xl font-black">Add Supervisor</DialogTitle>
+                    <p className="text-xs text-muted-foreground font-medium">Add a new supervisor to the system.</p>
                 </DialogHeader>
-                <form onSubmit={handleSubmit}>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Name *</Label>
-                            <Input
-                                id="name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="phone">Phone</Label>
-                            <Input
-                                id="phone"
-                                value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            />
+                <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                    <div className="space-y-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Identity</p>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-foreground">Name *</label>
+                            <input name="name" value={formData.name} onChange={handleChange} required className={inputClass} placeholder="e.g. Dr. Ahmad" />
                         </div>
                     </div>
-                    <DialogFooter>
-                        <button type="submit" disabled={addMutation.isPending} className="flex items-center justify-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all disabled:opacity-50">
-                            {addMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Supervisor
+                    <div className="space-y-3 border-t border-border pt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Email</label>
+                                <input name="email" type="email" value={formData.email} onChange={handleChange} className={inputClass} placeholder="e.g. ahmad@school.com" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Phone</label>
+                                <input name="phone" value={formData.phone} onChange={handleChange} className={inputClass} placeholder="e.g. +92 300 1234567" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-3 border-t border-border pt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Scheduling</p>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-foreground">Timing</label>
+                            <Select value={formData.timing || "none"} onValueChange={(val) => setFormData(prev => ({ ...prev, timing: val === "none" ? "" : val }))}>
+                                <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium focus:ring-2 focus:ring-primary">
+                                    <SelectValue placeholder="Select Timing" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl">
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="Morning">Morning</SelectItem>
+                                    <SelectItem value="Evening">Evening</SelectItem>
+                                    <SelectItem value="Night">Night</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                        <button type="submit" disabled={addMutation.isPending} className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20">
+                            {addMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save Supervisor</>}
                         </button>
-                    </DialogFooter>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function EditSupervisorDialog({ supervisor, open, onOpenChange }: { supervisor: Supervisor | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+    const queryClient = useQueryClient();
+    const [formData, setFormData] = useState({ name: "", email: "", phone: "", timing: "" });
+
+    useEffect(() => {
+        if (supervisor && open) {
+            setFormData({
+                name: supervisor.name || "",
+                email: supervisor.email || "",
+                phone: supervisor.phone || "",
+                timing: supervisor.timing || "",
+            });
+        }
+    }, [supervisor, open]);
+
+    const updateMutation = useMutation({
+        mutationFn: async () => {
+            if (!supervisor) throw new Error("No supervisor selected");
+            return await updateSupervisor(supervisor.id, {
+                name: formData.name,
+                email: formData.email || null,
+                phone: formData.phone || null,
+                timing: formData.timing || null,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["supervisors"] });
+            onOpenChange(false);
+            toast.success("Supervisor updated successfully");
+        },
+        onError: () => {
+            toast.error("Failed to update supervisor");
+        }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        updateMutation.mutate();
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[480px] rounded-3xl border-border bg-card">
+                <DialogHeader className="pb-2">
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-sm">
+                            {supervisor?.name?.slice(0, 2).toUpperCase() || "??"}
+                        </div>
+                        <div>
+                            <DialogTitle className="text-xl font-black">Edit Supervisor</DialogTitle>
+                            <p className="text-xs text-muted-foreground font-medium mt-0.5">Update supervisor details.</p>
+                        </div>
+                    </div>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                    <div className="space-y-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Identity</p>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-foreground">Name *</label>
+                            <input name="name" value={formData.name} onChange={handleChange} required className={inputClass} placeholder="e.g. Dr. Ahmad" />
+                        </div>
+                    </div>
+                    <div className="space-y-3 border-t border-border pt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Email</label>
+                                <input name="email" type="email" value={formData.email} onChange={handleChange} className={inputClass} placeholder="e.g. ahmad@school.com" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Phone</label>
+                                <input name="phone" value={formData.phone} onChange={handleChange} className={inputClass} placeholder="e.g. +92 300 1234567" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-3 border-t border-border pt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Scheduling</p>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-foreground">Timing</label>
+                            <Select value={formData.timing || "none"} onValueChange={(val) => setFormData(prev => ({ ...prev, timing: val === "none" ? "" : val }))}>
+                                <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium focus:ring-2 focus:ring-primary">
+                                    <SelectValue placeholder="Select Timing" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl">
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="Morning">Morning</SelectItem>
+                                    <SelectItem value="Evening">Evening</SelectItem>
+                                    <SelectItem value="Night">Night</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                        <button type="submit" disabled={updateMutation.isPending} className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20">
+                            {updateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save Changes</>}
+                        </button>
+                    </div>
                 </form>
             </DialogContent>
         </Dialog>

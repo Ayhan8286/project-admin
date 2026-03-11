@@ -131,12 +131,15 @@ const BLOCK_COLORS = [
 function getBlockColor(i: number) { return BLOCK_COLORS[i % BLOCK_COLORS.length]; }
 
 import { AddTeacherDialog } from "@/components/dialogs/AddTeacherDialog";
+import { EditTeacherDialog } from "@/components/dialogs/EditTeacherDialog";
 
 export default function TeachersPage() {
     const queryClient = useQueryClient();
     const router = useRouter();
     const [teacherSearchQuery, setTeacherSearchQuery] = useState("");
     const [isAddTeacherOpen, setIsAddTeacherOpen] = useState(false);
+    const [isEditTeacherOpen, setIsEditTeacherOpen] = useState(false);
+    const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
     const [selectedDay, setSelectedDay] = useState<string>("Monday");
     const [gridTimezone, setGridTimezone] = useState<"pk" | "uk">("pk");
 
@@ -223,6 +226,12 @@ export default function TeachersPage() {
             <AddTeacherDialog
                 open={isAddTeacherOpen}
                 onOpenChange={setIsAddTeacherOpen}
+            />
+
+            <EditTeacherDialog
+                open={isEditTeacherOpen}
+                onOpenChange={setIsEditTeacherOpen}
+                teacher={selectedTeacher}
             />
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -362,7 +371,14 @@ export default function TeachersPage() {
                                                             <Link href={`/teachers/${teacher.id}`} className="w-8 h-8 rounded-lg text-slate-400 hover:text-forest hover:bg-forest/10 dark:hover:bg-forest/20 flex items-center justify-center transition-all" title="View Profile">
                                                                 <Eye className="text-xl h-4 w-4" />
                                                             </Link>
-                                                            <button className="w-8 h-8 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-center transition-all" title="Edit Record">
+                                                            <button
+                                                                className="w-8 h-8 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-center transition-all"
+                                                                title="Edit Record"
+                                                                onClick={() => {
+                                                                    setSelectedTeacher(teacher);
+                                                                    setIsEditTeacherOpen(true);
+                                                                }}
+                                                            >
                                                                 <Edit2 className="text-xl font-light h-4 w-4" />
                                                             </button>
                                                             <button

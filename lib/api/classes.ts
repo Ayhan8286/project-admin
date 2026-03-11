@@ -73,7 +73,17 @@ export async function deleteTeacher(id: string): Promise<void> {
         console.error("Error deleting teacher availability:", availabilityError);
     }
 
-    // 3. Finally delete the teacher
+    // 3. Delete associated complaints
+    const { error: complaintsError } = await supabase
+        .from("complaints")
+        .delete()
+        .eq("teacher_id", id);
+
+    if (complaintsError) {
+        console.error("Error deleting teacher complaints:", complaintsError);
+    }
+
+    // 4. Finally delete the teacher
     const { error } = await supabase
         .from("teachers")
         .delete()
@@ -246,4 +256,62 @@ export async function updateTeacherSupervisor(
         console.error("Error updating teacher supervisor:", error);
         throw error;
     }
+}
+
+export async function updateTeacher(
+    id: string,
+    updates: Partial<Omit<Teacher, "id">>
+): Promise<void> {
+    const { error } = await supabase
+        .from("teachers")
+        .update(updates)
+        .eq("id", id);
+
+    if (error) {
+        console.error("Error updating teacher:", error);
+        throw error;
+    }
+}
+
+/**
+ * Returns a map of supervisorId -> { teacherCount, studentCount }
+ * by fetching all teachers with their classes in a single joined query.
+ */
+export async function getSupervisorStats(): Promise<Record<string, { teachers: number; students: number }>> {
+    // Fetch all teachers with their class student_ids
+    const { data, error } = await supabase
+        .from("teachers")
+        .select(`
+            id,
+            supervisor_id,
+            is_active,
+            classes:classes(student_id)
+        `)
+        .eq("is_active", true);
+
+    if (error) {
+        console.error("Error fetching supervisor stats:", error);
+        throw error;
+    }
+
+    const stats: Record<string, { teachers: number; students: Set<string> }> = {};
+
+    (data || []).forEach((teacher: any) => {
+        if (!teacher.supervisor_id) return;
+        if (!stats[teacher.supervisor_id]) {
+            stats[teacher.supervisor_id] = { teachers: 0, students: new Set() };
+        }
+        stats[teacher.supervisor_id].teachers += 1;
+        (teacher.classes || []).forEach((cls: any) => {
+            if (cls.student_id) stats[teacher.supervisor_id].students.add(cls.student_id);
+        });
+    });
+
+    // Convert Sets to counts
+    const result: Record<string, { teachers: number; students: number }> = {};
+    Object.entries(stats).forEach(([id, { teachers, students }]) => {
+        result[id] = { teachers, students: students.size };
+    });
+
+    return result;
 }

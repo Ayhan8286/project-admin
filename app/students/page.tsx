@@ -6,13 +6,42 @@ import Link from "next/link";
 import { getStudents, deleteStudent } from "@/lib/api/students";
 import { Student } from "@/types/student";
 import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
+import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
 import { Users, UserPlus, Search, Plus, Loader2, Trash2, Eye, Edit2, Download, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { format } from "date-fns";
+
+function exportStudentsCSV(students: Student[]) {
+    const headers = ["Full Name", "Reg No", "Guardian Name", "Status", "Shift"];
+    const rows = students.map(s => [
+        s.full_name,
+        s.reg_no || "",
+        s.guardian_name || "",
+        s.status || "",
+        s.shift || "",
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `students_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
 
 export default function StudentsPage() {
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+    const handleEditClick = (student: Student) => {
+        setSelectedStudent(student);
+        setIsEditOpen(true);
+    };
 
     // Queries
     const { data: students = [], isLoading, error } = useQuery({
@@ -74,6 +103,11 @@ export default function StudentsPage() {
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
             />
+            <EditStudentDialog
+                student={selectedStudent}
+                open={isEditOpen}
+                onOpenChange={setIsEditOpen}
+            />
 
 
             {/* Gen Z KPI Cards */}
@@ -125,7 +159,10 @@ export default function StudentsPage() {
                         Clear Filters
                     </button>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
+                <button
+                    onClick={() => exportStudentsCSV(filteredStudents)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground"
+                >
                     <Download className="h-4 w-4" />
                     Export CSV
                 </button>
@@ -267,6 +304,7 @@ export default function StudentsPage() {
                                                     <button
                                                         className="w-8 h-8 rounded text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
                                                         title="Edit Student"
+                                                        onClick={() => handleEditClick(student)}
                                                     >
                                                         <Edit2 className="h-4 w-4 font-light" />
                                                     </button>

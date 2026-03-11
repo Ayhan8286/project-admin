@@ -49,3 +49,15 @@ export async function updateComplaintStatus(id: string, status: string): Promise
         throw error;
     }
 }
+
+export async function deleteComplaint(id: string): Promise<void> {
+    const { error } = await supabase
+        .from("complaints")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        console.error("Error deleting complaint:", error);
+        throw error;
+    }
+}

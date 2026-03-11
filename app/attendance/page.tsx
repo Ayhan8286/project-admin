@@ -7,14 +7,7 @@ import Link from "next/link";
 import { getTeachers, getStudentsByTeacher } from "@/lib/api/classes";
 import { submitAttendance } from "@/lib/api/attendance";
 import { Teacher, AttendanceRecord } from "@/types/student";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
 import {
     Select,
     SelectContent,
@@ -23,7 +16,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CalendarIcon, Check, UserCheck, UserX, Clock, History, CalendarOff } from "lucide-react";
+import { CalendarIcon, Check, UserCheck, UserX, Clock, History, CalendarOff, Loader2 } from "lucide-react";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 import { cn } from "@/lib/utils";
 
@@ -115,37 +108,40 @@ export default function AttendancePage() {
     const leaveCount = attendanceList.filter((s) => s.status === "Leave").length;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gradient">Attendance Manager</h1>
-                    <p className="text-slate-400">
+                    <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-1">Daily Operations</p>
+                    <h1 className="text-3xl font-black tracking-tight text-foreground leading-none">
+                        Attendance Manager
+                        <span className="text-primary ml-2 text-2xl">✦</span>
+                    </h1>
+                    <p className="text-muted-foreground mt-1.5 text-sm">
                         Mark and submit daily attendance for students.
                     </p>
                 </div>
                 <Link href="/attendance/records">
-                    <Button variant="outline" className="gap-2">
+                    <button className="flex items-center gap-2 px-6 py-3 bg-card border border-border rounded-full text-sm font-bold hover:bg-accent transition-colors text-foreground shadow-sm">
                         <History className="h-4 w-4" />
                         View Records
-                    </Button>
+                    </button>
                 </Link>
             </div>
 
-            {/* Filters */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Select Class</CardTitle>
-                    <CardDescription>Choose a teacher and date to mark attendance</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-4">
-                    <div className="w-full sm:w-64">
+            {/* Main Selection Area */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Teacher Selection */}
+                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex flex-col card-hover">
+                    <h3 className="text-lg font-black mb-2 text-foreground">Select Class</h3>
+                    <p className="text-xs text-muted-foreground mb-6 font-medium">Choose a teacher to load their students.</p>
+                    <div className="relative z-10">
                         <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
-                            <SelectTrigger>
-                                <SelectValue placeholder={teachersLoading ? "Loading..." : "Select Teacher"} />
+                            <SelectTrigger className="pill-input h-14 bg-accent/20 border-border rounded-2xl px-5 text-sm font-bold text-foreground focus:ring-2 focus:ring-primary focus:border-primary shadow-sm outline-none transition-all">
+                                <SelectValue placeholder={teachersLoading ? "Loading..." : "Select Teacher..."} />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-2xl border-border shadow-xl">
                                 {teachers.map((teacher: Teacher) => (
-                                    <SelectItem key={teacher.id} value={teacher.id}>
+                                    <SelectItem key={teacher.id} value={teacher.id} className="cursor-pointer font-medium hover:bg-accent focus:bg-accent rounded-xl m-1 transition-colors">
                                         {teacher.name} ({teacher.staff_id})
                                     </SelectItem>
                                 ))}
@@ -153,150 +149,159 @@ export default function AttendancePage() {
                         </Select>
                     </div>
 
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className={cn(
-                                    "w-full sm:w-[240px] justify-start text-left font-normal",
-                                    !selectedDate && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={(date) => date && setSelectedDate(date)}
-                                initialFocus
-                            />
-                        </PopoverContent>
-                    </Popover>
-                </CardContent>
-            </Card>
+                    {!selectedTeacher && (
+                        <div className="mt-8 flex-1 flex flex-col items-center justify-center text-center opacity-50">
+                            <div className="p-4 rounded-full bg-accent mb-3">
+                                <UserCheck className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <p className="text-sm font-bold text-foreground">Awaiting Selection</p>
+                            <p className="text-xs text-muted-foreground max-w-[200px] mt-1">Please select a teacher from the dropdown to continue.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Inline Calendar (only prominent when a teacher is selected) */}
+                <div className={cn("bg-card rounded-3xl p-6 border border-border shadow-sm flex flex-col transition-all duration-500", !selectedTeacher ? "opacity-50 pointer-events-none filter blur-[1px]" : "card-hover")}>
+                    <h3 className="text-lg font-black mb-2 text-foreground">Select Date</h3>
+                    <p className="text-xs text-muted-foreground mb-6 font-medium">Pick the date you are recording attendance for.</p>
+                    <div className="flex justify-center bg-accent/10 rounded-3xl border border-border p-4 shadow-inner">
+                        <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => date && setSelectedDate(date)}
+                            className="pointer-events-auto"
+                        />
+                    </div>
+                </div>
+            </div>
 
             {/* Student List */}
             {selectedTeacher && (
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
+                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover animate-in slide-in-from-bottom-4 fade-in duration-500">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                         <div>
-                            <CardTitle>Student Attendance</CardTitle>
-                            <CardDescription>
-                                {attendanceList.length} student(s) • {format(selectedDate, "EEEE, MMMM d, yyyy")}
-                            </CardDescription>
+                            <h3 className="text-lg font-black text-foreground">Student Roster</h3>
+                            <p className="text-sm text-primary font-bold mt-1">
+                                {attendanceList.length} student(s) • {format(selectedDate, "EEEE, MMMM d")}
+                            </p>
                         </div>
                         {attendanceList.length > 0 && (
-                            <div className="flex gap-4 text-sm">
-                                <span className="flex items-center gap-1 text-green-600">
-                                    <UserCheck className="h-4 w-4" /> {presentCount}
+                            <div className="flex flex-wrap gap-3 p-3 bg-accent/30 rounded-2xl border border-border/50">
+                                <span className="flex items-center gap-1.5 text-xs font-black bg-green-500/10 text-green-500 px-3 py-1.5 rounded-full">
+                                    <UserCheck className="h-3.5 w-3.5" /> Present: {presentCount}
                                 </span>
-                                <span className="flex items-center gap-1 text-red-600">
-                                    <UserX className="h-4 w-4" /> {absentCount}
+                                <span className="flex items-center gap-1.5 text-xs font-black bg-red-500/10 text-red-500 px-3 py-1.5 rounded-full">
+                                    <UserX className="h-3.5 w-3.5" /> Absent: {absentCount}
                                 </span>
-                                <span className="flex items-center gap-1 text-yellow-600">
-                                    <Clock className="h-4 w-4" /> {lateCount}
+                                <span className="flex items-center gap-1.5 text-xs font-black bg-amber-500/10 text-amber-500 px-3 py-1.5 rounded-full">
+                                    <Clock className="h-3.5 w-3.5" /> Late: {lateCount}
                                 </span>
-                                <span className="flex items-center gap-1 text-blue-600">
-                                    <CalendarOff className="h-4 w-4" /> {leaveCount}
+                                <span className="flex items-center gap-1.5 text-xs font-black bg-indigo-500/10 text-indigo-500 px-3 py-1.5 rounded-full">
+                                    <CalendarOff className="h-3.5 w-3.5" /> Leave: {leaveCount}
                                 </span>
                             </div>
                         )}
-                    </CardHeader>
-                    <CardContent>
+                    </div>
+
+                    <div className="overflow-hidden rounded-2xl border border-border bg-accent/5">
                         {studentsLoading ? (
-                            <div className="py-6"><LoadingShimmer rows={5} rowHeight="h-14" /></div>
+                            <div className="p-6"><LoadingShimmer rows={5} rowHeight="h-14" /></div>
                         ) : attendanceList.length === 0 ? (
-                            <p className="text-muted-foreground text-center py-10">
-                                No students found for this teacher.
-                            </p>
+                            <div className="flex flex-col items-center justify-center p-12 text-center">
+                                <UserX className="h-12 w-12 text-muted-foreground opacity-50 mb-3" />
+                                <h4 className="text-base font-bold text-foreground">No Students Found</h4>
+                                <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                                    There are no students currently assigned to this teacher.
+                                </p>
+                            </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="divide-y divide-border">
                                 {attendanceList.map((student) => (
                                     <div
                                         key={student.student_id}
-                                        className="flex items-center justify-between rounded-xl glass-card px-4 py-3"
+                                        className="flex flex-col lg:flex-row lg:items-center justify-between p-4 gap-4 hover:bg-accent/20 transition-colors"
                                     >
-                                        <div>
-                                            <p className="font-medium text-slate-100">{student.full_name}</p>
-                                            <p className="text-sm text-slate-400">{student.reg_no}</p>
+                                        <div className="flex items-center gap-4">
+                                            <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-sm shadow-sm">
+                                                {student.full_name.slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-foreground text-[15px]">{student.full_name}</p>
+                                                <p className="text-[11px] font-black tracking-widest uppercase text-muted-foreground mt-0.5">{student.reg_no}</p>
+                                            </div>
                                         </div>
-                                        <ToggleGroup
-                                            type="single"
-                                            value={student.status}
-                                            onValueChange={(value) =>
-                                                value && handleStatusChange(student.student_id, value as AttendanceStatus)
-                                            }
-                                            className="gap-1"
-                                        >
-                                            <ToggleGroupItem
-                                                value="Present"
-                                                className="data-[state=on]:bg-emerald-500/20 data-[state=on]:text-emerald-300 data-[state=on]:shadow-[0_0_10px_rgba(16,185,129,0.25)] data-[state=on]:border-emerald-500/30 border border-white/10"
+                                        <div className="bg-card p-1.5 rounded-2xl border border-border shadow-sm self-start lg:self-auto">
+                                            <ToggleGroup
+                                                type="single"
+                                                value={student.status}
+                                                onValueChange={(value) =>
+                                                    value && handleStatusChange(student.student_id, value as AttendanceStatus)
+                                                }
+                                                className="gap-1 justify-start lg:justify-end"
                                             >
-                                                <UserCheck className="h-4 w-4 mr-1" />
-                                                Present
-                                            </ToggleGroupItem>
-                                            <ToggleGroupItem
-                                                value="Absent"
-                                                className="data-[state=on]:bg-red-500/20 data-[state=on]:text-red-300 data-[state=on]:shadow-[0_0_10px_rgba(239,68,68,0.25)] data-[state=on]:border-red-500/30 border border-white/10"
-                                            >
-                                                <UserX className="h-4 w-4 mr-1" />
-                                                Absent
-                                            </ToggleGroupItem>
-                                            <ToggleGroupItem
-                                                value="Late"
-                                                className="data-[state=on]:bg-amber-500/20 data-[state=on]:text-amber-300 data-[state=on]:shadow-[0_0_10px_rgba(245,158,11,0.25)] data-[state=on]:border-amber-500/30 border border-white/10"
-                                            >
-                                                <Clock className="h-4 w-4 mr-1" />
-                                                Late
-                                            </ToggleGroupItem>
-                                            <ToggleGroupItem
-                                                value="Leave"
-                                                className="data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-300 data-[state=on]:shadow-[0_0_10px_rgba(99,102,241,0.25)] data-[state=on]:border-indigo-500/30 border border-white/10"
-                                            >
-                                                <CalendarOff className="h-4 w-4 mr-1" />
-                                                Leave
-                                            </ToggleGroupItem>
-                                        </ToggleGroup>
+                                                <ToggleGroupItem
+                                                    value="Present"
+                                                    className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-green-500/15 data-[state=on]:text-green-600 data-[state=on]:shadow-[0_0_15px_rgba(34,197,94,0.2)] data-[state=on]:border-green-500/30 text-muted-foreground hover:bg-accent"
+                                                >
+                                                    <UserCheck className="h-4 w-4 mr-1.5" />
+                                                    Present
+                                                </ToggleGroupItem>
+                                                <ToggleGroupItem
+                                                    value="Absent"
+                                                    className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-red-500/15 data-[state=on]:text-red-500 data-[state=on]:shadow-[0_0_15px_rgba(239,68,68,0.2)] data-[state=on]:border-red-500/30 text-muted-foreground hover:bg-accent"
+                                                >
+                                                    <UserX className="h-4 w-4 mr-1.5" />
+                                                    Absent
+                                                </ToggleGroupItem>
+                                                <ToggleGroupItem
+                                                    value="Late"
+                                                    className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-yellow-500/15 data-[state=on]:text-yellow-600 data-[state=on]:shadow-[0_0_15px_rgba(234,179,8,0.2)] data-[state=on]:border-yellow-500/30 text-muted-foreground hover:bg-accent"
+                                                >
+                                                    <Clock className="h-4 w-4 mr-1.5" />
+                                                    Late
+                                                </ToggleGroupItem>
+                                                <ToggleGroupItem
+                                                    value="Leave"
+                                                    className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-indigo-500/15 data-[state=on]:text-indigo-500 data-[state=on]:shadow-[0_0_15px_rgba(99,102,241,0.2)] data-[state=on]:border-indigo-500/30 text-muted-foreground hover:bg-accent"
+                                                >
+                                                    <CalendarOff className="h-4 w-4 mr-1.5" />
+                                                    Leave
+                                                </ToggleGroupItem>
+                                            </ToggleGroup>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         )}
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit Bar */}
             {attendanceList.length > 0 && (
-                <div className="flex items-center gap-4">
-                    <Button
-                        size="lg"
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-card/80 backdrop-blur-xl border border-border/50 shadow-2xl p-3 pr-4 rounded-full animate-in slide-in-from-bottom-10 fade-in duration-500">
+                    <button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
-                        className="gap-2"
+                        className="flex items-center gap-2 px-8 py-3.5 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 shadow-[0_0_30px_rgba(var(--primary),0.3)] transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                     >
                         {isSubmitting ? (
                             <>
-                                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                </svg>
+                                <Loader2 className="h-5 w-5 animate-spin" />
                                 Submitting...
                             </>
                         ) : (
                             <>
-                                <Check className="h-4 w-4" />
+                                <Check className="h-5 w-5" />
                                 Submit Attendance
                             </>
                         )}
-                    </Button>
+                    </button>
                     {submitSuccess && (
-                        <span className="text-green-600 flex items-center gap-1">
-                            <Check className="h-4 w-4" />
-                            Attendance submitted successfully!
-                        </span>
+                        <div className="flex items-center gap-2 px-4 text-green-500 font-bold text-sm bg-green-500/10 py-2 rounded-full border border-green-500/20">
+                            <div className="size-2 rounded-full bg-green-500 animate-pulse" />
+                            Saved successfully!
+                        </div>
                     )}
                 </div>
             )}

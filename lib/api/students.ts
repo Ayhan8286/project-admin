@@ -86,7 +86,7 @@ export async function getSiblings(student: Student): Promise<Student[]> {
 
 export async function updateStudent(
     id: string,
-    updates: Partial<Pick<Student, "full_name" | "status" | "shift" | "reg_no" | "supervisor_id">>
+    updates: Partial<Pick<Student, "full_name" | "status" | "shift" | "reg_no" | "supervisor_id" | "guardian_name">>
 ): Promise<Student | null> {
     const { data, error } = await supabase
         .from("students")
@@ -122,7 +122,29 @@ export async function addStudent(
 }
 
 export async function deleteStudent(id: string): Promise<void> {
-    // 1. Delete associated classes first to avoid foreign key constraints
+    // 1. Delete associated attendance
+    const { error: attendanceError } = await supabase
+        .from("attendance")
+        .delete()
+        .eq("student_id", id);
+
+    if (attendanceError) {
+        console.error("Error deleting student attendance:", attendanceError);
+        throw attendanceError;
+    }
+
+    // 2. Delete associated complaints
+    const { error: complaintsError } = await supabase
+        .from("complaints")
+        .delete()
+        .eq("student_id", id);
+
+    if (complaintsError) {
+        console.error("Error deleting student complaints:", complaintsError);
+        throw complaintsError;
+    }
+
+    // 3. Delete associated classes
     const { error: classesError } = await supabase
         .from("classes")
         .delete()
@@ -133,7 +155,7 @@ export async function deleteStudent(id: string): Promise<void> {
         throw classesError;
     }
 
-    // 2. Delete the student
+    // 5. Finally, delete the student
     const { error } = await supabase
         .from("students")
         .delete()

@@ -4,34 +4,31 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAttendanceByDate, submitAttendance } from "@/lib/api/attendance";
 import { getAllClasses } from "@/lib/api/classes";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, UserCheck, UserX, Clock, Calendar, ChevronRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, UserCheck, UserX, Clock, CalendarOff, Clock3, Globe } from "lucide-react";
 import { toast } from "sonner";
-import { AttendanceRecord, ClassSchedule } from "@/types/student";
+import { AttendanceRecord } from "@/types/student";
+import { cn } from "@/lib/utils";
+
+type StatusFilter = "all" | "Present" | "Absent" | "Late" | "Leave";
+
+const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string; icon: React.ElementType }> = {
+    Present: { bg: "bg-green-500/10", text: "text-green-500", dot: "bg-green-500", icon: UserCheck },
+    Absent: { bg: "bg-red-500/10", text: "text-red-500", dot: "bg-red-500", icon: UserX },
+    Late: { bg: "bg-yellow-500/10", text: "text-yellow-500", dot: "bg-yellow-500", icon: Clock },
+    Leave: { bg: "bg-blue-500/10", text: "text-blue-500", dot: "bg-blue-500", icon: CalendarOff },
+};
 
 export default function TodayAttendancePage() {
     const queryClient = useQueryClient();
     const today = new Date().toISOString().split('T')[0];
-    const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'short' }); // "Mon", "Tue" etc.
+    const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'short' });
 
-    // State for Time Slot Dialog
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [isSlotDialogOpen, setIsSlotDialogOpen] = useState(false);
     const [timeZone, setTimeZone] = useState<'PKT' | 'UKT'>('PKT');
+    const [tab, setTab] = useState<StatusFilter>("all");
 
-    // Queries
     const { data: attendanceData = [], isLoading: isAttendanceLoading } = useQuery({
         queryKey: ["attendance", today],
         queryFn: () => getAttendanceByDate(today),
@@ -42,7 +39,6 @@ export default function TodayAttendancePage() {
         queryFn: getAllClasses,
     });
 
-    // Mutation
     const attendanceMutation = useMutation({
         mutationFn: submitAttendance,
         onSuccess: () => {
@@ -50,253 +46,290 @@ export default function TodayAttendancePage() {
             toast.success("Attendance marked successfully");
             setIsSlotDialogOpen(false);
         },
-        onError: (error) => {
-            toast.error("Failed to mark attendance");
-            console.error(error);
-        }
+        onError: () => toast.error("Failed to mark attendance"),
     });
 
-    // Derived Data
-    const getStatusColor = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case 'present': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-            case 'absent': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-            case 'late': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-            case 'leave': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-            default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-        }
+    const summary = {
+        total: attendanceData.length,
+        present: attendanceData.filter(r => r.status === 'Present').length,
+        absent: attendanceData.filter(r => r.status === 'Absent').length,
+        late: attendanceData.filter(r => r.status === 'Late').length,
+        leave: attendanceData.filter(r => r.status === 'Leave').length,
     };
 
-    const presentStudents = attendanceData.filter(r => r.status === 'Present');
-    const absentStudents = attendanceData.filter(r => r.status === 'Absent');
-    const lateStudents = attendanceData.filter(r => r.status === 'Late');
-    const leaveStudents = attendanceData.filter(r => r.status === 'Leave');
-
-    // Group Classes by Time Slot
     const todaysClasses = classesData.filter((cls: any) => cls.schedule_days && cls.schedule_days[currentDay]);
-
     const classesByTime: Record<string, any[]> = {};
-    if (todaysClasses) {
-        todaysClasses.forEach((cls: any) => {
-            // Choose time based on selected zone
-            // Note: Database field is 'pak_start_time' or 'uk_start_time'
-            const time = timeZone === 'PKT'
-                ? (cls.pak_start_time || "Unscheduled")
-                : (cls.uk_start_time || "Unscheduled");
-
-            if (!classesByTime[time]) classesByTime[time] = [];
-            classesByTime[time].push(cls);
-        });
-    }
-
-    // Sort times
-    const sortedTimes = Object.keys(classesByTime).sort((a, b) => {
-        // Simple string sort for "HH:MM AM/PM" might work if format is consistent,
-        // but strictly better to parse. assuming standard format for now.
-        return a.localeCompare(b);
+    todaysClasses.forEach((cls: any) => {
+        const time = timeZone === 'PKT' ? (cls.pak_start_time || "Unscheduled") : (cls.uk_start_time || "Unscheduled");
+        if (!classesByTime[time]) classesByTime[time] = [];
+        classesByTime[time].push(cls);
     });
+    const sortedTimes = Object.keys(classesByTime).sort((a, b) => a.localeCompare(b));
 
     const handleMarkAttendance = (studentId: string, status: AttendanceRecord['status']) => {
-        attendanceMutation.mutate([{
-            student_id: studentId,
-            date: today,
-            status: status
-        }]);
+        attendanceMutation.mutate([{ student_id: studentId, date: today, status }]);
     };
 
-    const StudentTable = ({ data }: { data: any[] }) => (
-        <div className="rounded-md border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Student Name</TableHead>
-                        <TableHead>Reg. No.</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Time</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {data.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                                No records found for this category.
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        data.map((record) => (
-                            <TableRow key={record.id}>
-                                <TableCell className="font-medium">{record.student?.full_name || 'Unknown'}</TableCell>
-                                <TableCell>{record.student?.reg_no || '-'}</TableCell>
-                                <TableCell>
-                                    <Badge variant="outline" className={`border-0 ${getStatusColor(record.status)}`}>
-                                        {record.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="text-right text-muted-foreground">
-                                    {new Date(record.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
-        </div>
-    );
+    const filteredData = tab === "all" ? attendanceData : attendanceData.filter(r => r.status === tab);
+
+    const TABS: { key: StatusFilter; label: string; count: number }[] = [
+        { key: "all", label: "All", count: summary.total },
+        { key: "Present", label: "Present", count: summary.present },
+        { key: "Absent", label: "Absent", count: summary.absent },
+        { key: "Late", label: "Late", count: summary.late },
+        { key: "Leave", label: "Leave", count: summary.leave },
+    ];
+
+    const tabAccent: Record<string, string> = {
+        all: "border-primary text-primary",
+        Present: "border-green-500 text-green-500",
+        Absent: "border-red-500 text-red-500",
+        Late: "border-yellow-500 text-yellow-500",
+        Leave: "border-blue-500 text-blue-500",
+    };
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Today's Attendance</h1>
-                <p className="text-muted-foreground">
-                    Detailed view of student attendance for {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
-                </p>
-            </div>
+        <div className="flex-1 overflow-y-auto flex flex-col">
+            <div className="p-4 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full">
 
-            {isAttendanceLoading || isClassesLoading ? (
-                <div className="flex justify-center py-10">
-                    <Loader2 className="h-8 w-8 animate-spin" />
+                {/* Header */}
+                <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-1">Attendance</p>
+                    <h1 className="text-3xl font-black tracking-tight text-foreground leading-none">
+                        Today's Records
+                        <span className="text-primary ml-2 text-2xl">✦</span>
+                    </h1>
+                    <p className="text-muted-foreground mt-1.5 text-sm">
+                        {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
                 </div>
-            ) : (
-                <Tabs defaultValue="all" className="space-y-4">
-                    <TabsList>
-                        <TabsTrigger value="all">All Records ({attendanceData.length})</TabsTrigger>
-                        <TabsTrigger value="slots" className="text-indigo-600 font-medium">Time Slots</TabsTrigger>
-                        <TabsTrigger value="present" className="text-green-600">Present ({presentStudents.length})</TabsTrigger>
-                        <TabsTrigger value="absent" className="text-red-600">Absent ({absentStudents.length})</TabsTrigger>
-                        <TabsTrigger value="late" className="text-yellow-600">Late ({lateStudents.length})</TabsTrigger>
-                        <TabsTrigger value="leave" className="text-blue-600">Leave ({leaveStudents.length})</TabsTrigger>
-                    </TabsList>
 
-                    <TabsContent value="all">
-                        <StudentTable data={attendanceData} />
-                    </TabsContent>
+                {isAttendanceLoading || isClassesLoading ? (
+                    <div className="flex justify-center py-16">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <>
+                        {/* Summary Stat Cards */}
+                        <div className="flex items-center gap-3">
+                            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Overview</span>
+                            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {[
+                                { label: "Present", count: summary.present, accent: "#22c55e", icon: UserCheck },
+                                { label: "Absent", count: summary.absent, accent: "#ef4444", icon: UserX },
+                                { label: "Late", count: summary.late, accent: "#eab308", icon: Clock3 },
+                                { label: "Leave", count: summary.leave, accent: "#3b82f6", icon: CalendarOff },
+                            ].map(({ label, count, accent, icon: Icon }) => (
+                                <div key={label} className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3">
+                                    <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full blur-xl opacity-40 group-hover:opacity-70 transition-opacity" style={{ background: accent }} />
+                                    <div className="relative w-9 h-9 rounded-2xl flex items-center justify-center" style={{ background: `${accent}18` }}>
+                                        <Icon className="h-4 w-4" style={{ color: accent }} />
+                                    </div>
+                                    <div className="relative">
+                                        <p className="text-2xl font-black tracking-tight" style={{ color: accent }}>{count}</p>
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mt-0.5">{label}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
 
-                    <TabsContent value="slots">
-                        <div className="flex justify-end mb-4">
-                            <div className="inline-flex items-center rounded-lg bg-muted p-1 text-muted-foreground">
+                        {/* Time Slots */}
+                        <div className="flex items-center gap-3">
+                            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Time Slots</span>
+                            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+                            <div className="flex items-center bg-accent/50 p-1 rounded-full gap-1">
                                 <button
                                     onClick={() => setTimeZone('PKT')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${timeZone === 'PKT' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                    className={cn("px-3 py-1.5 text-xs font-black rounded-full transition-all", timeZone === 'PKT' ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground")}
                                 >
-                                    PKT (Pakistan)
+                                    🇵🇰 PKT
                                 </button>
                                 <button
                                     onClick={() => setTimeZone('UKT')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${timeZone === 'UKT' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                    className={cn("px-3 py-1.5 text-xs font-black rounded-full transition-all", timeZone === 'UKT' ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground")}
                                 >
-                                    UKT (UK)
+                                    🇬🇧 UKT
                                 </button>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {sortedTimes.length === 0 ? (
-                                <div className="col-span-full text-center py-8 text-muted-foreground">
-                                    No classes scheduled for today ({currentDay}) in {timeZone}.
-                                </div>
-                            ) : (
-                                sortedTimes.map((time) => (
-                                    <Card
+                        {sortedTimes.length === 0 ? (
+                            <div className="text-center py-10 bg-card rounded-3xl border border-border">
+                                <Globe className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-40" />
+                                <p className="font-bold text-foreground">No classes scheduled for today ({currentDay}) in {timeZone}</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {sortedTimes.map((time) => (
+                                    <button
                                         key={time}
-                                        className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-indigo-500"
-                                        onClick={() => {
-                                            setSelectedSlot(time);
-                                            setIsSlotDialogOpen(true);
-                                        }}
+                                        onClick={() => { setSelectedSlot(time); setIsSlotDialogOpen(true); }}
+                                        className="card-hover text-left bg-card rounded-3xl border border-border p-5 flex flex-col gap-3 hover:border-primary/40 transition-all group"
                                     >
-                                        <CardHeader className="pb-2">
-                                            <CardTitle className="text-lg flex justify-between items-center">
-                                                {time}
-                                                <Badge variant="secondary" className="ml-2">
-                                                    {classesByTime[time].length} Classes
-                                                </Badge>
-                                            </CardTitle>
-                                            <CardDescription>
-                                                {classesByTime[time].length} Students scheduled ({timeZone})
-                                            </CardDescription>
-                                        </CardHeader>
-                                    </Card>
-                                ))
-                            )}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Clock3 className="h-4 w-4 text-primary" />
+                                                <span className="text-lg font-black text-foreground">{time}</span>
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary px-3 py-1.5 rounded-full border border-primary/20">
+                                                {classesByTime[time].length} class{classesByTime[time].length !== 1 ? 'es' : ''}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground font-medium">
+                                            {classesByTime[time].map((c: any) => c.student?.full_name).filter(Boolean).slice(0, 3).join(', ')}
+                                            {classesByTime[time].length > 3 && ` +${classesByTime[time].length - 3} more`}
+                                        </p>
+                                        <p className="text-[10px] text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity">Tap to mark attendance →</p>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Records Table with Tab Filter */}
+                        <div className="flex items-center gap-3">
+                            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Records</span>
+                            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
                         </div>
-                    </TabsContent>
 
-                    <TabsContent value="present">
-                        <StudentTable data={presentStudents} />
-                    </TabsContent>
-                    <TabsContent value="absent">
-                        <StudentTable data={absentStudents} />
-                    </TabsContent>
-                    <TabsContent value="late">
-                        <StudentTable data={lateStudents} />
-                    </TabsContent>
-                    <TabsContent value="leave">
-                        <StudentTable data={leaveStudents} />
-                    </TabsContent>
-                </Tabs>
-            )}
+                        <div className="bg-card rounded-3xl border border-border overflow-hidden">
+                            {/* Tab bar */}
+                            <div className="flex border-b border-border overflow-x-auto">
+                                {TABS.map(({ key, label, count }) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => setTab(key)}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-5 py-4 text-xs font-black uppercase tracking-widest whitespace-nowrap border-b-2 transition-all",
+                                            tab === key
+                                                ? tabAccent[key] + " bg-accent/20"
+                                                : "border-transparent text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        {label}
+                                        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-black", tab === key ? "bg-current/10" : "bg-accent")}>
+                                            {count}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
 
-            {/* Slot Details Dialog */}
-            <Dialog open={isSlotDialogOpen} onOpenChange={setIsSlotDialogOpen}>
-                <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>Classes for {selectedSlot}</DialogTitle>
-                        <DialogDescription>
-                            Mark attendance for students scheduled at this time.
-                        </DialogDescription>
-                    </DialogHeader>
+                            {/* Table */}
+                            <div className="overflow-x-auto min-h-[200px]">
+                                {filteredData.length === 0 ? (
+                                    <div className="flex items-center justify-center p-12 text-muted-foreground font-semibold">
+                                        No records for this category.
+                                    </div>
+                                ) : (
+                                    <table className="w-full text-left border-collapse min-w-[520px]">
+                                        <thead className="bg-accent/40 text-muted-foreground text-[10px] uppercase tracking-[0.1em] font-black">
+                                            <tr>
+                                                <th className="px-6 py-4 border-b border-border">Student</th>
+                                                <th className="px-6 py-4 border-b border-border">Reg No.</th>
+                                                <th className="px-6 py-4 text-center border-b border-border">Status</th>
+                                                <th className="px-6 py-4 text-right border-b border-border">Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {filteredData.map((record: any) => {
+                                                const cfg = STATUS_CONFIG[record.status] || STATUS_CONFIG.Present;
+                                                const Icon = cfg.icon;
+                                                return (
+                                                    <tr key={record.id} className="hover:bg-accent/20 transition-colors group">
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-9 h-9 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-primary border border-primary/20 text-xs">
+                                                                    {(record.student?.full_name || "U").slice(0, 2).toUpperCase()}
+                                                                </div>
+                                                                <span className="font-bold text-foreground text-sm">{record.student?.full_name || 'Unknown'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-muted-foreground font-semibold text-sm">
+                                                            #{record.student?.reg_no || "—"}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold", cfg.bg, cfg.text)}>
+                                                                <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+                                                                <Icon className="h-3 w-3" />
+                                                                {record.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right text-muted-foreground text-xs font-semibold">
+                                                            {record.created_at ? new Date(record.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
 
-                    <div className="max-h-[60vh] overflow-y-auto space-y-4">
-                        {selectedSlot && classesByTime[selectedSlot]?.map((cls: any) => {
-                            // Check if student already has attendance today
-                            const studentAttendance = attendanceData.find(r => r.student_id === cls.student_id);
-
-                            return (
-                                <div key={cls.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
-                                    <div className="mb-4 sm:mb-0">
-                                        <h4 className="font-semibold text-base">{cls.student?.full_name}</h4>
-                                        <div className="text-sm text-muted-foreground space-y-1">
-                                            <p>Reg: {cls.student?.reg_no}</p>
-                                            <p>Teacher: {cls.teacher?.name}</p>
-                                            <p className="text-xs">Subject/Platform: {cls.app_account?.platform || 'N/A'}</p>
+                {/* Slot Detail Dialog */}
+                <Dialog open={isSlotDialogOpen} onOpenChange={setIsSlotDialogOpen}>
+                    <DialogContent className="max-w-2xl rounded-3xl border-border bg-card max-h-[80vh] overflow-y-auto">
+                        <DialogHeader className="pb-2">
+                            <DialogTitle className="text-xl font-black flex items-center gap-2">
+                                <Clock3 className="h-5 w-5 text-primary" />
+                                Classes at {selectedSlot}
+                            </DialogTitle>
+                            <p className="text-xs text-muted-foreground font-medium mt-0.5">Mark attendance for students in this time slot.</p>
+                        </DialogHeader>
+                        <div className="space-y-3 pt-2">
+                            {selectedSlot && classesByTime[selectedSlot]?.map((cls: any) => {
+                                const studentAttendance = attendanceData.find(r => r.student_id === cls.student_id);
+                                const cfg = studentAttendance ? (STATUS_CONFIG[studentAttendance.status] || null) : null;
+                                return (
+                                    <div key={cls.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-accent/30 rounded-2xl border border-border gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-primary border border-primary/20 text-xs shrink-0">
+                                                {(cls.student?.full_name || "?").slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="font-black text-foreground text-sm">{cls.student?.full_name}</p>
+                                                <p className="text-[11px] text-muted-foreground">Reg: {cls.student?.reg_no} · Teacher: {cls.teacher?.name}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 flex-wrap justify-end shrink-0">
+                                            {cfg ? (
+                                                <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-black", cfg.bg, cfg.text)}>
+                                                    <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+                                                    {studentAttendance?.status} — Marked
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    {(["Present", "Absent", "Late", "Leave"] as const).map(status => {
+                                                        const c = STATUS_CONFIG[status];
+                                                        return (
+                                                            <button
+                                                                key={status}
+                                                                onClick={() => handleMarkAttendance(cls.student_id, status)}
+                                                                disabled={attendanceMutation.isPending}
+                                                                className={cn("px-3 py-2 rounded-full text-xs font-black border transition-all hover:scale-95 active:scale-90 disabled:opacity-50", c.bg, c.text, "border-current/20 hover:border-current/40")}
+                                                            >
+                                                                {status}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </>
+                                            )}
                                         </div>
                                     </div>
-
-                                    <div className="flex gap-2 flex-wrap justify-end">
-                                        {studentAttendance ? (
-                                            <div className="flex items-center gap-2">
-                                                <Badge className={`text-sm px-3 py-1 ${getStatusColor(studentAttendance.status)}`}>
-                                                    Example: {studentAttendance.status}
-                                                </Badge>
-                                                <span className="text-xs text-muted-foreground">Marked</span>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleMarkAttendance(cls.student_id, "Present")}>
-                                                    Present
-                                                </Button>
-                                                <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleMarkAttendance(cls.student_id, "Absent")}>
-                                                    Absent
-                                                </Button>
-                                                <Button size="sm" variant="outline" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50" onClick={() => handleMarkAttendance(cls.student_id, "Late")}>
-                                                    Late
-                                                </Button>
-                                                <Button size="sm" variant="outline" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleMarkAttendance(cls.student_id, "Leave")}>
-                                                    Leave
-                                                </Button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <DialogFooter>
-                        <Button variant="secondary" onClick={() => setIsSlotDialogOpen(false)}>Close</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                                );
+                            })}
+                        </div>
+                        <div className="pt-4 flex justify-end border-t border-border mt-2">
+                            <button onClick={() => setIsSlotDialogOpen(false)} className="px-6 py-2.5 rounded-full border border-border text-sm font-bold hover:bg-accent transition-all text-foreground">
+                                Close
+                            </button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
     );
 }

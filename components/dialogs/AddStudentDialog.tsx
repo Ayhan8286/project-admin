@@ -6,14 +6,9 @@ import { addStudent } from "@/lib/api/students";
 import { getTeachers, addClass } from "@/lib/api/classes";
 import { getAppAccounts } from "@/lib/api/platforms";
 import { getSupervisors } from "@/lib/api/supervisors";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -24,7 +19,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
+
+const inputClass = "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
 
 interface AddStudentDialogProps {
     open: boolean;
@@ -153,197 +150,140 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Add New Student</DialogTitle>
-                    <DialogDescription>
-                        Enter student details and assign initial class.
-                    </DialogDescription>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-3xl border-border bg-card">
+                <DialogHeader className="pb-2">
+                    <DialogTitle className="text-xl font-black">Add New Student</DialogTitle>
+                    <p className="text-xs text-muted-foreground font-medium">Enter student details and assign an initial class.</p>
                 </DialogHeader>
-                <form onSubmit={handleSubmit}>
-                    <div className="grid gap-6 py-4">
-                        {/* Student Details Section */}
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Student Info</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="full_name">Full Name *</Label>
-                                    <Input
-                                        id="full_name"
-                                        name="full_name"
-                                        value={formData.full_name}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="reg_no">Registration No *</Label>
-                                    <Input
-                                        id="reg_no"
-                                        name="reg_no"
-                                        value={formData.reg_no}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
+                <form onSubmit={handleSubmit} className="space-y-5 pt-2">
+
+                    {/* Student Info */}
+                    <div className="space-y-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student Info</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Full Name *</label>
+                                <input name="full_name" value={formData.full_name} onChange={handleInputChange} required className={inputClass} placeholder="e.g. Ahmed Ali" />
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="guardian_name">Guardian Name *</Label>
-                                <Input
-                                    id="guardian_name"
-                                    name="guardian_name"
-                                    value={formData.guardian_name}
-                                    onChange={handleInputChange}
-                                    required
-                                />
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Registration No *</label>
+                                <input name="reg_no" value={formData.reg_no} onChange={handleInputChange} required className={inputClass} placeholder="e.g. REG-001" />
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="status">Status *</Label>
-                                <Select
-                                    value={formData.status}
-                                    onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
-                                >
-                                    <SelectTrigger id="status">
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-foreground">Guardian Name *</label>
+                            <input name="guardian_name" value={formData.guardian_name} onChange={handleInputChange} required className={inputClass} placeholder="e.g. Ali Khan" />
+                        </div>
+                    </div>
+
+                    {/* Assignment */}
+                    <div className="space-y-3 border-t border-border pt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Assignment</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Status *</label>
+                                <Select value={formData.status} onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}>
+                                    <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
                                         <SelectValue placeholder="Select Status" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="rounded-2xl">
                                         <SelectItem value="Active">Active</SelectItem>
                                         <SelectItem value="Inactive">Inactive</SelectItem>
                                         <SelectItem value="Trial">Trial</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="shift">Shift / Timing</Label>
-                                <Input
-                                    id="shift"
-                                    name="shift"
-                                    value={formData.shift}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., Morning"
-                                />
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Shift / Timing</label>
+                                <input name="shift" value={formData.shift} onChange={handleInputChange} className={inputClass} placeholder="e.g. Morning" />
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="supervisor">Supervisor</Label>
-                                <Select
-                                    value={formData.supervisor_id || "none"}
-                                    onValueChange={(val) => setFormData(prev => ({ ...prev, supervisor_id: val === "none" ? "" : val }))}
-                                >
-                                    <SelectTrigger id="supervisor">
-                                        <SelectValue placeholder="Select Supervisor" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-foreground">Supervisor</label>
+                            <Select value={formData.supervisor_id || "none"} onValueChange={(val) => setFormData(prev => ({ ...prev, supervisor_id: val === "none" ? "" : val }))}>
+                                <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
+                                    <SelectValue placeholder="Select Supervisor" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl">
+                                    <SelectItem value="none">None</SelectItem>
+                                    {supervisors.map((s: any) => (
+                                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* Initial Class */}
+                    <div className="space-y-3 border-t border-border pt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Initial Class <span className="normal-case tracking-normal font-medium text-muted-foreground/60">(optional)</span></p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Teacher</label>
+                                <Select value={classFormData.teacher_id || "none"} onValueChange={(val) => setClassFormData(prev => ({ ...prev, teacher_id: val === "none" ? "" : val }))}>
+                                    <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
+                                        <SelectValue placeholder="Select Teacher" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="rounded-2xl">
                                         <SelectItem value="none">None</SelectItem>
-                                        {supervisors.map((s: any) => (
-                                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                        {teachers.map((t: any) => (
+                                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Platform</label>
+                                <Select value={classFormData.app_account_id || "none"} onValueChange={(val) => setClassFormData(prev => ({ ...prev, app_account_id: val === "none" ? "" : val }))}>
+                                    <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
+                                        <SelectValue placeholder="Select Platform" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl">
+                                        <SelectItem value="none">None</SelectItem>
+                                        {appAccounts.map((a: any) => (
+                                            <SelectItem key={a.id} value={a.id}>{a.platform} — {a.account_identifier}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
-
-
-                        {/* Class Details Section */}
-                        <div className="space-y-4 border-t pt-4">
-                            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Initial Class Class</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="teacher">Teacher</Label>
-                                    <Select
-                                        value={classFormData.teacher_id}
-                                        onValueChange={(val) => setClassFormData(prev => ({ ...prev, teacher_id: val }))}
-                                    >
-                                        <SelectTrigger id="teacher">
-                                            <SelectValue placeholder="Select Teacher" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {teachers.map((t: any) => (
-                                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="platform">Platform</Label>
-                                    <Select
-                                        value={classFormData.app_account_id}
-                                        onValueChange={(val) => setClassFormData(prev => ({ ...prev, app_account_id: val === "none" ? "" : val }))}
-                                    >
-                                        <SelectTrigger id="platform">
-                                            <SelectValue placeholder="Select Platform" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            {appAccounts.map((a: any) => (
-                                                <SelectItem key={a.id} value={a.id}>{a.platform} - {a.account_identifier}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">🇵🇰 PK Start Time</label>
+                                <input name="pak_start_time" value={classFormData.pak_start_time} onChange={handleClassInputChange} className={inputClass} placeholder="e.g. 2:00 PM" />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="pak_start_time">PK Start Time</Label>
-                                    <Input
-                                        id="pak_start_time"
-                                        name="pak_start_time"
-                                        value={classFormData.pak_start_time}
-                                        onChange={handleClassInputChange}
-                                        placeholder="e.g. 14:00"
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="pak_end_time">PK End Time</Label>
-                                    <Input
-                                        id="pak_end_time"
-                                        name="pak_end_time"
-                                        value={classFormData.pak_end_time}
-                                        onChange={handleClassInputChange}
-                                        placeholder="e.g. 15:00"
-                                    />
-                                </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">🇵🇰 PK End Time</label>
+                                <input name="pak_end_time" value={classFormData.pak_end_time} onChange={handleClassInputChange} className={inputClass} placeholder="e.g. 3:00 PM" />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="uk_start_time">UK Start Time</Label>
-                                    <Input
-                                        id="uk_start_time"
-                                        name="uk_start_time"
-                                        value={classFormData.uk_start_time}
-                                        onChange={handleClassInputChange}
-                                        placeholder="e.g. 09:00"
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="uk_end_time">UK End Time</Label>
-                                    <Input
-                                        id="uk_end_time"
-                                        name="uk_end_time"
-                                        value={classFormData.uk_end_time}
-                                        onChange={handleClassInputChange}
-                                        placeholder="e.g. 10:00"
-                                    />
-                                </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">🇬🇧 UK Start Time</label>
+                                <input name="uk_start_time" value={classFormData.uk_start_time} onChange={handleClassInputChange} className={inputClass} placeholder="e.g. 9:00 AM" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">🇬🇧 UK End Time</label>
+                                <input name="uk_end_time" value={classFormData.uk_end_time} onChange={handleClassInputChange} className={inputClass} placeholder="e.g. 10:00 AM" />
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <button type="submit" disabled={addMutation.isPending} className="flex items-center justify-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all disabled:opacity-50">
+
+                    <div className="flex justify-end pt-2">
+                        <button
+                            type="submit"
+                            disabled={addMutation.isPending}
+                            className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20"
+                        >
                             {addMutation.isPending ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Saving...
-                                </>
+                                <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
                             ) : (
-                                "Save Student"
+                                <><Save className="h-4 w-4" /> Save Student</>
                             )}
                         </button>
-                    </DialogFooter>
+                    </div>
                 </form>
-            </DialogContent >
-        </Dialog >
+            </DialogContent>
+        </Dialog>
     );
 }

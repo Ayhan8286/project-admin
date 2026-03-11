@@ -69,8 +69,8 @@ export default function PlatformsPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
+                <div className="mb-8">
+                    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover md:max-w-sm">
                         <div>
                             <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Assigned</p>
                             <h3 className="text-3xl font-black text-foreground">{students.length}</h3>
@@ -80,27 +80,6 @@ export default function PlatformsPage() {
                         </div>
                         <div className="p-3 bg-green-500/10 rounded-2xl text-green-500">
                             <Users className="h-5 w-5" />
-                        </div>
-                    </div>
-                    {/* Additional mock metric cards for aesthetic completeness from HTML */}
-                    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
-                        <div>
-                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Usage Today</p>
-                            <h3 className="text-3xl font-black text-foreground">84%</h3>
-                            <p className="text-xs text-blue-500 font-bold mt-1">Avg attendance rate</p>
-                        </div>
-                        <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500">
-                            <Monitor className="h-5 w-5" />
-                        </div>
-                    </div>
-                    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
-                        <div>
-                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Conflicts</p>
-                            <h3 className="text-3xl font-black text-red-500">0</h3>
-                            <p className="text-xs text-muted-foreground font-bold mt-1">Schedule overlaps</p>
-                        </div>
-                        <div className="p-3 bg-red-500/10 rounded-2xl text-red-500">
-                            <AlertCircle className="h-5 w-5" />
                         </div>
                     </div>
                 </div>
@@ -220,18 +199,12 @@ export default function PlatformsPage() {
                         <h1 className="text-3xl font-black tracking-tight mb-2 text-foreground">Platform & Accounts<span className="text-primary ml-2 text-2xl">✦</span></h1>
                         <p className="text-muted-foreground font-medium text-sm">Manage institutional accounts and monitor live classroom usage to prevent scheduling conflicts.</p>
                     </div>
-                    <div className="flex gap-3">
-                        <button className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-full text-sm hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all fab-glow active:scale-95">
-                            <Plus className="h-5 w-5" />
-                            Link New Account
-                        </button>
-                    </div>
                 </div>
             </div>
 
-            {/* Overall Metrics Block from HTML */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
+            {/* Overall Metrics Block */}
+            <div className="mb-8">
+                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover md:max-w-sm">
                     <div>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Active Platforms</p>
                         <h3 className="text-3xl font-black text-foreground">{platforms.length}</h3>
@@ -241,26 +214,6 @@ export default function PlatformsPage() {
                     </div>
                     <div className="p-3 bg-green-500/10 rounded-2xl text-green-500">
                         <Video className="h-5 w-5" />
-                    </div>
-                </div>
-                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
-                    <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Licenses</p>
-                        <h3 className="text-3xl font-black text-foreground">—</h3>
-                        <p className="text-xs text-muted-foreground font-bold mt-1.5">Across all platforms</p>
-                    </div>
-                    <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500">
-                        <Monitor className="h-5 w-5" />
-                    </div>
-                </div>
-                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover">
-                    <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">System Status</p>
-                        <h3 className="text-3xl font-black text-green-500">Stable</h3>
-                        <p className="text-xs text-muted-foreground font-bold mt-1.5">Last checked: Just now</p>
-                    </div>
-                    <div className="p-3 bg-green-500/10 rounded-2xl text-green-500">
-                        <Layers className="h-5 w-5" />
                     </div>
                 </div>
             </div>
@@ -344,13 +297,6 @@ export default function PlatformsPage() {
                             );
                         })}
 
-                        <div className="border-2 border-dashed border-border rounded-3xl p-6 flex flex-col items-center justify-center text-center hover:border-primary/50 hover:bg-accent/40 transition-all cursor-pointer min-h-[280px]">
-                            <div className="size-16 rounded-3xl bg-accent flex items-center justify-center mb-4 text-muted-foreground">
-                                <Plus className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-lg font-black text-foreground">Add New Integration</h3>
-                            <p className="text-xs font-medium text-muted-foreground mt-2 max-w-[200px] leading-relaxed">Link another institutional communication provider</p>
-                        </div>
                     </div>
                 )}
             </div>

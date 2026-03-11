@@ -23,6 +23,9 @@ export interface Teacher {
     id: string;
     staff_id: string;
     name: string;
+    email?: string | null;
+    phone?: string | null;
+    timing?: string | null;
     is_active: boolean;
     supervisor_id: string | null;
 }

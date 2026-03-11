@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getComplaints, updateComplaintStatus } from "@/lib/api/complaints";
+import { getComplaints, updateComplaintStatus, deleteComplaint } from "@/lib/api/complaints";
 import { AddComplaintDialog } from "@/components/dialogs/AddComplaintDialog";
 import { ComplaintDetailDialog } from "@/components/dialogs/ComplaintDetailDialog";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
@@ -26,7 +26,8 @@ import {
     History,
     MessageCircle,
     Check,
-    CheckCircle
+    CheckCircle,
+    Trash2
 } from "lucide-react";
 
 export default function ComplaintsPage() {
@@ -55,6 +56,22 @@ export default function ComplaintsPage() {
         else newStatus = "Pending";
 
         updateStatusMutation.mutate({ id, status: newStatus });
+    };
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => deleteComplaint(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["complaints"] });
+        },
+    });
+
+    const handleDelete = (id: string) => {
+        if (window.confirm("Are you sure you want to delete this ticket?")) {
+            deleteMutation.mutate(id);
+            if (selectedComplaint?.id === id) {
+                setSelectedComplaint(null);
+            }
+        }
     };
 
     // Filter by search
@@ -219,6 +236,9 @@ export default function ComplaintsPage() {
                                                     <span className="text-xs font-bold text-foreground">{complaint.student?.full_name}</span>
                                                 </div>
                                                 <div className="flex gap-2 opacity-0 group-[.hover]:opacity-100 lg:group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(complaint.id); }} disabled={deleteMutation.isPending} className="p-2 hover:bg-destructive/10 rounded-xl text-muted-foreground hover:text-destructive font-semibold disabled:opacity-50" title="Delete Ticket">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
                                                     <button onClick={(e) => { e.stopPropagation(); handleStatusChange(complaint.id, complaint.status); }} className="p-2 hover:bg-accent rounded-xl text-muted-foreground hover:text-red-400 font-semibold" title="Review Ticket">
                                                         <UserPlus className="h-4 w-4" />
                                                     </button>
@@ -274,6 +294,9 @@ export default function ComplaintsPage() {
                                                     <span className="text-xs font-bold text-foreground">{complaint.student?.full_name}</span>
                                                 </div>
                                                 <div className="flex gap-2 opacity-0 group-[.hover]:opacity-100 lg:group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(complaint.id); }} disabled={deleteMutation.isPending} className="p-2 hover:bg-destructive/10 rounded-xl text-muted-foreground hover:text-destructive font-semibold disabled:opacity-50" title="Delete Ticket">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
                                                     <button onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: complaint.id, status: "Pending" }); }} className="p-2 hover:bg-accent rounded-xl text-muted-foreground hover:text-red-400 font-semibold" title="Revert to Open">
                                                         <X className="h-4 w-4" />
                                                     </button>
@@ -342,6 +365,7 @@ export default function ComplaintsPage() {
                 complaint={selectedComplaint}
                 open={!!selectedComplaint}
                 onOpenChange={(open) => !open && setSelectedComplaint(null)}
+                onDelete={handleDelete}
             />
         </div>
     );

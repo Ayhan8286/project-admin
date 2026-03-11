@@ -9,16 +9,17 @@ import {
 } from "@/components/ui/dialog";
 import { Complaint } from "@/types/complaint";
 import { format } from "date-fns";
-import { User, Clock, AlertCircle, FileText, CalendarClock, History } from "lucide-react";
+import { User, Clock, AlertCircle, FileText, CalendarClock, History, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ComplaintDetailDialogProps {
     complaint: Complaint | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onDelete?: (id: string) => void;
 }
 
-export function ComplaintDetailDialog({ complaint, open, onOpenChange }: ComplaintDetailDialogProps) {
+export function ComplaintDetailDialog({ complaint, open, onOpenChange, onDelete }: ComplaintDetailDialogProps) {
     if (!complaint) return null;
 
     const getPriorityColor = () => {
@@ -41,6 +42,16 @@ export function ComplaintDetailDialog({ complaint, open, onOpenChange }: Complai
                                 #{complaint.id.split('-')[0]}
                             </span>
                         </div>
+                        {onDelete && (
+                            <button
+                                onClick={() => {
+                                    onDelete(complaint.id);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-destructive bg-destructive/10 hover:bg-destructive hover:text-white border border-destructive/20 rounded-full transition-colors"
+                            >
+                                <Trash2 className="h-3.5 w-3.5" /> Delete Ticket
+                            </button>
+                        )}
                     </div>
                     <DialogTitle className="text-2xl font-black text-foreground mb-2 leading-tight">
                         {complaint.title || `Issue regarding ${complaint.teacher?.name}`}
