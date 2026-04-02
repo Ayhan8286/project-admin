@@ -96,8 +96,12 @@ export default function SupervisorsPage() {
     );
 
     return (
-        <div className="flex-1 overflow-y-auto flex flex-col">
-            <div className="p-4 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+        <div className="flex-1 overflow-y-auto flex flex-col relative">
+            {/* Organic Background Elements */}
+            <div className="organic-blob bg-primary-container/20 w-[600px] h-[600px] -top-48 -left-24 fixed"></div>
+            <div className="organic-blob bg-tertiary-container/20 w-[500px] h-[500px] bottom-0 right-0 fixed"></div>
+
+            <div className="p-4 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full relative z-10">
 
                 {/* Gen Z Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -110,21 +114,6 @@ export default function SupervisorsPage() {
                         <p className="text-muted-foreground mt-1.5 text-sm">Manage department heads and view faculty oversight.</p>
                     </div>
                     <div className="flex gap-3">
-                        <button
-                            onClick={() => exportToCSV(
-                                filteredSupervisors.map(s => ({
-                                    Name: s.name,
-                                    Email: s.email || "",
-                                    Phone: s.phone || "",
-                                    Timing: s.timing || ""
-                                })),
-                                `supervisors_${new Date().toISOString().slice(0, 10)}`
-                            )}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground"
-                        >
-                            <Download className="h-4 w-4" />
-                            Export CSV
-                        </button>
                         <button
                             onClick={() => setIsAddDialogOpen(true)}
                             className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
@@ -141,7 +130,7 @@ export default function SupervisorsPage() {
                     <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3">
+                    <div className="card-hover relative glass-panel rounded-3xl p-5 border border-white/20 dark:border-white/5 overflow-hidden group flex flex-col gap-3 shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                         <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: "#13ec37" }} />
                         <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(19, 236, 55, 0.09)" }}>
                             <ShieldCheck className="h-5 w-5 text-primary" />
@@ -159,7 +148,7 @@ export default function SupervisorsPage() {
                     <div className="relative w-full sm:w-80">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
                         <input
-                            className="pill-input w-full pl-10 pr-5 py-2.5 bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground/50"
+                            className="pill-input w-full pl-10 pr-5 py-2.5 glass-panel border border-white/20 dark:border-white/5 text-sm text-foreground placeholder:text-muted-foreground/50"
                             placeholder="Search supervisors by name or email..."
                             type="text"
                             value={search}
@@ -183,7 +172,7 @@ export default function SupervisorsPage() {
                             const statusColor = stats.teachers > 0 ? "bg-green-500" : "bg-gray-400";
 
                             return (
-                                <div key={supervisor.id} className="card-hover bg-card rounded-3xl border border-border overflow-hidden flex flex-col">
+                                <div key={supervisor.id} className="card-hover glass-panel rounded-3xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                                     <div className="p-6 pb-4 flex-1">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="relative">
@@ -277,14 +266,14 @@ export default function SupervisorsPage() {
 
 function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const queryClient = useQueryClient();
-    const [formData, setFormData] = useState({ name: "", email: "", phone: "", timing: "" });
+    const [formData, setFormData] = useState({ name: "", email: "", phone: "", timing: "", password: "" });
 
     const addMutation = useMutation({
         mutationFn: addSupervisor,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["supervisors"] });
             onOpenChange(false);
-            setFormData({ name: "", email: "", phone: "", timing: "" });
+            setFormData({ name: "", email: "", phone: "", timing: "", password: "" });
             toast.success("Supervisor added successfully");
         },
         onError: (error) => {
@@ -295,7 +284,13 @@ function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        addMutation.mutate({ name: formData.name, email: formData.email || null, phone: formData.phone || null, timing: formData.timing || null });
+        addMutation.mutate({ 
+            name: formData.name, 
+            email: formData.email || null, 
+            phone: formData.phone || null, 
+            timing: formData.timing || null,
+            password: formData.password || null 
+        });
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -359,6 +354,17 @@ function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                             </Select>
                         </div>
                     </div>
+                    <div className="space-y-3 border-t border-border pt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Security</p>
+                        <FormInput
+                            label="Password"
+                            name="password"
+                            type="text"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Set a password for login..."
+                        />
+                    </div>
                     <div className="flex justify-end pt-2">
                         <button type="submit" disabled={addMutation.isPending} className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20">
                             {addMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save Supervisor</>}
@@ -372,7 +378,7 @@ function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
 function EditSupervisorDialog({ supervisor, open, onOpenChange }: { supervisor: Supervisor | null; open: boolean; onOpenChange: (open: boolean) => void }) {
     const queryClient = useQueryClient();
-    const [formData, setFormData] = useState({ name: "", email: "", phone: "", timing: "" });
+    const [formData, setFormData] = useState({ name: "", email: "", phone: "", timing: "", password: "" });
 
     useEffect(() => {
         if (supervisor && open) {
@@ -381,6 +387,7 @@ function EditSupervisorDialog({ supervisor, open, onOpenChange }: { supervisor: 
                 email: supervisor.email || "",
                 phone: supervisor.phone || "",
                 timing: supervisor.timing || "",
+                password: supervisor.password || "",
             });
         }
     }, [supervisor, open]);
@@ -393,6 +400,7 @@ function EditSupervisorDialog({ supervisor, open, onOpenChange }: { supervisor: 
                 email: formData.email || null,
                 phone: formData.phone || null,
                 timing: formData.timing || null,
+                password: formData.password || null,
             });
         },
         onSuccess: () => {
@@ -477,6 +485,17 @@ function EditSupervisorDialog({ supervisor, open, onOpenChange }: { supervisor: 
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+                    <div className="space-y-3 border-t border-border pt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Security</p>
+                        <FormInput
+                            label="Password"
+                            name="password"
+                            type="text"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Update password for login..."
+                        />
                     </div>
                     <div className="flex justify-end pt-2">
                         <button type="submit" disabled={updateMutation.isPending} className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20">

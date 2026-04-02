@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
-import { Sidebar } from "@/components/Sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
-import { Prefetcher } from "@/components/Prefetcher";
 
-const geistSans = Space_Grotesk({
-  variable: "--font-geist-sans",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const vietnam = Be_Vietnam_Pro({
+  variable: "--font-vietnam",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -30,38 +29,32 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+          rel="stylesheet"
+        />
+        <style>{`
+          .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+          }
+        `}</style>
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${jakarta.variable} ${vietnam.variable} antialiased bg-background text-foreground`}
       >
         <QueryProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="dark"
+            defaultTheme="light" /* Defaulting to light to match new theme */
             enableSystem={false}
             disableTransitionOnChange
           >
-            {/* Main Application Shell */}
-            <div className="flex h-screen overflow-hidden bg-[#f4f6f4] dark:bg-[#0c1a0d] text-foreground transition-colors duration-200 relative">
-              {/* Gradient mesh orbs — personality layer */}
-              <div className="pointer-events-none fixed inset-0 overflow-hidden z-0" aria-hidden="true">
-                <div className="absolute -top-40 -right-40 w-[560px] h-[560px] rounded-full bg-primary/[0.06] dark:bg-primary/[0.05] blur-[120px]" />
-                <div className="absolute -bottom-40 -left-20 w-[440px] h-[440px] rounded-full bg-emerald-500/[0.06] dark:bg-emerald-400/[0.04] blur-[100px]" />
-                <div className="absolute top-1/2 right-1/4 w-[300px] h-[300px] rounded-full bg-teal-400/[0.04] dark:bg-teal-300/[0.025] blur-[80px]" />
-              </div>
-              <Prefetcher />
-              <Sidebar />
-              <main className="flex-1 overflow-y-auto relative z-10 bg-transparent flex flex-col custom-scrollbar">
-                {children}
-              </main>
-            </div>
+            {children}
             <Toaster
-              theme="dark"
+              theme="light"
               toastOptions={{
                 style: {
-                  background: "rgba(12, 26, 13, 0.92)",
-                  backdropFilter: "blur(16px)",
-                  border: "1px solid rgba(19, 236, 55, 0.15)",
-                  color: "#e2f5e4",
                   borderRadius: "1rem",
                 },
               }}

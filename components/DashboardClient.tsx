@@ -2,231 +2,236 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getDashboardStats, DashboardStats } from "@/lib/api/dashboard";
-import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
-import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
-import {
-  Users, UserCheck, Search, Bell,
-  Clock, ChevronDown, Moon, Sun, BookOpen, Calendar,
-  UserPlus, GraduationCap, ClipboardList, BarChart3,
-  ArrowUpRight, CheckCircle, AlertCircle, Activity, Zap
-} from "lucide-react";
 
 export default function DashboardClient({ initialStats }: { initialStats: DashboardStats }) {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+    const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
 
-  const { data: stats } = useQuery({
-    queryKey: ["dashboardStats"],
-    queryFn: getDashboardStats,
-    initialData: initialStats,
-  });
+    const { data: stats } = useQuery({
+        queryKey: ["dashboardStats"],
+        queryFn: getDashboardStats,
+        initialData: initialStats,
+        refetchInterval: 60000, // Refetch every minute for live dashboard feel
+    });
 
-  const kpiCards = [
-    {
-      label: "Students",
-      value: stats?.totalStudents ?? 0,
-      sub: "Enrolled",
-      icon: Users,
-      accent: "#13ec37",
-      accentMuted: "rgba(19,236,55,0.12)",
-    },
-    {
-      label: "Active",
-      value: stats?.activeStudents ?? 0,
-      sub: "Currently enrolled",
-      icon: UserCheck,
-      accent: "#34d399",
-      accentMuted: "rgba(52,211,153,0.12)",
-    },
-    {
-      label: "Teachers",
-      value: stats?.totalTeachers ?? 0,
-      sub: "In network",
-      icon: BookOpen,
-      accent: "#2dd4bf",
-      accentMuted: "rgba(45,212,191,0.12)",
-    },
-    {
-      label: "Classes",
-      value: stats?.totalClasses ?? 0,
-      sub: "Active pairs",
-      icon: Calendar,
-      accent: "#a78bfa",
-      accentMuted: "rgba(167,139,250,0.12)",
-    },
-    {
-      label: "Attendance",
-      value: `${stats?.todayAttendancePercentage ?? 0}%`,
-      sub: "Today",
-      icon: Clock,
-      accent: "#fb923c",
-      accentMuted: "rgba(251,146,60,0.12)",
-    },
-  ];
+    const activeStudents = stats?.activeStudents || 0;
+    const totalStudents = stats?.totalStudents || 0;
+    const totalTeachers = stats?.totalTeachers || 0;
+    const activeTeachers = stats?.activeTeachers || 0;
+    const attendancePercentage = stats?.todayAttendancePercentage || 0;
+    const att = stats?.attendanceStats || { present: 0, absent: 0, late: 0, leave: 0 };
+    const totalClasses = stats?.totalClasses || 0;
 
-  const quickActions = [
-    { label: "Add Student", desc: "Register", icon: UserPlus, href: "/students", accent: "#13ec37" },
-    { label: "Teachers", desc: "Faculty roster", icon: GraduationCap, href: "/teachers", accent: "#34d399" },
-    { label: "Attendance", desc: "Mark today", icon: ClipboardList, href: "/attendance", accent: "#2dd4bf" },
-    { label: "Platforms", desc: "Analytics", icon: BarChart3, href: "/platforms", accent: "#a78bfa" },
-  ];
+    // SVG Circle Dashmap calculations for a circle with r="88" => circum = 2 * PI * 88 = 552.92
+    const dashArray = 552.92;
+    const dashOffset = dashArray - (dashArray * attendancePercentage) / 100;
 
-  return (
-    <div className="relative flex-1 flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-20 backdrop-blur-xl bg-[#f4f6f4]/80 dark:bg-[#0c1a0d]/80 border-b border-border/50 px-6 lg:px-8 py-4 flex justify-between items-center gap-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-0.5">AL Huda Network</p>
-          <h1 className="text-2xl font-black tracking-tight text-foreground leading-none">
-            Dashboard
-            <span className="text-primary ml-2 text-lg">✦</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* User chip */}
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-2xl border border-border bg-card hover:border-primary/20 transition-colors cursor-pointer">
-            <div className="w-7 h-7 rounded-xl bg-primary/20 border border-primary/25 text-[11px] font-black text-primary flex items-center justify-center">AR</div>
-            <span className="hidden md:block text-sm font-bold text-foreground">A. Rahman</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
-          </div>
-        </div>
-      </header>
+    return (
+        <div className="flex-1 flex flex-col min-h-screen relative">
+            {/* Organic Background Elements (From new theme) */}
+            <div className="organic-blob bg-primary-container/30 w-[500px] h-[500px] -top-48 -left-24"></div>
+            <div className="organic-blob bg-tertiary-container/20 w-[400px] h-[400px] bottom-0 right-0"></div>
 
-      {/* Page body */}
-      <div className="flex-1 p-6 lg:p-8 flex flex-col gap-10">
+            {/* TopAppBar */}
+            <header className="flex justify-between items-center px-6 md:px-10 py-6 w-full sticky top-0 z-20 glass-panel border-b border-white/20 dark:border-white/5">
+                <div className="flex items-center">
+                    {/* Handled by sidebar mobile toggle normally, but we can leave a placeholder */}
+                    <span className="md:hidden mr-4 material-symbols-outlined text-emerald-900 dark:text-emerald-50" data-icon="menu">menu</span>
+                    <h2 className="text-2xl font-black tracking-tight text-emerald-900 dark:text-emerald-50 brand-font">Dashboard Overview</h2>
+                </div>
+                <div className="flex items-center space-x-6">
+                    <div className="hidden lg:flex items-center bg-surface-container-highest px-4 py-2 rounded-full w-64 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                        <span className="material-symbols-outlined text-outline" data-icon="search">search</span>
+                        <input className="bg-transparent border-none focus:ring-0 text-sm w-full font-body outline-none placeholder:text-outline/60 ml-2" placeholder="Search analytics..." type="text" />
+                    </div>
+                    <div className="flex space-x-2">
+                        {mounted && (
+                            <button
+                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-colors text-emerald-800 dark:text-emerald-200"
+                            >
+                                <span className="material-symbols-outlined">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+                            </button>
+                        )}
+                        <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-colors text-emerald-800 dark:text-emerald-200">
+                            <span className="material-symbols-outlined" data-icon="notifications">notifications</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
 
-        {/* Hero KPI row */}
-        <section className="fade-slide-up">
-          {/* Section eyebrow */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex items-center gap-2">
-              <Zap className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Live Metrics</span>
+            {/* Content Area */}
+            <div className="p-6 md:p-10 space-y-16 relative z-10 w-full max-w-7xl mx-auto">
+                {/* Bento Grid Section: Primary Stats */}
+                <section className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                    {/* Total Students (Large Bento Piece) */}
+                    <div className="md:col-span-2 lg:col-span-2 p-8 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col justify-between border border-white/20 dark:border-white/5">
+                        <div className="flex justify-between items-start">
+                            <span className="p-3 bg-primary-container text-on-primary-container rounded-2xl material-symbols-outlined" data-icon="school">school</span>
+                            <span className="text-xs font-bold text-primary px-3 py-1 bg-primary/10 rounded-full">Total Core</span>
+                        </div>
+                        <div className="mt-8">
+                            <p className="text-on-surface-variant dark:text-white/60 font-medium text-sm">Total Students</p>
+                            <h3 className="text-5xl font-black text-on-surface dark:text-white mt-1">{totalStudents.toLocaleString()}</h3>
+                        </div>
+                    </div>
+
+                    {/* Active Students (Large Bento Piece) */}
+                    <div className="md:col-span-2 lg:col-span-2 p-8 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col justify-between border border-white/20 dark:border-white/5">
+                        <div className="flex justify-between items-start">
+                            <span className="p-3 bg-secondary-container text-on-secondary-container rounded-2xl material-symbols-outlined" data-icon="person_play">person_play</span>
+                            <span className="text-xs font-bold text-secondary px-3 py-1 bg-secondary/10 rounded-full">Live Now</span>
+                        </div>
+                        <div className="mt-8">
+                            <p className="text-on-surface-variant dark:text-white/60 font-medium text-sm">Active Students</p>
+                            <h3 className="text-5xl font-black text-on-surface dark:text-white mt-1">{activeStudents.toLocaleString()}</h3>
+                        </div>
+                    </div>
+
+                    {/* Summary Column */}
+                    <div className="md:col-span-2 lg:col-span-2 grid grid-rows-2 gap-6">
+                        <div className="p-6 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex items-center space-x-6 border border-white/20 dark:border-white/5">
+                            <div className="w-14 h-14 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-800 dark:text-emerald-200">
+                                <span className="material-symbols-outlined" data-icon="supervisor_account">supervisor_account</span>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-xs font-bold text-emerald-800/60 dark:text-emerald-200/60 uppercase tracking-widest">Teachers</p>
+                                <div className="flex items-baseline space-x-2">
+                                    <h4 className="text-2xl font-black text-emerald-900 dark:text-emerald-50">{activeTeachers.toLocaleString()}</h4>
+                                    <span className="text-sm font-semibold text-emerald-800/50 dark:text-emerald-200/50">/ {totalTeachers.toLocaleString()}</span>
+                                </div>
+                                <p className="text-[10px] text-emerald-800/50 dark:text-emerald-200/50 font-medium">Currently Active</p>
+                            </div>
+                        </div>
+                        <div className="p-6 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex items-center space-x-6 border border-white/20 dark:border-white/5">
+                            <div className="w-14 h-14 shrink-0 rounded-full bg-emerald-800 dark:bg-emerald-700 flex items-center justify-center text-white">
+                                <span className="material-symbols-outlined" data-icon="how_to_reg">how_to_reg</span>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-emerald-800/60 dark:text-emerald-200/60 uppercase tracking-widest">Classes Total</p>
+                                <h4 className="text-2xl font-black text-emerald-900 dark:text-emerald-50">{totalClasses.toLocaleString()}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Creative Layout: Attendance & Class Insights */}
+                <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* Present Students Breakdown (Large Visual) */}
+                    <div className="lg:col-span-7 p-10 rounded-2xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] relative overflow-hidden group border border-white/20 dark:border-white/5">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20 transition-transform duration-700 group-hover:scale-110"></div>
+                        <div className="relative z-10">
+                            <h3 className="text-3xl font-black text-emerald-900 dark:text-white mb-8 brand-font">Daily Attendance Growth</h3>
+                            <div className="flex flex-col md:flex-row items-end space-y-8 md:space-y-0 md:space-x-12">
+                                <div className="relative w-48 h-48 flex items-center justify-center shrink-0">
+                                    {/* Organic SVG Progress (CSS Indicator) */}
+                                    <svg className="w-full h-full transform -rotate-90">
+                                        <circle className="text-surface-container-highest dark:text-white/10" cx="96" cy="96" fill="transparent" r="88" stroke="currentColor" strokeWidth="16"></circle>
+                                        <circle
+                                            className="text-primary transition-all duration-1000 ease-in-out"
+                                            cx="96" cy="96" fill="transparent" r="88" stroke="currentColor"
+                                            strokeDasharray={dashArray}
+                                            strokeDashoffset={dashOffset}
+                                            strokeLinecap="round" strokeWidth="16"
+                                        ></circle>
+                                    </svg>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span className="text-4xl font-black text-emerald-900 dark:text-white brand-font">{attendancePercentage}%</span>
+                                        <span className="text-[10px] font-bold text-emerald-800/40 dark:text-white/40 uppercase tracking-tighter">Present Today</span>
+                                    </div>
+                                </div>
+                                <div className="flex-1 space-y-6">
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-semibold text-emerald-800/60 dark:text-white/60">Present Students Today (Active)</p>
+                                        <div className="flex items-baseline space-x-2">
+                                            <h4 className="text-4xl font-black text-emerald-900 dark:text-white brand-font">
+                                                {/* Rough estimate back-calculation for display if not fully tracked individually for today */}
+                                                {Math.round(activeStudents * (attendancePercentage / 100)).toLocaleString()}
+                                            </h4>
+                                            <span className="text-lg font-medium text-emerald-800/40 dark:text-white/40">/ {activeStudents.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-primary-container/30 dark:bg-primary-container/10 rounded-2xl flex items-center space-x-4">
+                                        <div className="w-10 h-10 shrink-0 rounded-full bg-primary flex items-center justify-center text-white">
+                                            <span className="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+                                        </div>
+                                        <p className="text-sm font-medium leading-tight text-emerald-900/80 dark:text-emerald-50">
+                                            Tracking <span className="font-black text-emerald-900 dark:text-primary">{attendancePercentage}% total coverage</span> of daily attendance out of all active enrolled students.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Secondary Stats & Total Classes */}
+                    <div className="lg:col-span-5 space-y-8">
+                        {/* Total Classes Card */}
+                        <div className="p-8 rounded-2xl bg-tertiary-container/30 dark:bg-tertiary-container/10 border border-tertiary/10 dark:border-white/5 flex justify-between items-center overflow-hidden relative">
+                            <div className="relative z-10">
+                                <p className="text-sm font-bold text-tertiary-dim dark:text-tertiary-container uppercase tracking-widest mb-1">Live Environment</p>
+                                <h3 className="text-4xl font-black text-on-tertiary-container dark:text-white brand-font">{totalClasses} Classes</h3>
+                                <p className="text-on-tertiary-container/70 dark:text-white/60 text-sm mt-2">Actively scheduled & grouped</p>
+                            </div>
+                            <span className="material-symbols-outlined text-8xl text-tertiary/20 absolute -right-4 -bottom-4" data-icon="meeting_room">meeting_room</span>
+                        </div>
+
+                        {/* Fine-Grained Attendance Status */}
+                        <div className="p-8 rounded-2xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] border border-white/20 dark:border-white/5 space-y-6">
+                            <h4 className="text-xl font-bold text-emerald-900 dark:text-white brand-font">Attendance Anomalies</h4>
+                            <div className="space-y-4">
+                                {/* Late */}
+                                <div className="flex items-center justify-between group">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-2 h-10 bg-amber-400 rounded-full"></div>
+                                        <div>
+                                            <p className="text-sm font-bold dark:text-white">Late</p>
+                                            <p className="text-xs text-on-surface-variant dark:text-white/60">Arrived late to class</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-lg font-black dark:text-white brand-font">{att.late}%</p>
+                                    </div>
+                                </div>
+
+                                {/* Leave */}
+                                <div className="flex items-center justify-between group">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-2 h-10 bg-blue-400 rounded-full"></div>
+                                        <div>
+                                            <p className="text-sm font-bold dark:text-white">Leave</p>
+                                            <p className="text-xs text-on-surface-variant dark:text-white/60">Approved medical/family</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-lg font-black dark:text-white brand-font">{att.leave}%</p>
+                                    </div>
+                                </div>
+
+                                {/* Absent */}
+                                <div className="flex items-center justify-between group">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-2 h-10 bg-red-400 rounded-full"></div>
+                                        <div>
+                                            <p className="text-sm font-bold dark:text-white">Absent</p>
+                                            <p className="text-xs text-on-surface-variant dark:text-white/60">Unexcused absence</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-lg font-black dark:text-white brand-font">{att.absent}%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
-            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {kpiCards.map((card, i) => {
-              const Icon = card.icon;
-              return (
-                <div
-                  key={i}
-                  className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3"
-                >
-                  {/* Accent glow blob */}
-                  <div
-                    className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{ background: card.accent }}
-                  />
-                  {/* Icon */}
-                  <div
-                    className="relative w-10 h-10 rounded-2xl flex items-center justify-center"
-                    style={{ background: card.accentMuted }}
-                  >
-                    <Icon className="h-5 w-5" style={{ color: card.accent }} />
-                  </div>
-                  {/* Number */}
-                  <div className="relative">
-                    <p
-                      className="text-3xl font-black tracking-tight leading-none"
-                      style={{ color: card.accent }}
-                    >
-                      {card.value}
-                    </p>
-                    <p className="text-[11px] font-bold text-foreground mt-1.5">{card.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{card.sub}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Quick Actions */}
-        <section className="fade-slide-up" style={{ animationDelay: '0.06s' }}>
-          <div className="flex items-center gap-3 mb-5">
-            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Quick Actions</span>
-            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, i) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={i}
-                  href={action.href}
-                  className="card-hover bg-card rounded-2xl p-5 border border-border group flex items-center gap-4"
-                >
-                  <div
-                    className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-200"
-                    style={{ background: `${action.accent}18` }}
-                  >
-                    <Icon className="h-5 w-5" style={{ color: action.accent }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{action.label}</p>
-                    <p className="text-[11px] text-muted-foreground">{action.desc}</p>
-                  </div>
-                  <ArrowUpRight
-                    className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all duration-200"
-                    style={{ color: action.accent }}
-                  />
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Status */}
-        <section className="fade-slide-up" style={{ animationDelay: '0.12s' }}>
-          <div className="flex items-center gap-3 mb-5">
-            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">System Status</span>
-            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
-            <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">● All systems go</span>
-          </div>
-          <div className="bg-card rounded-3xl border border-border overflow-hidden divide-y divide-border">
-            {[
-              { label: "Total Students", value: stats?.totalStudents ?? 0, icon: CheckCircle, good: true },
-              { label: "Active Teachers", value: stats?.totalTeachers ?? 0, icon: CheckCircle, good: true },
-              { label: "Total Classes", value: stats?.totalClasses ?? 0, icon: Activity, good: true },
-              { label: "Attendance Today", value: `${stats?.todayAttendancePercentage ?? 0}%`, icon: (stats?.todayAttendancePercentage ?? 0) > 50 ? CheckCircle : AlertCircle, good: (stats?.todayAttendancePercentage ?? 0) > 50 },
-            ].map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <div key={i} className="flex items-center justify-between px-6 py-4 hover:bg-primary/[0.03] transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Icon className={`h-4 w-4 ${item.good ? "text-emerald-500" : "text-amber-500"}`} />
-                    <span className="text-sm font-semibold text-foreground">{item.label}</span>
-                  </div>
-                  <span className={`text-sm font-black ${item.good ? "text-emerald-500" : "text-amber-500"}`}>{item.value}</span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-      </div>
-
-      {/* Floating Theme Toggle */}
-      {mounted && (
-        <div className="fixed bottom-6 right-6 z-50 bg-card border border-border rounded-2xl p-1.5 shadow-xl flex flex-col gap-1 backdrop-blur-md">
-          <button
-            onClick={() => setTheme('light')}
-            className={`p-2.5 rounded-xl transition-all ${theme === 'light' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-primary/10'}`}
-          >
-            <Sun className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setTheme('dark')}
-            className={`p-2.5 rounded-xl transition-all ${theme === 'dark' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-primary/10'}`}
-          >
-            <Moon className="h-4 w-4" />
-          </button>
+            
+            {/* Bottom Navigation spacer for mobile */}
+            <div className="h-20 md:hidden"></div>
         </div>
-      )}
-    </div>
-  );
+    );
 }

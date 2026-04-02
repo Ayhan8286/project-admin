@@ -105,8 +105,12 @@ export default function ComplaintsPage() {
     };
 
     return (
-        <div className="flex flex-col p-6 lg:p-8 gap-6">
+        <div className="flex-1 overflow-y-auto flex flex-col relative w-full mx-auto">
+            {/* Organic Background Elements */}
+            <div className="organic-blob bg-primary-container/20 w-[600px] h-[600px] -top-48 -left-24 fixed"></div>
+            <div className="organic-blob bg-tertiary-container/20 w-[500px] h-[500px] bottom-0 right-0 fixed"></div>
 
+            <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 flex-1 relative z-10">
             {/* Gen Z Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -121,7 +125,7 @@ export default function ComplaintsPage() {
                     <div className="relative hidden md:block">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                         <input
-                            className="pill-input pl-10 pr-5 py-2.5 bg-card border border-border text-sm text-foreground w-56 placeholder:text-muted-foreground/50"
+                            className="pill-input pl-10 pr-5 py-2.5 glass-panel border border-white/20 dark:border-white/5 text-sm text-foreground w-56 placeholder:text-muted-foreground/50"
                             placeholder="Search tickets..."
                             type="text"
                             value={searchQuery}
@@ -149,7 +153,7 @@ export default function ComplaintsPage() {
                     { label: "Pending Resolution", value: isLoading ? "-" : totalPending, sub: "Under review", accent: "#fb923c", Icon: Clock, tag: "In Review" },
                     { label: "Resolved", value: isLoading ? "-" : totalResolved, sub: "Completed", accent: "#13ec37", Icon: CheckCircle2, tag: "Closed" },
                 ].map(({ label, value, sub, accent, Icon, tag }, i) => (
-                    <div key={i} className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3">
+                    <div key={i} className="card-hover relative glass-panel rounded-3xl p-5 border border-white/20 dark:border-white/5 shadow-[0px_0px_48px_rgba(45,52,50,0.06)] overflow-hidden group flex flex-col gap-3">
                         <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: accent }} />
                         <div className="flex items-start justify-between">
                             <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${accent}18` }}>
@@ -175,7 +179,7 @@ export default function ComplaintsPage() {
                 <div className="flex gap-2">
                     <button
                         onClick={() => setSortOrder(prev => prev === "desc" ? "asc" : "desc")}
-                        className="bg-card border border-border px-4 py-2 rounded-full text-sm font-bold text-muted-foreground flex items-center gap-2 hover:bg-accent hover:text-foreground transition-colors transition-all active:scale-95"
+                        className="glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] border border-white/20 dark:border-white/5 px-4 py-2 rounded-full text-sm font-bold text-muted-foreground flex items-center gap-2 hover:bg-accent hover:text-foreground transition-all active:scale-95"
                     >
                         <ArrowUpDown className="h-4 w-4" />
                         Sort by: {sortOrder === "desc" ? "Newest" : "Oldest"}
@@ -209,7 +213,7 @@ export default function ComplaintsPage() {
                                     <div
                                         key={complaint.id}
                                         onClick={() => setSelectedComplaint(complaint)}
-                                        className="bg-card border border-border rounded-3xl p-5 shadow-sm hover:shadow-lg transition-all group relative shrink-0 text-left card-hover hover:border-red-500/30 cursor-pointer"
+                                        className="glass-panel border-white/20 dark:border-white/5 rounded-3xl p-5 shadow-[0px_0px_48px_rgba(45,52,50,0.06)] hover:shadow-lg transition-all group relative shrink-0 text-left card-hover hover:border-red-500/30 cursor-pointer"
                                     >
                                         <div className={cn("absolute left-0 top-6 bottom-6 w-1.5 rounded-r-full shadow-[0_0_10px_rgba(248,113,113,0.5)] bg-red-400")}></div>
                                         <div className="pl-3">
@@ -269,7 +273,7 @@ export default function ComplaintsPage() {
                                     <div
                                         key={complaint.id}
                                         onClick={() => setSelectedComplaint(complaint)}
-                                        className="bg-card border border-border rounded-3xl p-5 shadow-sm hover:shadow-lg transition-all group relative shrink-0 text-left card-hover hover:border-orange-500/30 cursor-pointer"
+                                        className="glass-panel border-white/20 dark:border-white/5 rounded-3xl p-5 shadow-[0px_0px_48px_rgba(45,52,50,0.06)] hover:shadow-lg transition-all group relative shrink-0 text-left card-hover hover:border-orange-500/30 cursor-pointer"
                                     >
                                         <div className="absolute left-0 top-6 bottom-6 w-1.5 bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.5)] rounded-r-full"></div>
                                         <div className="pl-3">
@@ -328,7 +332,7 @@ export default function ComplaintsPage() {
                                 <div
                                     key={complaint.id}
                                     onClick={() => setSelectedComplaint(complaint)}
-                                    className="bg-card/60 border border-border rounded-3xl p-5 opacity-75 hover:opacity-100 transition-opacity shrink-0 text-left card-hover cursor-pointer"
+                                    className="glass-panel border-white/20 dark:border-white/5 rounded-3xl p-5 opacity-75 hover:opacity-100 transition-opacity shrink-0 text-left card-hover cursor-pointer"
                                 >
                                     <div className="pl-1">
                                         <div className="flex justify-between items-start mb-3">
@@ -367,6 +371,7 @@ export default function ComplaintsPage() {
                 onOpenChange={(open) => !open && setSelectedComplaint(null)}
                 onDelete={handleDelete}
             />
+            </div>
         </div>
     );
 }

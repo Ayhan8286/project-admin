@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 
 export interface DashboardStats {
     totalStudents: number;
+    activeTeachers: number;
     totalTeachers: number;
     totalClasses: number;
     activeStudents: number;
@@ -24,7 +25,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     // Get all counts in parallel
     const [
         studentsResult,
-        teachersResult,
+        activeTeachersResult,
+        allTeachersResult,
         classesResult,
         activeStudentsResult,
         shiftResult,
@@ -33,6 +35,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     ] = await Promise.all([
         supabase.from("students").select("*", { count: "exact", head: true }),
         supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("teachers").select("*", { count: "exact", head: true }),
         supabase.from("classes").select("*", { count: "exact", head: true }),
         supabase.from("students").select("*", { count: "exact", head: true }).ilike("status", "active"),
         supabase.from("students").select("shift"),
@@ -146,7 +149,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     return {
         totalStudents,
-        totalTeachers: teachersResult.count || 0,
+        activeTeachers: activeTeachersResult.count || 0,
+        totalTeachers: allTeachersResult.count || 0,
         totalClasses: classesResult.count || 0,
         activeStudents,
         inactiveStudents: totalStudents - activeStudents,

@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
-import { Calendar, Users, Clock, Plus, Edit, Trash2, ArrowLeft, Globe } from "lucide-react";
+import { Calendar, Users, Clock, Plus, Edit, Trash2, ArrowLeft, Globe, Eye, UserCheck } from "lucide-react";
 import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
 import { AddClassDialog } from "@/components/dialogs/AddClassDialog";
 import { EditClassDialog } from "@/components/dialogs/EditClassDialog";
@@ -124,6 +124,10 @@ export default function TeacherProfilePage() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const teacherId = params.id as string;
+    const cookiesArr = typeof document !== 'undefined' ? document.cookie.split("; ") : [];
+    const role = cookiesArr.find(c => c.trim().startsWith("auth_role="))?.split("=")[1] || "admin";
+    const supervisorIdCookie = cookiesArr.find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
+    const isSupervisor = role === "supervisor";
 
     // State
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -249,29 +253,33 @@ export default function TeacherProfilePage() {
             <div className="p-4 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full">
                 {/* ── Header ── */}
                 <div className="flex items-center gap-4">
-                    <Link href="/teachers">
+                    <Link href={isSupervisor ? `/supervisors/${supervisorIdCookie}` : "/teachers"}>
                         <button className="rounded-full border border-border hover:border-primary/30 p-2 transition-all text-muted-foreground hover:text-foreground">
                             <ArrowLeft className="h-4 w-4" />
                         </button>
                     </Link>
                     <div>
-                        <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-0.5">Teacher Profile</p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-0.5">
+                            {isSupervisor ? "Schedule & Students" : "Teacher Profile"}
+                        </p>
                         <h1 className="text-3xl font-black tracking-tight text-foreground leading-none">
                             {teacher.name}
                             <span className="text-primary ml-2 text-2xl">✦</span>
                         </h1>
                         <p className="text-muted-foreground mt-1 text-sm">Staff ID: {teacher.staff_id} · View and manage assigned classes.</p>
                     </div>
-                    <div className="ml-auto">
-                        <button
-                            onClick={handleDeleteTeacher}
-                            disabled={deleteTeacherMutation.isPending}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 font-bold rounded-full text-sm transition-all disabled:opacity-50"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                            Delete Teacher
-                        </button>
-                    </div>
+                    {!isSupervisor && (
+                        <div className="ml-auto">
+                            <button
+                                onClick={handleDeleteTeacher}
+                                disabled={deleteTeacherMutation.isPending}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 font-bold rounded-full text-sm transition-all disabled:opacity-50"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Delete Teacher
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Stat Cards ── */}
@@ -355,14 +363,26 @@ export default function TeacherProfilePage() {
                             </div>
 
 
-                            <button onClick={() => setIsCreateStudentOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
-                                <Plus className="h-4 w-4" />
-                                Create Student
-                            </button>
-                            <button onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0">
-                                <Plus className="h-4 w-4" />
-                                Assign Class
-                            </button>
+                            <Link
+                                href={`/attendance?teacherId=${teacherId}`}
+                                className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
+                            >
+                                <UserCheck className="h-4 w-4" />
+                                Mark Attendance
+                            </Link>
+
+                            {!isSupervisor && (
+                                <>
+                                    <button onClick={() => setIsCreateStudentOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
+                                        <Plus className="h-4 w-4" />
+                                        Create Student
+                                    </button>
+                                    <button onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0">
+                                        <Plus className="h-4 w-4" />
+                                        Assign Class
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -555,12 +575,19 @@ export default function TeacherProfilePage() {
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex items-center gap-1">
-                                                            <button className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all" onClick={() => handleEditClick(cls)}>
-                                                                <Edit className="h-4 w-4" />
-                                                            </button>
-                                                            <button className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all" onClick={() => handleDeleteClick(cls.id)}>
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
+                                                            <Link href={`/students/${cls.student?.id}`} className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                                                                <Eye className="h-4 w-4" />
+                                                            </Link>
+                                                            {!isSupervisor && (
+                                                                <>
+                                                                    <button className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all" onClick={() => handleEditClick(cls)}>
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </button>
+                                                                    <button className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all" onClick={() => handleDeleteClick(cls.id)}>
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>

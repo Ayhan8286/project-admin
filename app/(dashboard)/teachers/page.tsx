@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getTeachers, getAllClasses, getAllTeacherAvailability, deleteTeacher } from "@/lib/api/classes";
+import { getTeachers, getTeachersBySupervisor, getAllClasses, getAllTeacherAvailability, deleteTeacher } from "@/lib/api/classes";
 import { Teacher, ClassSchedule, TeacherAvailability } from "@/types/student";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -146,8 +146,19 @@ export default function TeachersPage() {
     const [gridTimezone, setGridTimezone] = useState<"pk" | "uk">("pk");
 
     const { data: teachers = [], isLoading: teachersLoading, error: teachersError, refetch: refetchTeachers } = useQuery({
-        queryKey: ["teachers"],
-        queryFn: getTeachers,
+        queryKey: (typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) 
+            ? ["teachers", "supervisor", document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1]]
+            : ["teachers"],
+        queryFn: async () => {
+            const cookies = document.cookie.split("; ");
+            const role = cookies.find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
+            const supervisorId = cookies.find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
+
+            if (role === "supervisor" && supervisorId) {
+                return await getTeachersBySupervisor(supervisorId);
+            }
+            return await getTeachers();
+        },
         ...STALE_SHORT,
     });
 
@@ -181,7 +192,12 @@ export default function TeachersPage() {
     );
 
     return (
-        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+        <div className="flex-1 overflow-y-auto flex flex-col relative w-full mx-auto">
+            {/* Organic Background Elements */}
+            <div className="organic-blob bg-primary-container/20 w-[600px] h-[600px] -top-48 -left-24 fixed"></div>
+            <div className="organic-blob bg-tertiary-container/20 w-[500px] h-[500px] bottom-0 right-0 fixed"></div>
+
+            <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 flex-1 relative z-10">
             <div className="mb-2">
                 <nav className="flex items-center gap-2 text-sm mb-6">
                     <span className="text-foreground font-medium">Faculty Network</span>
@@ -195,15 +211,17 @@ export default function TeachersPage() {
                         </h1>
                         <p className="text-muted-foreground mt-1.5 text-sm">Manage instructors, view active assignments, and coordinate schedules.</p>
                     </div>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setIsAddTeacherOpen(true)}
-                            className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
-                        >
-                            <UserPlus className="h-4 w-4" />
-                            Add Teacher
-                        </button>
-                    </div>
+                    {!(typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) && (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsAddTeacherOpen(true)}
+                                className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
+                            >
+                                <UserPlus className="h-4 w-4" />
+                                Add Teacher
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -218,7 +236,7 @@ export default function TeachersPage() {
                     { label: "Active Classes", value: allClasses.length, sub: "Sections currently taught", accent: "#a855f7", Icon: BookOpen },
                     { label: "New This Month", value: 3, sub: "Recent onboardings", accent: "#3b82f6", Icon: Calendar },
                 ].map(({ label, value, sub, accent, Icon }, i) => (
-                    <div key={i} className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3">
+                    <div key={i} className="card-hover relative glass-panel rounded-3xl p-5 border border-white/20 dark:border-white/5 overflow-hidden group flex flex-col gap-3 shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                         <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: accent }} />
                         <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${accent}18` }}>
                             <Icon className="h-5 w-5" style={{ color: accent }} />
@@ -248,7 +266,7 @@ export default function TeachersPage() {
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
                         <input
-                            className="pill-input pl-10 pr-5 py-2.5 bg-card border border-border text-sm text-foreground w-full sm:w-64 placeholder:text-muted-foreground/50"
+                            className="pill-input pl-10 pr-5 py-2.5 glass-panel border border-white/20 dark:border-white/5 text-sm text-foreground w-full sm:w-64 placeholder:text-muted-foreground/50"
                             placeholder="Search teachers..."
                             value={teacherSearchQuery}
                             onChange={(e) => setTeacherSearchQuery(e.target.value)}
@@ -256,7 +274,7 @@ export default function TeachersPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
+                    <button className="flex items-center gap-2 px-4 py-2.5 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
                         <Filter className="h-4 w-4" />
                         Filter
                     </button>
@@ -270,12 +288,12 @@ export default function TeachersPage() {
                 </TabsList>
 
                 <TabsContent value="list" className="space-y-8">
-                    <div className="bg-card rounded-3xl shadow-sm border border-border overflow-hidden">
+                    <div className="glass-panel rounded-3xl shadow-[0px_0px_48px_rgba(45,52,50,0.06)] border border-white/20 dark:border-white/5 overflow-hidden">
 
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse min-w-[800px]">
                                 <thead>
-                                    <tr className="bg-slate-50/50 dark:bg-[#1a331d]/80 border-b border-border">
+                                    <tr className="bg-white/40 dark:bg-white/5 border-b border-white/10 dark:border-white/5">
                                         <th className="px-6 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Teacher Profile</th>
                                         <th className="px-6 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest text-center">Classes</th>
                                         <th className="px-6 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
@@ -318,12 +336,14 @@ export default function TeachersPage() {
                                                     <p className="text-sm text-muted-foreground mb-6">
                                                         {teacherSearchQuery ? "Try adjusting your search filters." : "Start building your faculty roster."}
                                                     </p>
-                                                    <button
-                                                        onClick={() => setIsAddTeacherOpen(true)}
-                                                        className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold shadow-md shadow-primary/20 hover:bg-primary-hover transition-colors"
-                                                    >
-                                                        Add New Teacher
-                                                    </button>
+                                                    {!(typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) && (
+                                                        <button
+                                                            onClick={() => setIsAddTeacherOpen(true)}
+                                                            className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold shadow-md shadow-primary/20 hover:bg-primary-hover transition-colors"
+                                                        >
+                                                            Add New Teacher
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -433,8 +453,8 @@ export default function TeachersPage() {
                 </TabsContent>
 
                 <TabsContent value="availability">
-                    <Card className="overflow-hidden bg-card border-border shadow-sm">
-                        <CardHeader className="pb-3 border-b border-border">
+                    <Card className="overflow-hidden glass-panel border-white/20 dark:border-white/5 shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
+                        <CardHeader className="pb-3 border-b border-white/10 dark:border-white/5">
                             <div className="flex flex-col gap-3">
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div>
@@ -710,6 +730,7 @@ export default function TeachersPage() {
                 </TabsContent>
             </Tabs >
 
+        </div>
         </div >
     );
 }

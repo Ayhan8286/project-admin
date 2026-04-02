@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Link from "next/link";
-import { getTeachers, getStudentsByTeacher } from "@/lib/api/classes";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { getTeachers, getStudentsByTeacher, getTeachersBySupervisor } from "@/lib/api/classes";
 import { submitAttendance } from "@/lib/api/attendance";
 import { Teacher, AttendanceRecord } from "@/types/student";
 import { Calendar } from "@/components/ui/calendar";
@@ -30,16 +32,46 @@ interface StudentAttendance {
 }
 
 export default function AttendancePage() {
+    return (
+        <Suspense fallback={<div className="p-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+            <AttendanceContent />
+        </Suspense>
+    );
+}
+
+function AttendanceContent() {
     const queryClient = useQueryClient();
+    const searchParams = useSearchParams();
+    const teacherFromUrl = searchParams.get("teacherId");
+
     const [selectedTeacher, setSelectedTeacher] = useState<string>("");
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [attendanceList, setAttendanceList] = useState<StudentAttendance[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
 
+    // Initial effect for URL param
+    useEffect(() => {
+        if (teacherFromUrl) {
+            setSelectedTeacher(teacherFromUrl);
+        }
+    }, [teacherFromUrl]);
+
     const { data: teachers = [], isLoading: teachersLoading } = useQuery({
-        queryKey: ["teachers"],
-        queryFn: getTeachers,
+        queryKey: (typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) 
+            ? ["teachers", "attendance", "supervisor", document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1]]
+            : ["teachers", "attendance"],
+        queryFn: async () => {
+            // Check for supervisor role from cookies
+            const cookies = document.cookie.split("; ");
+            const role = cookies.find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
+            const supervisorId = cookies.find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
+
+            if (role === "supervisor" && supervisorId) {
+                return await getTeachersBySupervisor(supervisorId);
+            }
+            return await getTeachers();
+        },
     });
 
     const { data: studentsData = [], isLoading: studentsLoading, isFetched } = useQuery({
@@ -108,7 +140,12 @@ export default function AttendancePage() {
     const leaveCount = attendanceList.filter((s) => s.status === "Leave").length;
 
     return (
-        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+        <div className="flex-1 overflow-y-auto flex flex-col relative w-full mx-auto">
+            {/* Organic Background Elements */}
+            <div className="organic-blob bg-primary-container/20 w-[600px] h-[600px] -top-48 -left-24 fixed"></div>
+            <div className="organic-blob bg-tertiary-container/20 w-[500px] h-[500px] bottom-0 right-0 fixed"></div>
+
+            <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 flex-1 relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                     <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-1">Daily Operations</p>
@@ -121,7 +158,7 @@ export default function AttendancePage() {
                     </p>
                 </div>
                 <Link href="/attendance/records">
-                    <button className="flex items-center gap-2 px-6 py-3 bg-card border border-border rounded-full text-sm font-bold hover:bg-accent transition-colors text-foreground shadow-sm">
+                    <button className="flex items-center gap-2 px-6 py-3 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-bold hover:bg-accent transition-colors text-foreground shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                         <History className="h-4 w-4" />
                         View Records
                     </button>
@@ -131,7 +168,7 @@ export default function AttendancePage() {
             {/* Main Selection Area */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Teacher Selection */}
-                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex flex-col card-hover">
+                <div className="glass-panel border-white/20 dark:border-white/5 rounded-3xl p-6 border shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col card-hover">
                     <h3 className="text-lg font-black mb-2 text-foreground">Select Class</h3>
                     <p className="text-xs text-muted-foreground mb-6 font-medium">Choose a teacher to load their students.</p>
                     <div className="relative z-10">
@@ -161,7 +198,7 @@ export default function AttendancePage() {
                 </div>
 
                 {/* Inline Calendar (only prominent when a teacher is selected) */}
-                <div className={cn("bg-card rounded-3xl p-6 border border-border shadow-sm flex flex-col transition-all duration-500", !selectedTeacher ? "opacity-50 pointer-events-none filter blur-[1px]" : "card-hover")}>
+                <div className={cn("glass-panel border-white/20 dark:border-white/5 rounded-3xl p-6 border shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col transition-all duration-500", !selectedTeacher ? "opacity-50 pointer-events-none filter blur-[1px]" : "card-hover")}>
                     <h3 className="text-lg font-black mb-2 text-foreground">Select Date</h3>
                     <p className="text-xs text-muted-foreground mb-6 font-medium">Pick the date you are recording attendance for.</p>
                     <div className="flex justify-center bg-accent/10 rounded-3xl border border-border p-4 shadow-inner">
@@ -177,7 +214,7 @@ export default function AttendancePage() {
 
             {/* Student List */}
             {selectedTeacher && (
-                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover animate-in slide-in-from-bottom-4 fade-in duration-500">
+                <div className="glass-panel border-white/20 dark:border-white/5 rounded-3xl p-6 border shadow-[0px_0px_48px_rgba(45,52,50,0.06)] card-hover animate-in slide-in-from-bottom-4 fade-in duration-500">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                         <div>
                             <h3 className="text-lg font-black text-foreground">Student Roster</h3>
@@ -230,7 +267,7 @@ export default function AttendancePage() {
                                                 <p className="text-[11px] font-black tracking-widest uppercase text-muted-foreground mt-0.5">{student.reg_no}</p>
                                             </div>
                                         </div>
-                                        <div className="bg-card p-1.5 rounded-2xl border border-border shadow-sm self-start lg:self-auto">
+                                        <div className="glass-panel p-1.5 rounded-2xl border border-white/20 dark:border-white/5 shadow-sm self-start lg:self-auto">
                                             <ToggleGroup
                                                 type="single"
                                                 value={student.status}
@@ -279,7 +316,7 @@ export default function AttendancePage() {
 
             {/* Submit Bar */}
             {attendanceList.length > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-card/80 backdrop-blur-xl border border-border/50 shadow-2xl p-3 pr-4 rounded-full animate-in slide-in-from-bottom-10 fade-in duration-500">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 glass-panel border border-white/20 dark:border-white/5 shadow-[0px_0px_48px_rgba(45,52,50,0.1)] p-3 pr-4 rounded-full animate-in slide-in-from-bottom-10 fade-in duration-500">
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
@@ -305,6 +342,7 @@ export default function AttendancePage() {
                     )}
                 </div>
             )}
+            </div>
         </div>
     );
 }

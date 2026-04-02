@@ -416,3 +416,78 @@
 .fab-glow:active {
   transform: scale(0.96);
 }
+/* === NEW M3 DASHBOARD THEME === */
+@theme {
+  --color-tertiary-fixed-dim: #deb29c;
+  --color-background-m3: #f8faf8;
+  --color-on-primary: #e9ffe6;
+  --color-error-dim: #791903;
+  --color-tertiary-fixed: #edc0a9;
+  --color-primary-dim: #3b5a3f;
+  --color-outline: #757c7a;
+  --color-on-tertiary: #fff7f5;
+  --color-surface-container-lowest: #ffffff;
+  --color-primary-fixed: #c8ecc8;
+  --color-secondary-fixed-dim: #c9dabf;
+  --color-on-error-container: #6e1400;
+  --color-on-primary-container: #3a593d;
+  --color-surface-container-low: #f1f4f2;
+  --color-error-container: #fd795a;
+  --color-secondary-m3: #54634e;
+  --color-surface-container: #eaefec;
+  --color-on-tertiary-container: #593b2a;
+  --color-on-primary-fixed-variant: #436347;
+  --color-on-error: #fff7f6;
+  --color-surface-bright: #f8faf8;
+  --color-primary-container: #c8ecc8;
+  --color-secondary-dim: #485743;
+  --color-outline-variant: #acb4b1;
+  --color-surface-dim: #d4dcd9;
+  --color-on-tertiary-fixed: #432818;
+  --color-inverse-on-surface: #9b9d9c;
+  --color-secondary-container: #d7e8cd;
+  --color-on-primary-fixed: #27462c;
+  --color-on-tertiary-fixed-variant: #634432;
+  --color-tertiary-container: #edc0a9;
+  --color-on-secondary-fixed-variant: #51604b;
+  --color-tertiary-dim: #6c4c3a;
+  --color-primary-fixed-dim: #badeba;
+  --color-surface-container-high: #e4e9e7;
+  --color-on-secondary-fixed: #354330;
+  --color-inverse-surface: #0b0f0e;
+  --color-on-secondary: #edfee2;
+  --color-error-m3: #a73b21;
+  --color-surface-tint: #47664a;
+  --color-inverse-primary: #cdf2cd;
+  --color-primary-m3: #47664a;
+  --color-surface-variant: #dde4e1;
+  --color-on-surface-variant: #59615f;
+  --color-surface-container-highest: #dde4e1;
+  --color-on-secondary-container: #475641;
+  --color-secondary-fixed: #d7e8cd;
+  --font-headline: var(--font-jakarta), sans-serif;
+  --font-body: var(--font-vietnam), sans-serif;
+  --font-label: var(--font-vietnam), sans-serif;
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+.dark .glass-panel {
+    background: rgba(16, 34, 19, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+.organic-blob {
+    position: absolute;
+    z-index: -1;
+    filter: blur(80px);
+    border-radius: 50%;
+}
+.brand-font {
+    font-family: var(--font-jakarta), sans-serif;
+}

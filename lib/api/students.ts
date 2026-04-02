@@ -27,6 +27,60 @@ export async function getStudents(): Promise<Student[]> {
     }));
 }
 
+export async function getStudentsBySupervisor(supervisorId: string): Promise<Student[]> {
+    // 1. Get all teachers assigned to this supervisor
+    const { data: teachers, error: teachersError } = await supabase
+        .from("teachers")
+        .select("id")
+        .eq("supervisor_id", supervisorId);
+
+    if (teachersError) {
+        console.error("Error fetching supervisor teachers:", teachersError);
+        throw teachersError;
+    }
+
+    const teacherIds = (teachers || []).map(t => t.id);
+
+    // 2. Get students linked via these teachers' classes
+    const { data: classStudents, error: classesError } = await supabase
+        .from("classes")
+        .select("student_id")
+        .in("teacher_id", teacherIds);
+
+    if (classesError) {
+        console.error("Error fetching students via classes:", classesError);
+        throw classesError;
+    }
+
+    const linkedStudentIds = (classStudents || []).map(cs => cs.student_id);
+
+    // 3. Fetch students who match either the teacher-link OR a direct supervisor_id
+    const { data: students, error: studentsError } = await supabase
+        .from("students")
+        .select(`
+            id, full_name, reg_no, guardian_name, status, shift, guardian_id, shift_id, supervisor_id,
+            supervisor:supervisors(name),
+            classes(
+                course:courses(name)
+            )
+        `)
+        .or(`supervisor_id.eq.${supervisorId},id.in.(${linkedStudentIds.length > 0 ? linkedStudentIds.join(',') : 'null'})`);
+
+    if (studentsError) {
+        console.error("Error fetching students by supervisor domain:", studentsError);
+        throw studentsError;
+    }
+
+    return (students || []).map((student: any) => ({
+        ...student,
+        classes: student.classes?.map((cls: any) => ({
+            ...cls,
+            course: Array.isArray(cls.course) ? cls.course[0] : cls.course
+        })),
+        supervisor: Array.isArray(student.supervisor) ? student.supervisor[0] : student.supervisor
+    }));
+}
+
 export async function getStudentsCount(): Promise<number> {
     const { count, error } = await supabase
         .from("students")

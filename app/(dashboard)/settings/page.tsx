@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { FormInput } from "@/components/ui/form-input";
 import { exportToCSV } from "@/lib/utils/csv";
 import { STALE_LONG } from "@/lib/query-config";
+import { toast } from "sonner";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ export default function SettingsPage() {
             bad: { bg: "bg-red-500/10", border: "border-red-500/20", text: "text-red-500", badge: "bg-red-500/20 text-red-500" },
         }[status];
         return (
-            <div className={cn("rounded-3xl border p-6 transition-all bg-card shadow-sm card-hover", colors.border)}>
+            <div className={cn("rounded-3xl border p-6 transition-all glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] card-hover", colors.border)}>
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                         {icon}
@@ -183,9 +184,13 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full -m-8 bg-background">
+        <div className="flex-1 overflow-y-auto flex flex-col relative w-full h-full -m-8">
+            {/* Organic Background Elements */}
+            <div className="organic-blob bg-primary-container/20 w-[600px] h-[600px] -top-48 -left-24 fixed"></div>
+            <div className="organic-blob bg-tertiary-container/20 w-[500px] h-[500px] bottom-0 right-0 fixed"></div>
+
             {/* Header */}
-            <header className="h-16 flex items-center justify-between px-8 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-10">
+            <header className="h-16 flex items-center justify-between px-8 border-b border-white/10 glass-panel sticky top-0 z-20">
                 <div className="flex items-center gap-3">
                     <Settings2 className="text-primary h-5 w-5" />
                     <h2 className="text-lg font-black text-foreground tracking-wide uppercase">Academy Customization</h2>
@@ -196,7 +201,7 @@ export default function SettingsPage() {
             </header>
 
             {/* Page Content */}
-            <div className="p-8 max-w-6xl w-full mx-auto space-y-8 overflow-y-auto">
+            <div className="p-8 max-w-6xl w-full mx-auto space-y-8 overflow-y-auto relative z-10">
                 <div>
                     <h1 className="text-4xl font-black tracking-tight mb-2 text-foreground">Theme & Global Configuration</h1>
                     <p className="text-muted-foreground font-medium">Manage your academy's visual identity and core system defaults.</p>
@@ -228,8 +233,8 @@ export default function SettingsPage() {
                             {/* Left Column: Theme Customization */}
                             <div className="xl:col-span-2 space-y-8">
                                 {/* Theme Preview Card */}
-                                <div className="rounded-3xl overflow-hidden border border-border bg-card shadow-sm card-hover">
-                                    <div className="p-5 border-b border-border flex justify-between items-center bg-accent/40">
+                                <div className="rounded-3xl overflow-hidden border border-white/20 dark:border-white/5 glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] card-hover">
+                                    <div className="p-5 border-b border-white/10 flex justify-between items-center bg-accent/40">
                                         <h3 className="font-bold flex items-center gap-2 text-foreground">
                                             <Moon className="text-primary h-5 w-5" />
                                             Current Selection: Obsidian Aurora
@@ -264,7 +269,7 @@ export default function SettingsPage() {
                                         <Settings2 className="text-primary h-7 w-7" />
                                         Regional & Academic Defaults
                                     </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 rounded-3xl border border-border bg-card shadow-sm card-hover">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 rounded-3xl border border-white/20 dark:border-white/5 glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] card-hover">
                                         <div className="space-y-3">
                                             <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Organization Name</label>
                                             <input
@@ -318,7 +323,7 @@ export default function SettingsPage() {
 
                             {/* Right Column: Quick Toggles */}
                             <div className="space-y-6">
-                                <div className="rounded-3xl border border-border bg-card p-8 space-y-6 shadow-sm card-hover">
+                                <div className="rounded-3xl border border-white/20 dark:border-white/5 glass-panel p-8 space-y-6 shadow-[0px_0px_48px_rgba(45,52,50,0.06)] card-hover">
                                     <h4 className="font-black text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Theme Modes</h4>
                                     <div className="space-y-5">
                                         <label className="flex items-center justify-between group cursor-pointer" onClick={() => setTheme("light")}>
@@ -378,7 +383,7 @@ export default function SettingsPage() {
 
                     {/* ══════ TAB 2: Platform Overview ══════ */}
                     <TabsContent value="overview" className="space-y-4 focus-visible:outline-none pb-12">
-                        <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-sm p-8 card-hover">
+                        <div className="rounded-3xl border border-white/20 dark:border-white/5 glass-panel overflow-hidden shadow-[0px_0px_48px_rgba(45,52,50,0.06)] p-8 card-hover">
                             <div className="mb-6">
                                 <h3 className="text-2xl font-black text-foreground">Live Record Counts</h3>
                                 <p className="text-sm font-medium text-muted-foreground">Real-time statistics from the database.</p>
@@ -418,7 +423,7 @@ export default function SettingsPage() {
 
                     {/* ══════ TAB 3: Data Quality ══════ */}
                     <TabsContent value="quality" className="space-y-4 focus-visible:outline-none pb-12">
-                        <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-sm p-8 card-hover">
+                        <div className="rounded-3xl border border-white/20 dark:border-white/5 glass-panel overflow-hidden shadow-[0px_0px_48px_rgba(45,52,50,0.06)] p-8 card-hover">
                             <div className="mb-6">
                                 <h3 className="text-2xl font-black text-foreground">Data Quality Report</h3>
                                 <p className="text-sm font-medium text-muted-foreground">Identify missing data and potential issues across your platform.</p>
@@ -442,7 +447,7 @@ export default function SettingsPage() {
 
                     {/* ══════ TAB 4: Quick Actions ══════ */}
                     <TabsContent value="actions" className="space-y-4 focus-visible:outline-none pb-12">
-                        <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden p-8 max-w-3xl card-hover">
+                        <div className="rounded-3xl border border-white/20 dark:border-white/5 glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] overflow-hidden p-8 max-w-3xl card-hover">
                             <div className="mb-6">
                                 <h3 className="text-2xl font-black text-foreground">Bulk Operations</h3>
                                 <p className="text-sm font-medium text-muted-foreground">Run secure data exports directly to your machine.</p>

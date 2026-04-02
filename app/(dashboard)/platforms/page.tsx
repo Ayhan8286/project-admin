@@ -46,7 +46,12 @@ export default function PlatformsPage() {
         );
 
         return (
-            <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+            <div className="flex-1 overflow-y-auto flex flex-col relative w-full mx-auto">
+                {/* Organic Background Elements */}
+                <div className="organic-blob bg-primary-container/20 w-[600px] h-[600px] -top-48 -left-24 fixed"></div>
+                <div className="organic-blob bg-tertiary-container/20 w-[500px] h-[500px] bottom-0 right-0 fixed"></div>
+
+                <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 flex-1 relative z-10">
                 <div className="mb-2">
                     <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 font-bold uppercase tracking-wider">
                         <button onClick={() => setSelectedPlatform(null)} className="hover:text-primary flex items-center gap-1 transition-colors">
@@ -70,7 +75,7 @@ export default function PlatformsPage() {
                 </div>
 
                 <div className="mb-8">
-                    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover md:max-w-sm">
+                    <div className="glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] rounded-3xl p-6 border border-white/20 dark:border-white/5 flex items-start justify-between card-hover md:max-w-sm">
                         <div>
                             <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Assigned</p>
                             <h3 className="text-3xl font-black text-foreground">{students.length}</h3>
@@ -89,7 +94,7 @@ export default function PlatformsPage() {
                         <div className="relative">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                             <input
-                                className="pill-input appearance-none pl-11 pr-5 py-2.5 bg-card border border-border text-sm font-medium text-foreground transition-all w-full sm:w-72"
+                                className="pill-input appearance-none pl-11 pr-5 py-2.5 glass-panel border border-white/20 dark:border-white/5 text-sm font-medium text-foreground transition-all w-full sm:w-72"
                                 placeholder="Search accounts..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -97,17 +102,17 @@ export default function PlatformsPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-5 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:bg-accent transition-colors text-foreground">
+                        <button className="flex items-center gap-2 px-5 py-2.5 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-bold hover:bg-accent transition-colors text-foreground">
                             <Download className="h-4 w-4" />
                             <span>Export Data</span>
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm card-hover">
+                <div className="glass-panel rounded-3xl border border-white/20 dark:border-white/5 overflow-hidden shadow-[0px_0px_48px_rgba(45,52,50,0.06)] card-hover">
                     <div className="overflow-x-auto min-h-[400px]">
                         <table className="w-full text-left border-collapse min-w-[900px]">
-                            <thead className="bg-accent/40 border-b border-border">
+                            <thead className="bg-white/40 dark:bg-white/5 border-b border-white/10 dark:border-white/5">
                                 <tr>
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Student Name</th>
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Reg. No.</th>
@@ -183,13 +188,19 @@ export default function PlatformsPage() {
                         </table>
                     </div>
                 </div>
+                </div>
             </div>
         );
     }
 
     // Main Selection View
     return (
-        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+        <div className="flex-1 overflow-y-auto flex flex-col relative w-full mx-auto">
+            {/* Organic Background Elements */}
+            <div className="organic-blob bg-primary-container/20 w-[600px] h-[600px] -top-48 -left-24 fixed"></div>
+            <div className="organic-blob bg-tertiary-container/20 w-[500px] h-[500px] bottom-0 right-0 fixed"></div>
+
+            <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 flex-1 relative z-10">
             <div className="mb-2">
                 <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6">
                     <span className="text-foreground">Platform Integrations</span>
@@ -204,7 +215,7 @@ export default function PlatformsPage() {
 
             {/* Overall Metrics Block */}
             <div className="mb-8">
-                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm flex items-start justify-between card-hover md:max-w-sm">
+                <div className="glass-panel rounded-3xl p-6 border border-white/20 dark:border-white/5 flex items-start justify-between card-hover md:max-w-sm shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                     <div>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Active Platforms</p>
                         <h3 className="text-3xl font-black text-foreground">{platforms.length}</h3>
@@ -250,7 +261,7 @@ export default function PlatformsPage() {
                                 <div
                                     key={platform.id}
                                     onClick={() => setSelectedPlatform(platform)}
-                                    className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm hover:shadow-lg transition-all group cursor-pointer card-hover hover:border-primary/50"
+                                    className="glass-panel border-white/20 dark:border-white/5 rounded-3xl border overflow-hidden transition-all group cursor-pointer card-hover hover:border-primary/50 shadow-[0px_0px_48px_rgba(45,52,50,0.06)]"
                                 >
                                     <div className="p-6">
                                         <div className="flex justify-between items-start mb-6">
@@ -299,6 +310,7 @@ export default function PlatformsPage() {
 
                     </div>
                 )}
+            </div>
             </div>
         </div>
     );

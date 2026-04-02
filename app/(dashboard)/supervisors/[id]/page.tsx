@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSupervisorById } from "@/lib/api/supervisors";
 import { getTeachersBySupervisor, getTeachers, getAllClasses, updateTeacherSupervisor } from "@/lib/api/classes";
@@ -28,11 +28,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-
-interface PageProps {
-    params: Promise<{ id: string }>;
-}
+import { useParams, useRouter } from "next/navigation";
 
 // Placeholder avatars for visual richness
 const placeholderAvatars = [
@@ -42,9 +38,11 @@ const placeholderAvatars = [
     "https://lh3.googleusercontent.com/aida-public/AB6AXuBgMWlB1KnBZfibcIbULK1r9K9jezgJYQSz_oPc60wQY84EvSVzN-jA6tms3OEJiOw2oC4QtrYAODLfrMdKxjpJ18THDcpOizqzePzAZkZRdm1JA8IN03u23Y-anvF9mKlR87-Iscm7jlZpgKoM--F85EfU3Gg5SQqhNWP6sbhoqtO3s6uMHIJ397dT9Am7QclRH1U7HNdFzpcwUu_8g3P4W5-tXvONLGtJ8XqFxfodVooTo1Nqc4huNvtOjwOY6BNUx6jRvtPL2gY"
 ];
 
-export default function SupervisorDetailPage({ params }: PageProps) {
-    const resolvedParams = use(params);
-    const supervisorId = resolvedParams.id;
+export default function SupervisorDetailPage() {
+    const params = useParams();
+    const supervisorId = params.id as string;
+    const role = typeof document !== 'undefined' ? document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1] : "admin";
+    const isSupervisor = role === "supervisor";
     const queryClient = useQueryClient();
     const router = useRouter();
     const [isAssignTeacherOpen, setIsAssignTeacherOpen] = useState(false);
@@ -158,13 +156,15 @@ export default function SupervisorDetailPage({ params }: PageProps) {
                         <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Assigned Teachers</span>
                         <div className="h-px w-12 bg-gradient-to-r from-border to-transparent" />
                     </div>
-                    <button
-                        onClick={() => setIsAssignTeacherOpen(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
-                    >
-                        <UserPlus className="h-4 w-4" />
-                        Assign Teacher
-                    </button>
+                    {!isSupervisor && (
+                        <button
+                            onClick={() => setIsAssignTeacherOpen(true)}
+                            className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
+                        >
+                            <UserPlus className="h-4 w-4" />
+                            Assign Teacher
+                        </button>
+                    )}
                 </div>
 
                 {/* Teachers Grid */}
@@ -193,13 +193,15 @@ export default function SupervisorDetailPage({ params }: PageProps) {
                                                 />
                                                 <div className={`absolute -bottom-1.5 -right-1.5 ${teacher.is_active ? 'bg-green-500' : 'bg-gray-400'} size-4 rounded-full border-2 border-card`} />
                                             </div>
-                                            <button
-                                                onClick={() => handleUnassignTeacher(teacher.id, teacher.name)}
-                                                className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-500/10"
-                                                title="Unassign from supervisor"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
+                                            {!isSupervisor && (
+                                                <button
+                                                    onClick={() => handleUnassignTeacher(teacher.id, teacher.name)}
+                                                    className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-500/10"
+                                                    title="Unassign from supervisor"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            )}
                                         </div>
                                         <div>
                                             <h4 className="text-lg font-black text-foreground mb-0.5">{teacher.name}</h4>

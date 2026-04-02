@@ -57,7 +57,7 @@ export async function updateSupervisor(
         .single();
 
     if (error) {
-        console.error("Error updating supervisor:", error);
+        console.error("Error updating supervisor:", JSON.stringify(error, null, 2));
         throw error;
     }
 

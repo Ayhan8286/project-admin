@@ -4,5 +4,6 @@ export interface Supervisor {
     email: string | null;
     phone: string | null;
     timing: string | null;
+    password?: string | null;
     created_at: string;
 }

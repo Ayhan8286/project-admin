@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { getStudents, deleteStudent } from "@/lib/api/students";
+import { getStudents, getStudentsBySupervisor, deleteStudent } from "@/lib/api/students";
 import { Student } from "@/types/student";
 import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
 import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { exportToCSV } from "@/lib/utils/csv";
 import { STALE_LONG } from "@/lib/query-config";
 import { ErrorState } from "@/components/ui/error-state";
+import { cn } from "@/lib/utils";
 
 
 
@@ -21,6 +22,8 @@ export default function StudentsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+    const role = typeof document !== 'undefined' ? document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1] : "admin";
+    const isSupervisor = role === "supervisor";
 
     const handleEditClick = (student: Student) => {
         setSelectedStudent(student);
@@ -29,8 +32,19 @@ export default function StudentsPage() {
 
     // Queries
     const { data: students = [], isLoading, error, refetch } = useQuery({
-        queryKey: ["students"],
-        queryFn: getStudents,
+        queryKey: (typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) 
+            ? ["students", "supervisor", document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1]]
+            : ["students"],
+        queryFn: async () => {
+            const cookies = document.cookie.split("; ");
+            const role = cookies.find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
+            const supervisorId = cookies.find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
+
+            if (role === "supervisor" && supervisorId) {
+                return await getStudentsBySupervisor(supervisorId);
+            }
+            return await getStudents();
+        },
         ...STALE_LONG,
     });
 
@@ -60,7 +74,12 @@ export default function StudentsPage() {
     }
 
     return (
-        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
+        <div className="flex-1 overflow-y-auto flex flex-col relative w-full mx-auto">
+            {/* Organic Background Elements */}
+            <div className="organic-blob bg-primary-container/20 w-[600px] h-[600px] -top-48 -left-24 fixed"></div>
+            <div className="organic-blob bg-tertiary-container/20 w-[500px] h-[500px] bottom-0 right-0 fixed"></div>
+
+            <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 flex-1 relative z-10">
             {/* Gen Z Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -71,13 +90,26 @@ export default function StudentsPage() {
                     </h1>
                     <p className="text-muted-foreground mt-1.5 text-sm">Manage and view all enrolled students across the institution.</p>
                 </div>
-                <button
-                    onClick={() => setIsDialogOpen(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
-                >
-                    <Plus className="h-4 w-4" />
-                    Add New Student
-                </button>
+                {/* Conditional Admin Header Button */}
+                <div className="flex-shrink-0">
+                    <button
+                        onClick={() => {
+                            // Check role from cookies to prevent unauthorized dialog opening
+                            const role = document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
+                            if (role !== "supervisor") {
+                                setIsDialogOpen(true);
+                            }
+                        }}
+                        className={cn(
+                            "flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all",
+                            // Hide for supervisors
+                            (typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) && "hidden"
+                        )}
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add New Student
+                    </button>
+                </div>
             </div>
 
             <AddStudentDialog
@@ -103,7 +135,7 @@ export default function StudentsPage() {
                     { label: "Active Status", value: students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "Currently active", accent: "#34d399", Icon: Users },
                     { label: "Inactive/Leave", value: students.length - students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "On leave", accent: "#f87171", Icon: Users },
                 ].map(({ label, value, sub, accent, Icon }, i) => (
-                    <div key={i} className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3">
+                    <div key={i} className="card-hover relative glass-panel rounded-3xl p-5 border border-white/20 dark:border-white/5 overflow-hidden group flex flex-col gap-3 shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                         <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: accent }} />
                         <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${accent}18` }}>
                             <Icon className="h-5 w-5" style={{ color: accent }} />
@@ -124,13 +156,13 @@ export default function StudentsPage() {
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
                         <input
-                            className="pill-input pl-10 pr-5 py-2.5 bg-card border border-border text-sm text-foreground w-64 placeholder:text-muted-foreground/50"
+                            className="pill-input pl-10 pr-5 py-2.5 glass-panel border border-white/20 dark:border-white/5 text-sm text-foreground w-64 placeholder:text-muted-foreground/50"
                             placeholder="Search students..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <select className="appearance-none pl-4 pr-10 py-2.5 bg-card border border-border rounded-full text-sm font-semibold text-foreground cursor-pointer">
+                    <select className="appearance-none pl-4 pr-10 py-2.5 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-semibold text-foreground cursor-pointer">
                         <option>All Status</option>
                         <option>Active</option>
                         <option>On Leave</option>
@@ -151,17 +183,17 @@ export default function StudentsPage() {
                         })),
                         `students_${new Date().toISOString().slice(0, 10)}`
                     )}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground"
+                    className="flex items-center gap-2 px-4 py-2.5 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground"
                 >
                     <Download className="h-4 w-4" />
                     Export CSV
                 </button>
             </div>
 
-            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+            <div className="glass-panel rounded-2xl border border-white/20 dark:border-white/5 overflow-hidden shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[900px]">
-                        <thead className="bg-slate-50 dark:bg-[#1a331d]/50 border-b border-border">
+                        <thead className="bg-white/40 dark:bg-white/5 border-b border-white/10 dark:border-white/5">
                             <tr>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Student Name</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Courses</th>
@@ -207,7 +239,8 @@ export default function StudentsPage() {
                                             <p className="text-sm text-muted-foreground mb-6">
                                                 {searchQuery ? "Try adjusting your search query." : "Register your first student to get started."}
                                             </p>
-                                            {!searchQuery && (
+                                            {/* Hide button for supervisors */}
+                                            {!(typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) && (
                                                 <button
                                                     onClick={() => setIsDialogOpen(true)}
                                                     className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold shadow-md shadow-primary/20 hover:bg-primary-hover transition-colors"
@@ -291,21 +324,25 @@ export default function StudentsPage() {
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Link>
-                                                    <button
-                                                        className="w-8 h-8 rounded text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
-                                                        title="Edit Student"
-                                                        onClick={() => handleEditClick(student)}
-                                                    >
-                                                        <Edit2 className="h-4 w-4 font-light" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(student.id, student.full_name)}
-                                                        disabled={deleteMutation.isPending}
-                                                        className="w-8 h-8 rounded text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors disabled:opacity-50"
-                                                        title="Remove Student"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
+                                                    {!isSupervisor && (
+                                                        <>
+                                                            <button
+                                                                className="w-8 h-8 rounded text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+                                                                title="Edit Student"
+                                                                onClick={() => handleEditClick(student)}
+                                                            >
+                                                                <Edit2 className="h-4 w-4 font-light" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(student.id, student.full_name)}
+                                                                disabled={deleteMutation.isPending}
+                                                                className="w-8 h-8 rounded text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors disabled:opacity-50"
+                                                                title="Remove Student"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -324,6 +361,7 @@ export default function StudentsPage() {
                     </div>
                 )}
             </div>
+        </div>
         </div >
     );
 }
