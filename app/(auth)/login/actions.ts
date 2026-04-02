@@ -2,11 +2,15 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function loginAction(prevState: any, formData: FormData) {
+  // Clear any existing session before trying to log in
+  await supabase.auth.signOut();
+
   const rawEmail = formData.get("email") as string;
   const email = rawEmail?.trim().toLowerCase();
   const password = formData.get("password") as string;
@@ -30,11 +34,11 @@ export async function loginAction(prevState: any, formData: FormData) {
     }
 
     // Check if this user is a supervisor (should not login as admin)
-    const { data: supervisorMatch } = await supabase
+    const { data: supervisorMatch } = await supabaseAdmin
       .from("supervisors")
       .select("id")
-      .eq("email", email)
-      .single();
+      .ilike("email", email)
+      .maybeSingle();
 
     if (supervisorMatch) {
       await supabase.auth.signOut();
@@ -58,23 +62,18 @@ export async function loginAction(prevState: any, formData: FormData) {
       });
     }
 
+    revalidatePath("/", "layout");
     redirect("/");
   } else {
-    // Supervisor login uses Database Table
-    const { data: supervisor, error } = await supabase
+    // Supervisor login uses Database Table lookup (Bypasses RLS)
+    const { data: supervisor, error } = await supabaseAdmin
       .from("supervisors")
       .select("id, email, password")
       .ilike("email", email)
       .maybeSingle();
 
-    if (error || !supervisor) {
-      console.error("Supervisor Login Error:", error, "Supervisor Data:", supervisor, "Email tried:", email);
-      return { error: `Debug: Not found in DB. Email tried: "${email}". Ensure email is exactly correct.` };
-    }
-
-    // Direct password check (User requested database-based auth)
-    if (supervisor.password !== password) {
-      return { error: "Invalid credentials." };
+    if (error || !supervisor || supervisor.password !== password) {
+      return { error: "Invalid login credentials." };
     }
 
     // Set Supervisor cookies
@@ -92,6 +91,7 @@ export async function loginAction(prevState: any, formData: FormData) {
       path: "/",
     });
 
+    revalidatePath("/", "layout");
     redirect(`/supervisors/${supervisor.id}`);
   }
 }

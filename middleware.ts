@@ -20,7 +20,13 @@ export function middleware(request: NextRequest) {
   // If user is trying to access login page
   if (pathname === "/login") {
     if (isAuthenticated && request.method === "GET") {
-      // Redirect authenticated users away from login
+      // Direct redirect based on role
+      const isSupervisor = roleCookie?.value === "supervisor";
+      const supervisorId = request.cookies.get("supervisor_id")?.value;
+      
+      if (isSupervisor && supervisorId) {
+        return NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+      }
       return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
@@ -43,6 +49,11 @@ export function middleware(request: NextRequest) {
       const response = NextResponse.redirect(new URL("/login", request.url));
       response.cookies.delete("auth_role");
       return response;
+    }
+
+    // Handle root path separately to avoid a secondary redirect
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
     }
 
     // Supervisors are allowed on:

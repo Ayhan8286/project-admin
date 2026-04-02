@@ -1,0 +1,26 @@
+[
+  {
+    "id": "aab0d8bb-816d-443e-a37d-c36eab7383b7",
+    "name": "Miss Nimra",
+    "email": "nimra.supervisor@email.com",
+    "phone": "12345678",
+    "timing": "Evening",
+    "password": "supervisor@"
+  },
+  {
+    "id": "a25074e4-cf5e-4583-b66b-5d2693ec9f62",
+    "name": "Miss Fatima",
+    "email": "fatima.supervisor@email.com",
+    "phone": "123456788",
+    "timing": "Evening",
+    "password": "supervisor@"
+  },
+  {
+    "id": "870286da-6c6b-4c09-a7bf-3648a01261c7",
+    "name": "Miss Maryam",
+    "email": "maryum.supervisor@email.com",
+    "phone": "123456789",
+    "timing": "Morning",
+    "password": "supervisor@"
+  }
+]
