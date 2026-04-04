@@ -342,13 +342,11 @@ function AddSupervisorDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-foreground">Timing</label>
                             <Select value={formData.timing || "none"} onValueChange={(val) => setFormData(prev => ({ ...prev, timing: val === "none" ? "" : val }))}>
-                                <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium focus:ring-2 focus:ring-primary">
+                                <SelectTrigger className="h-12 rounded-3xl border-border bg-accent/30 text-sm font-medium px-5 transition-all hover:bg-accent/50">
                                     <SelectValue placeholder="Select Timing" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl">
-                                    <SelectItem value="none">None</SelectItem>
                                     <SelectItem value="Morning">Morning</SelectItem>
-                                    <SelectItem value="Evening">Evening</SelectItem>
                                     <SelectItem value="Night">Night</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -474,13 +472,11 @@ function EditSupervisorDialog({ supervisor, open, onOpenChange }: { supervisor: 
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-foreground">Timing</label>
                             <Select value={formData.timing || "none"} onValueChange={(val) => setFormData(prev => ({ ...prev, timing: val === "none" ? "" : val }))}>
-                                <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium focus:ring-2 focus:ring-primary">
+                                <SelectTrigger className="h-12 rounded-3xl border-border bg-accent/30 text-sm font-medium px-5 transition-all hover:bg-accent/50">
                                     <SelectValue placeholder="Select Timing" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl">
-                                    <SelectItem value="none">None</SelectItem>
                                     <SelectItem value="Morning">Morning</SelectItem>
-                                    <SelectItem value="Evening">Evening</SelectItem>
                                     <SelectItem value="Night">Night</SelectItem>
                                 </SelectContent>
                             </Select>

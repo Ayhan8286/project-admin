@@ -53,6 +53,7 @@ export interface ClassSchedule {
     app_account?: AppAccount;
     course_id: string | null;
     course?: Course;
+    student?: { id: string; full_name: string; reg_no: string };
 }
 
 export interface AttendanceRecord {

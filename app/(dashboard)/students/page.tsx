@@ -3,10 +3,11 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { getStudents, getStudentsBySupervisor, deleteStudent } from "@/lib/api/students";
 import { Student } from "@/types/student";
 import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
-import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
+import { ManageStudentDialog } from "@/components/dialogs/ManageStudentDialog";
 import { Users, UserPlus, Search, Plus, Loader2, Trash2, Eye, Edit2, Download, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { exportToCSV } from "@/lib/utils/csv";
@@ -18,15 +19,22 @@ import { cn } from "@/lib/utils";
 
 export default function StudentsPage() {
     const queryClient = useQueryClient();
+    const searchParams = useSearchParams();
+    const initialStatus = searchParams.get("status") || "All Status";
+    const initialShift = searchParams.get("shift") || "All Shifts";
+
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState(initialStatus);
+    const [shiftFilter, setShiftFilter] = useState(initialShift);
+    
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const role = typeof document !== 'undefined' ? document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1] : "admin";
     const isSupervisor = role === "supervisor";
 
     const handleEditClick = (student: Student) => {
-        setSelectedStudent(student);
+        setSelectedStudentId(student.id);
         setIsEditOpen(true);
     };
 
@@ -62,12 +70,20 @@ export default function StudentsPage() {
     };
 
     const filteredStudents = useMemo(() => {
-        if (!searchQuery.trim()) return students;
-        return students.filter((student: Student) =>
-            student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (student.reg_no && student.reg_no.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-    }, [students, searchQuery]);
+        return students.filter((student: Student) => {
+            const matchesSearch = !searchQuery.trim() || 
+                student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (student.reg_no && student.reg_no.toLowerCase().includes(searchQuery.toLowerCase()));
+            
+            const matchesStatus = statusFilter === "All Status" || 
+                student.status?.toLowerCase() === statusFilter.toLowerCase();
+            
+            const matchesShift = shiftFilter === "All Shifts" || 
+                student.shift?.toLowerCase() === shiftFilter.toLowerCase();
+
+            return matchesSearch && matchesStatus && matchesShift;
+        });
+    }, [students, searchQuery, statusFilter, shiftFilter]);
 
     if (error) {
         return <ErrorState message="Failed to load students. Please check your Supabase connection." onRetry={() => refetch()} />;
@@ -116,10 +132,11 @@ export default function StudentsPage() {
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
             />
-            <EditStudentDialog
-                student={selectedStudent}
+            <ManageStudentDialog
+                studentId={selectedStudentId}
                 open={isEditOpen}
                 onOpenChange={setIsEditOpen}
+                onSuccess={() => refetch()}
             />
 
 
@@ -162,13 +179,33 @@ export default function StudentsPage() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <select className="appearance-none pl-4 pr-10 py-2.5 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-semibold text-foreground cursor-pointer">
+                    <select 
+                        className="appearance-none pl-4 pr-10 py-2.5 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-semibold text-foreground cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
                         <option>All Status</option>
                         <option>Active</option>
-                        <option>On Leave</option>
-                        <option>Graduated</option>
+                        <option>Inactive</option>
+                        <option>Trial</option>
                     </select>
-                    <button className="px-4 py-2.5 text-sm font-bold text-primary hover:text-primary/70 transition-colors rounded-full hover:bg-primary/5">
+                    <select 
+                        className="appearance-none pl-4 pr-10 py-2.5 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-semibold text-foreground cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
+                        value={shiftFilter}
+                        onChange={(e) => setShiftFilter(e.target.value)}
+                    >
+                        <option>All Shifts</option>
+                        <option>Morning</option>
+                        <option>Night</option>
+                    </select>
+                    <button 
+                        onClick={() => {
+                            setSearchQuery("");
+                            setStatusFilter("All Status");
+                            setShiftFilter("All Shifts");
+                        }}
+                        className="px-4 py-2.5 text-sm font-bold text-primary hover:text-primary/70 transition-colors rounded-full hover:bg-primary/5"
+                    >
                         Clear Filters
                     </button>
                 </div>
@@ -362,6 +399,6 @@ export default function StudentsPage() {
                 )}
             </div>
         </div>
-        </div >
+        </div>
     );
 }

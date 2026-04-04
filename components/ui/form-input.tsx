@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 // Shared class string — single source of truth
 export const INPUT_CLASS =
-    "w-full px-4 py-3 bg-accent/30 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all";
+    "w-full h-12 px-5 bg-accent/10 border border-border rounded-3xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all hover:bg-accent/20";
 
 type BaseProps = {
     label?: string;

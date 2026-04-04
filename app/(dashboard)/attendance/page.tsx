@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CalendarIcon, Check, UserCheck, UserX, Clock, History, CalendarOff, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ interface StudentAttendance {
     full_name: string;
     reg_no: string;
     status: AttendanceStatus;
+    remarks?: string;
 }
 
 export default function AttendancePage() {
@@ -107,7 +109,15 @@ function AttendanceContent() {
     const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
         setAttendanceList((prev) =>
             prev.map((item) =>
-                item.student_id === studentId ? { ...item, status } : item
+                item.student_id === studentId ? { ...item, status, remarks: (status === "Late" || status === "Leave") ? item.remarks : "" } : item
+            )
+        );
+    };
+
+    const handleRemarksChange = (studentId: string, remarks: string) => {
+        setAttendanceList((prev) =>
+            prev.map((item) =>
+                item.student_id === studentId ? { ...item, remarks } : item
             )
         );
     };
@@ -121,6 +131,7 @@ function AttendanceContent() {
                 student_id: item.student_id,
                 date: format(selectedDate, "yyyy-MM-dd"),
                 status: item.status,
+                remarks: item.remarks || null,
             }));
 
             await submitAttendance(records);
@@ -267,44 +278,56 @@ function AttendanceContent() {
                                                 <p className="text-[11px] font-black tracking-widest uppercase text-muted-foreground mt-0.5">{student.reg_no}</p>
                                             </div>
                                         </div>
-                                        <div className="glass-panel p-1.5 rounded-2xl border border-white/20 dark:border-white/5 shadow-sm self-start lg:self-auto">
-                                            <ToggleGroup
-                                                type="single"
-                                                value={student.status}
-                                                onValueChange={(value) =>
-                                                    value && handleStatusChange(student.student_id, value as AttendanceStatus)
-                                                }
-                                                className="gap-1 justify-start lg:justify-end"
-                                            >
-                                                <ToggleGroupItem
-                                                    value="Present"
-                                                    className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-green-500/15 data-[state=on]:text-green-600 data-[state=on]:shadow-[0_0_15px_rgba(34,197,94,0.2)] data-[state=on]:border-green-500/30 text-muted-foreground hover:bg-accent"
+                                        <div className="flex flex-col gap-3 self-start lg:self-auto min-w-[300px]">
+                                            <div className="glass-panel p-1.5 rounded-2xl border border-white/20 dark:border-white/5 shadow-sm">
+                                                <ToggleGroup
+                                                    type="single"
+                                                    value={student.status}
+                                                    onValueChange={(value) =>
+                                                        value && handleStatusChange(student.student_id, value as AttendanceStatus)
+                                                    }
+                                                    className="gap-1 justify-start lg:justify-end"
                                                 >
-                                                    <UserCheck className="h-4 w-4 mr-1.5" />
-                                                    Present
-                                                </ToggleGroupItem>
-                                                <ToggleGroupItem
-                                                    value="Absent"
-                                                    className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-red-500/15 data-[state=on]:text-red-500 data-[state=on]:shadow-[0_0_15px_rgba(239,68,68,0.2)] data-[state=on]:border-red-500/30 text-muted-foreground hover:bg-accent"
-                                                >
-                                                    <UserX className="h-4 w-4 mr-1.5" />
-                                                    Absent
-                                                </ToggleGroupItem>
-                                                <ToggleGroupItem
-                                                    value="Late"
-                                                    className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-yellow-500/15 data-[state=on]:text-yellow-600 data-[state=on]:shadow-[0_0_15px_rgba(234,179,8,0.2)] data-[state=on]:border-yellow-500/30 text-muted-foreground hover:bg-accent"
-                                                >
-                                                    <Clock className="h-4 w-4 mr-1.5" />
-                                                    Late
-                                                </ToggleGroupItem>
-                                                <ToggleGroupItem
-                                                    value="Leave"
-                                                    className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-indigo-500/15 data-[state=on]:text-indigo-500 data-[state=on]:shadow-[0_0_15px_rgba(99,102,241,0.2)] data-[state=on]:border-indigo-500/30 text-muted-foreground hover:bg-accent"
-                                                >
-                                                    <CalendarOff className="h-4 w-4 mr-1.5" />
-                                                    Leave
-                                                </ToggleGroupItem>
-                                            </ToggleGroup>
+                                                    <ToggleGroupItem
+                                                        value="Present"
+                                                        className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-green-500/15 data-[state=on]:text-green-600 data-[state=on]:shadow-[0_0_15px_rgba(34,197,94,0.2)] data-[state=on]:border-green-500/30 text-muted-foreground hover:bg-accent"
+                                                    >
+                                                        <UserCheck className="h-4 w-4 mr-1.5" />
+                                                        Present
+                                                    </ToggleGroupItem>
+                                                    <ToggleGroupItem
+                                                        value="Absent"
+                                                        className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-red-500/15 data-[state=on]:text-red-500 data-[state=on]:shadow-[0_0_15px_rgba(239,68,68,0.2)] data-[state=on]:border-red-500/30 text-muted-foreground hover:bg-accent"
+                                                    >
+                                                        <UserX className="h-4 w-4 mr-1.5" />
+                                                        Absent
+                                                    </ToggleGroupItem>
+                                                    <ToggleGroupItem
+                                                        value="Late"
+                                                        className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-yellow-500/15 data-[state=on]:text-yellow-600 data-[state=on]:shadow-[0_0_15px_rgba(234,179,8,0.2)] data-[state=on]:border-yellow-500/30 text-muted-foreground hover:bg-accent"
+                                                    >
+                                                        <Clock className="h-4 w-4 mr-1.5" />
+                                                        Late
+                                                    </ToggleGroupItem>
+                                                    <ToggleGroupItem
+                                                        value="Leave"
+                                                        className="rounded-xl px-4 py-2 text-xs font-black transition-all border border-transparent data-[state=on]:bg-indigo-500/15 data-[state=on]:text-indigo-500 data-[state=on]:shadow-[0_0_15px_rgba(99,102,241,0.2)] data-[state=on]:border-indigo-500/30 text-muted-foreground hover:bg-accent"
+                                                    >
+                                                        <CalendarOff className="h-4 w-4 mr-1.5" />
+                                                        Leave
+                                                    </ToggleGroupItem>
+                                                </ToggleGroup>
+                                            </div>
+                                            {(student.status === "Late" || student.status === "Leave") && (
+                                                <div className="px-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                    <Input
+                                                        placeholder={`Reason for ${student.status.toLowerCase()}...`}
+                                                        value={student.remarks || ""}
+                                                        onChange={(e) => handleRemarksChange(student.student_id, e.target.value)}
+                                                        className="h-9 text-xs rounded-xl bg-accent/30 border-border focus:ring-primary font-medium"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

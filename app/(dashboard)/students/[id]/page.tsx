@@ -9,6 +9,8 @@ import { getAppAccounts } from "@/lib/api/platforms";
 import { getSupervisors } from "@/lib/api/supervisors"; // Keep this import as it's used
 import { Student, ClassSchedule, Teacher, AppAccount } from "@/types/student";
 import { Supervisor } from "@/types/supervisor";
+import { convertPkToUk } from "@/lib/utils/time";
+import { TimeSelect } from "@/components/ui/time-select";
 import {
     Dialog,
     DialogContent,
@@ -27,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { FormInput } from "@/components/ui/form-input";
 import { ErrorState } from "@/components/ui/error-state";
 import { STALE_SHORT } from "@/lib/query-config";
+import { ManageStudentDialog } from "@/components/dialogs/ManageStudentDialog";
 
 export default function StudentProfilePage({
     params,
@@ -35,27 +38,7 @@ export default function StudentProfilePage({
 }) {
     const { id } = use(params);
     const queryClient = useQueryClient();
-    const [isEditOpen, setIsEditOpen] = useState(false);
-    const [isClassEditOpen, setIsClassEditOpen] = useState(false);
-    const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-
-    const [editForm, setEditForm] = useState<Partial<Student>>({
-        full_name: "",
-        reg_no: "",
-        guardian_name: "",
-        status: "",
-        shift: "",
-        supervisor_id: "",
-    });
-
-    const [classForm, setClassForm] = useState<Partial<ClassSchedule>>({
-        teacher_id: "",
-        app_account_id: "",
-        pak_start_time: "",
-        pak_end_time: "",
-        uk_start_time: "",
-        uk_end_time: "",
-    });
+    const [isManageOpen, setIsManageOpen] = useState(false);
 
     // Queries
     const { data: student, isLoading: studentLoading, error: studentError, refetch: refetchStudent } = useQuery({
@@ -92,63 +75,9 @@ export default function StudentProfilePage({
         queryFn: getSupervisors,
     });
 
-    // Mutations
-    const updateMutation = useMutation({
-        mutationFn: (updates: Partial<Pick<Student, "full_name" | "status" | "shift" | "reg_no" | "supervisor_id" | "guardian_name">>) =>
-            updateStudent(id, updates),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["student", id] });
-            queryClient.invalidateQueries({ queryKey: ["students"] });
-            setIsEditOpen(false);
-        },
-    });
-
-    const updateClassMutation = useMutation({
-        mutationFn: (updates: Partial<ClassSchedule>) =>
-            selectedClassId ? updateClass(selectedClassId, updates) : Promise.reject("No class selected"),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["studentClasses", id] });
-            setIsClassEditOpen(false);
-            setSelectedClassId(null);
-        },
-    });
-
     // Handlers
-    const handleEditOpen = () => {
-        if (student) {
-            setEditForm({
-                full_name: student.full_name,
-                reg_no: student.reg_no,
-                guardian_name: student.guardian_name || "",
-                status: student.status,
-                shift: student.shift || "",
-                supervisor_id: student.supervisor_id || "",
-            });
-        }
-        setIsEditOpen(true);
-    };
-
-    const handleEditSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        updateMutation.mutate(editForm);
-    };
-
-    const handleClassEditOpen = (cls: ClassSchedule) => {
-        setSelectedClassId(cls.id);
-        setClassForm({
-            teacher_id: cls.teacher_id,
-            app_account_id: cls.app_account_id || "",
-            pak_start_time: cls.pak_start_time,
-            pak_end_time: cls.pak_end_time,
-            uk_start_time: cls.uk_start_time,
-            uk_end_time: cls.uk_end_time,
-        });
-        setIsClassEditOpen(true);
-    };
-
-    const handleClassSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        updateClassMutation.mutate(classForm);
+    const handleManageSuccess = () => {
+        refetchStudent();
     };
 
 
@@ -211,11 +140,11 @@ export default function StudentProfilePage({
                             {student.status || "Unknown"}
                         </span>
                         <button
-                            onClick={handleEditOpen}
+                            onClick={() => setIsManageOpen(true)}
                             className="flex items-center gap-2 px-5 py-2.5 border border-border bg-card hover:bg-accent rounded-full text-sm font-bold text-foreground transition-all"
                         >
                             <Edit2 className="h-3.5 w-3.5" />
-                            Edit Profile
+                            Manage Student
                         </button>
                     </div>
                 </div>
@@ -298,8 +227,7 @@ export default function StudentProfilePage({
                                         <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">Platform</th>
                                         <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">PK Time</th>
                                         <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">UK Time</th>
-                                        <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">Days</th>
-                                        <th className="px-5 py-3 w-10"></th>
+                                        <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground border-r-0">Days</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
@@ -337,14 +265,6 @@ export default function StudentProfilePage({
                                                         ))}
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-4">
-                                                <button
-                                                    onClick={() => handleClassEditOpen(cls)}
-                                                    className="size-8 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </button>
-                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -354,200 +274,13 @@ export default function StudentProfilePage({
                 )}
             </div>
 
-            {/* Edit Student Dialog */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[520px] rounded-3xl border-border bg-card max-h-[90vh] overflow-y-auto">
-                    <DialogHeader className="pb-2">
-                        <div className="flex items-center gap-3">
-                            <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-sm">
-                                {initials}
-                            </div>
-                            <div>
-                                <DialogTitle className="text-xl font-black text-foreground">Edit Student</DialogTitle>
-                                <p className="text-xs text-muted-foreground font-medium mt-0.5">Update student profile details.</p>
-                            </div>
-                        </div>
-                    </DialogHeader>
-                    <form onSubmit={handleEditSubmit} className="space-y-5 pt-2">
-                        <div className="space-y-3">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student Info</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormInput
-                                    label="Full Name *"
-                                    name="full_name"
-                                    value={editForm.full_name}
-                                    onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                                    required
-                                    placeholder="e.g. Ahmed Khan"
-                                />
-                                <FormInput
-                                    label="Registration No *"
-                                    name="reg_no"
-                                    value={editForm.reg_no}
-                                    onChange={(e) => setEditForm({ ...editForm, reg_no: e.target.value })}
-                                    required
-                                    placeholder="e.g. AHN-0001"
-                                />
-                            </div>
-                            <FormInput
-                                label="Guardian Name"
-                                name="guardian_name"
-                                value={editForm.guardian_name}
-                                onChange={(e) => setEditForm({ ...editForm, guardian_name: e.target.value })}
-                                placeholder="e.g. Mohammad Khan"
-                            />
-                        </div>
-                        <div className="space-y-3 border-t border-border pt-4">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Enrollment Info</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-foreground">Status</label>
-                                    <Select
-                                        value={editForm.status}
-                                        onValueChange={(val) => setEditForm({ ...editForm, status: val })}
-                                    >
-                                        <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
-                                            <SelectValue placeholder="Select Status" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-2xl">
-                                            <SelectItem value="Active">Active</SelectItem>
-                                            <SelectItem value="Inactive">Inactive</SelectItem>
-                                            <SelectItem value="Trial">Trial</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <FormInput
-                                    label="Shift / Timing"
-                                    name="shift"
-                                    value={editForm.shift}
-                                    onChange={(e) => setEditForm({ ...editForm, shift: e.target.value })}
-                                    placeholder="e.g. Morning"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-foreground">Supervisor</label>
-                                <Select
-                                    value={editForm.supervisor_id || "none"}
-                                    onValueChange={(val) => setEditForm({ ...editForm, supervisor_id: val === "none" ? "" : val })}
-                                >
-                                    <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
-                                        <SelectValue placeholder="Select Supervisor" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl">
-                                        <SelectItem value="none">None</SelectItem>
-                                        {supervisors.map((s: Supervisor) => (
-                                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="flex justify-end pt-2">
-                            <button
-                                type="submit"
-                                disabled={updateMutation.isPending}
-                                className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20"
-                            >
-                                {updateMutation.isPending ? (
-                                    <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
-                                ) : (
-                                    <><Save className="h-4 w-4" /> Save Changes</>
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Class Dialog */}
-            <Dialog open={isClassEditOpen} onOpenChange={setIsClassEditOpen}>
-                <DialogContent className="sm:max-w-[480px] rounded-3xl border-border bg-card">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-black">Edit Class Schedule</DialogTitle>
-                        <p className="text-xs text-muted-foreground font-medium">Update teacher, platform, and timing.</p>
-                    </DialogHeader>
-                    <form onSubmit={handleClassSubmit} className="space-y-4 pt-2">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-foreground">Teacher</label>
-                            <Select
-                                value={classForm.teacher_id}
-                                onValueChange={(val) => setClassForm({ ...classForm, teacher_id: val })}
-                            >
-                                <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
-                                    <SelectValue placeholder="Select teacher" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl">
-                                    {teachers.map((teacher: Teacher) => (
-                                        <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-foreground">Platform Account</label>
-                            <Select
-                                value={classForm.app_account_id || ""}
-                                onValueChange={(val) => setClassForm({ ...classForm, app_account_id: val === "none" ? null : val })}
-                            >
-                                <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
-                                    <SelectValue placeholder="Select platform" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl">
-                                    <SelectItem value="none">None</SelectItem>
-                                    {appAccounts.map((account: AppAccount) => (
-                                        <SelectItem key={account.id} value={account.id}>
-                                            {account.platform} - {account.account_identifier}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormInput
-                                label="PK Start"
-                                name="pak_start_time"
-                                value={classForm.pak_start_time || ""}
-                                onChange={(e) => setClassForm({ ...classForm, pak_start_time: e.target.value })}
-                                placeholder="e.g. 14:00"
-                            />
-                            <FormInput
-                                label="PK End"
-                                name="pak_end_time"
-                                value={classForm.pak_end_time || ""}
-                                onChange={(e) => setClassForm({ ...classForm, pak_end_time: e.target.value })}
-                                placeholder="e.g. 15:00"
-                            />
-                            <FormInput
-                                label="UK Start"
-                                name="uk_start_time"
-                                value={classForm.uk_start_time || ""}
-                                onChange={(e) => setClassForm({ ...classForm, uk_start_time: e.target.value })}
-                                placeholder="e.g. 09:00"
-                            />
-                            <FormInput
-                                label="UK End"
-                                name="uk_end_time"
-                                value={classForm.uk_end_time || ""}
-                                onChange={(e) => setClassForm({ ...classForm, uk_end_time: e.target.value })}
-                                placeholder="e.g. 10:00"
-                            />
-                        </div>
-                        <div className="flex justify-end pt-2">
-                            <button
-                                type="submit"
-                                disabled={updateClassMutation.isPending}
-                                className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-black rounded-full text-sm hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20"
-                            >
-                                {updateClassMutation.isPending ? (
-                                    <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
-                                ) : (
-                                    <><Save className="h-4 w-4" /> Save Changes</>
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+            {/* Unified Management Dialog */}
+            <ManageStudentDialog
+                studentId={id}
+                open={isManageOpen}
+                onOpenChange={setIsManageOpen}
+                onSuccess={handleManageSuccess}
+            />
         </div>
     );
 }

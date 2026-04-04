@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FormInput } from "@/components/ui/form-input";
 import { cn } from "@/lib/utils";
 import { ClassSchedule } from "@/types/student";
+import { toTimeInput, fromTimeInput } from "@/lib/utils/time";
+import { TimeSelect } from "@/components/ui/time-select";
 
 interface EditClassDialogProps {
     open: boolean;
@@ -100,52 +102,49 @@ export function EditClassDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[520px] rounded-3xl border-border bg-card">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-black">Edit Class Schedule</DialogTitle>
-                    <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                        Adjust timings for {classData?.student?.full_name || "student"}.
-                    </p>
+                <DialogHeader className="pb-2">
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-sm">
+                            {classData?.student?.full_name?.slice(0, 2).toUpperCase() || "??"}
+                        </div>
+                        <div>
+                            <DialogTitle className="text-xl font-black text-foreground">Edit Class Schedule</DialogTitle>
+                            <p className="text-xs text-muted-foreground font-medium mt-0.5">Adjust timings for {classData?.student?.full_name || "student"}.</p>
+                        </div>
+                    </div>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-5 pt-2">
                     <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">🇵🇰 Pakistan Time</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <FormInput
-                                label="PK Start"
-                                value={form.pak_start_time}
-                                onChange={e => {
-                                    const pk = e.target.value;
-                                    setForm(f => ({ ...f, pak_start_time: pk, uk_start_time: convertPkToUk(pk) || f.uk_start_time }));
-                                }}
-                                required
-                            />
-                            <FormInput
-                                label="PK End"
-                                value={form.pak_end_time}
-                                onChange={e => {
-                                    const pk = e.target.value;
-                                    setForm(f => ({ ...f, pak_end_time: pk, uk_end_time: convertPkToUk(pk) || f.uk_end_time }));
-                                }}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-3 border-t border-border pt-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                            🇬🇧 UK Time <span className="normal-case font-normal text-primary/60">⚡ auto-filled</span>
-                        </p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormInput
-                                label="UK Start"
-                                value={form.uk_start_time}
-                                onChange={e => setForm({ ...form, uk_start_time: e.target.value })}
-                            />
-                            <FormInput
-                                label="UK End"
-                                value={form.uk_end_time}
-                                onChange={e => setForm({ ...form, uk_end_time: e.target.value })}
-                            />
+                            <div className="space-y-1.5">
+                                <TimeSelect
+                                    label="PK Start"
+                                    value={form.pak_start_time}
+                                    onChange={(val) => {
+                                        setForm(f => ({ ...f, pak_start_time: val, uk_start_time: convertPkToUk(val) || f.uk_start_time }));
+                                    }}
+                                />
+                                {form.pak_start_time && (
+                                    <p className="text-[10px] text-muted-foreground/60 font-medium px-1">
+                                        🇬🇧 UK: {convertPkToUk(form.pak_start_time)}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="space-y-1.5">
+                                <TimeSelect
+                                    label="PK End"
+                                    value={form.pak_end_time}
+                                    onChange={(val) => {
+                                        setForm(f => ({ ...f, pak_end_time: val, uk_end_time: convertPkToUk(val) || f.uk_end_time }));
+                                    }}
+                                />
+                                {form.pak_end_time && (
+                                    <p className="text-[10px] text-muted-foreground/60 font-medium px-1">
+                                        🇬🇧 UK: {convertPkToUk(form.pak_end_time)}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
 

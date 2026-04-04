@@ -136,6 +136,7 @@ export default function TeacherProfilePage() {
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [selectedClass, setSelectedClass] = useState<any>(null);
     const [timezone, setTimezone] = useState<"pk" | "uk">("pk");
+    const [timetableShiftFilter, setTimetableShiftFilter] = useState<"All" | "Morning" | "Night">("All");
 
     // Queries
     const { data: teacher, isLoading: teacherLoading, error: teacherError, refetch: refetchTeacher } = useQuery({
@@ -324,12 +325,12 @@ export default function TeacherProfilePage() {
                 {/* ── Timetable Section ── */}
                 <Tabs defaultValue="schedule" className="space-y-4">
                     <div className="flex items-center justify-between flex-wrap gap-3">
-                        <TabsList className="bg-slate-100 dark:bg-[#1a331d] p-1 rounded-xl">
-                            <TabsTrigger value="schedule" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-foreground">
+                        <TabsList className="bg-slate-100/50 dark:bg-emerald-900/20 p-1.5 rounded-[20px] border border-border/50">
+                            <TabsTrigger value="schedule" className="rounded-2xl px-5 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-md data-[state=active]:text-primary font-bold">
                                 <Calendar className="h-4 w-4 mr-2" />
-                                Visual Schedule
+                                Time Table
                             </TabsTrigger>
-                            <TabsTrigger value="list" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-foreground">
+                            <TabsTrigger value="list" className="rounded-2xl px-5 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-md data-[state=active]:text-primary font-bold">
                                 <Clock className="h-4 w-4 mr-2" />
                                 Class List
                             </TabsTrigger>
@@ -360,6 +361,24 @@ export default function TeacherProfilePage() {
                                 >
                                     🇬🇧 UKT
                                 </button>
+                            </div>
+                            
+                            {/* Shift Filter for Timetable */}
+                            <div className="flex rounded-full overflow-hidden border border-border bg-card/50 p-1 backdrop-blur-md shadow-sm">
+                                {(["All", "Morning", "Night"] as const).map((s) => (
+                                    <button
+                                        key={s}
+                                        className={cn(
+                                            "px-5 py-1.5 text-xs font-black uppercase tracking-wider rounded-full transition-all duration-300",
+                                            timetableShiftFilter === s
+                                                ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.05]"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                                        )}
+                                        onClick={() => setTimetableShiftFilter(s)}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
                             </div>
 
 
@@ -459,7 +478,12 @@ export default function TeacherProfilePage() {
                                                             </div>
 
                                                             {/* Class blocks */}
-                                                            {dayClasses.map((cls) => {
+                                                            {dayClasses
+                                                                .filter(cls => {
+                                                                    if (timetableShiftFilter === "All") return true;
+                                                                    return cls.student?.shift === timetableShiftFilter;
+                                                                })
+                                                                .map((cls) => {
                                                                 // Fall back to PK times if UK times are missing
                                                                 const hasPkTime = !!cls.pak_start_time && !!cls.pak_end_time;
                                                                 const hasUkTime = !!cls.uk_start_time && !!cls.uk_end_time;
@@ -605,6 +629,7 @@ export default function TeacherProfilePage() {
                     onOpenChange={setIsAddOpen}
                     teacherId={teacherId}
                     teacherName={teacher.name}
+                    supervisorId={teacher.supervisor_id}
                     students={students}
                     convertPkToUk={convertPkToUk}
                 />

@@ -11,6 +11,7 @@ const navItems = [
     { label: "Dashboard", href: "/", icon: "dashboard" },
     { label: "Supervisors", href: "/supervisors", icon: "supervisor_account" },
     { label: "Teachers", href: "/teachers", icon: "school" },
+    { label: "Time Table", href: "/timetable", icon: "calendar_month" },
     { label: "Students", href: "/students", icon: "group" },
     { label: "Platforms", href: "/platforms", icon: "layers" },
     { label: "Attendance", href: "/attendance", icon: "event_available" },
@@ -43,7 +44,7 @@ export function Sidebar({ role = "admin", userName = "Admin", supervisorId }: { 
             
             <nav className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pb-4 pt-2 pr-2">
                 {navItems.map((item) => {
-                    const allowedLabels = ["Supervisors", "Students", "Attendance"];
+                    const allowedLabels = ["Supervisors", "Students", "Attendance", "Time Table"];
                     if (role === "supervisor" && !allowedLabels.includes(item.label)) {
                         return null;
                     }

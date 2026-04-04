@@ -29,7 +29,7 @@ function SelectTrigger({
       data-size={size}
       className={cn(
         // Theme-aware field
-        "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm whitespace-nowrap",
+        "flex w-full items-center justify-between gap-2 rounded-2xl px-3 py-2 text-sm whitespace-nowrap",
         "bg-card border border-border text-foreground",
         "data-[size=default]:h-9 data-[size=sm]:h-8",
         "data-[placeholder]:text-muted-foreground",
@@ -68,7 +68,7 @@ function SelectContent({
           "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           "data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
           "relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem]",
-          "origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-xl",
+          "origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-2xl",
           position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",
           className

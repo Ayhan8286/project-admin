@@ -78,7 +78,7 @@ export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDi
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[520px] rounded-3xl border-border bg-card max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[550px] rounded-[32px] border-border bg-card shadow-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="pb-2">
                     <DialogTitle className="text-xl font-black text-foreground">Add New Teacher</DialogTitle>
                     <p className="text-xs text-muted-foreground font-medium">Create a new teacher profile.</p>
@@ -142,7 +142,6 @@ export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDi
                                     <SelectContent className="rounded-2xl">
                                         <SelectItem value="none">None</SelectItem>
                                         <SelectItem value="Morning">Morning</SelectItem>
-                                        <SelectItem value="Evening">Evening</SelectItem>
                                         <SelectItem value="Night">Night</SelectItem>
                                     </SelectContent>
                                 </Select>

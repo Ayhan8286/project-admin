@@ -23,6 +23,10 @@ import { Loader2, Save } from "lucide-react";
 import { FormInput } from "@/components/ui/form-input";
 import { Teacher, AppAccount } from "@/types/student";
 import { Supervisor } from "@/types/supervisor";
+import { toTimeInput, fromTimeInput, convertPkToUk } from "@/lib/utils/time";
+import { TimeSelect } from "@/components/ui/time-select";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 
 
@@ -35,6 +39,22 @@ interface AddStudentDialogProps {
 
 export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacherId }: AddStudentDialogProps) {
     const queryClient = useQueryClient();
+
+    // Queries
+    const { data: teachers = [] } = useQuery({
+        queryKey: ["activeTeachers"],
+        queryFn: getTeachers,
+    });
+
+    const { data: appAccounts = [] } = useQuery({
+        queryKey: ["appAccounts"],
+        queryFn: getAppAccounts,
+    });
+
+    const { data: supervisors = [] } = useQuery({
+        queryKey: ["supervisors"],
+        queryFn: getSupervisors,
+    });
 
     // Form States
     const [formData, setFormData] = useState({
@@ -60,24 +80,16 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
     useEffect(() => {
         if (defaultTeacherId) {
             setClassFormData(prev => ({ ...prev, teacher_id: defaultTeacherId }));
+            
+            // Also try to find the supervisor if teachers are loaded
+            if (teachers.length > 0) {
+                const selectedTeacher = teachers.find(t => t.id === defaultTeacherId);
+                if (selectedTeacher?.supervisor_id) {
+                    setFormData(prev => ({ ...prev, supervisor_id: selectedTeacher.supervisor_id || "" }));
+                }
+            }
         }
-    }, [defaultTeacherId]);
-
-    // Queries
-    const { data: teachers = [] } = useQuery({
-        queryKey: ["activeTeachers"],
-        queryFn: getTeachers,
-    });
-
-    const { data: appAccounts = [] } = useQuery({
-        queryKey: ["appAccounts"],
-        queryFn: getAppAccounts,
-    });
-
-    const { data: supervisors = [] } = useQuery({
-        queryKey: ["supervisors"],
-        queryFn: getSupervisors,
-    });
+    }, [defaultTeacherId, teachers]);
 
     // Mutation
     const addMutation = useMutation({
@@ -101,7 +113,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                     pak_end_time: classFormData.pak_end_time,
                     uk_start_time: classFormData.uk_start_time,
                     uk_end_time: classFormData.uk_end_time,
-                    schedule_days: {}, // Default empty for now
+                    schedule_days: classFormData.schedule_days,
                     course_id: null,
                 });
             }
@@ -146,14 +158,23 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleClassInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setClassFormData((prev) => ({ ...prev, [name]: value }));
+    const toggleDay = (day: string) => {
+        setClassFormData(prev => {
+            const days = { ...prev.schedule_days };
+            if (days[day]) {
+                delete days[day];
+            } else {
+                days[day] = "Class";
+            }
+            return { ...prev, schedule_days: days };
+        });
     };
+
+    const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-3xl border-border bg-card">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-[32px] border-border bg-card shadow-2xl">
                 <DialogHeader className="pb-2">
                     <DialogTitle className="text-xl font-black">Add New Student</DialogTitle>
                     <p className="text-xs text-muted-foreground font-medium">Enter student details and assign an initial class.</p>
@@ -198,7 +219,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-foreground">Status *</label>
                                 <Select value={formData.status} onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}>
-                                    <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
+                                    <SelectTrigger className="h-12 rounded-3xl border-border bg-accent/30 text-sm font-medium px-5 transition-all hover:bg-accent/50">
                                         <SelectValue placeholder="Select Status" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl">
@@ -208,13 +229,25 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <FormInput
-                                label="Shift / Timing"
-                                name="shift"
-                                value={formData.shift}
-                                onChange={handleInputChange}
-                                placeholder="e.g. Morning"
-                            />
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-foreground">Shift / Timing</label>
+                                <Select value={formData.shift} onValueChange={(val) => {
+                                    setFormData(prev => ({ ...prev, shift: val }));
+                                    if (val === "Morning") {
+                                        setClassFormData(prev => ({ ...prev, pak_start_time: "10:00 AM", pak_end_time: "07:00 PM" }));
+                                    } else if (val === "Night") {
+                                        setClassFormData(prev => ({ ...prev, pak_start_time: "07:00 PM", pak_end_time: "05:00 AM" }));
+                                    }
+                                }}>
+                                    <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
+                                        <SelectValue placeholder="Select Shift" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl">
+                                        <SelectItem value="Morning">Morning</SelectItem>
+                                        <SelectItem value="Night">Night</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-foreground">Supervisor</label>
@@ -238,7 +271,21 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-foreground">Teacher</label>
-                                <Select value={classFormData.teacher_id || "none"} onValueChange={(val) => setClassFormData(prev => ({ ...prev, teacher_id: val === "none" ? "" : val }))}>
+                                <Select 
+                                    value={classFormData.teacher_id || "none"} 
+                                    onValueChange={(val) => {
+                                        const teacherId = val === "none" ? "" : val;
+                                        setClassFormData(prev => ({ ...prev, teacher_id: teacherId }));
+                                        
+                                        // Auto-detect supervisor from teacher
+                                        if (teacherId) {
+                                            const selectedTeacher = teachers.find(t => t.id === teacherId);
+                                            if (selectedTeacher?.supervisor_id) {
+                                                setFormData(prev => ({ ...prev, supervisor_id: selectedTeacher.supervisor_id || "" }));
+                                            }
+                                        }
+                                    }}
+                                >
                                     <SelectTrigger className="h-11 rounded-2xl border-border bg-accent/30 text-sm font-medium">
                                         <SelectValue placeholder="Select Teacher" />
                                     </SelectTrigger>
@@ -266,36 +313,69 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <FormInput
-                                label="🇵🇰 PK Start Time"
-                                name="pak_start_time"
-                                value={classFormData.pak_start_time}
-                                onChange={handleClassInputChange}
-                                placeholder="e.g. 2:00 PM"
-                            />
-                            <FormInput
-                                label="🇵🇰 PK End Time"
-                                name="pak_end_time"
-                                value={classFormData.pak_end_time}
-                                onChange={handleClassInputChange}
-                                placeholder="e.g. 3:00 PM"
-                            />
+                            <div className="space-y-1.5">
+                                <TimeSelect
+                                    label="🇵🇰 PK Start Time"
+                                    value={classFormData.pak_start_time || "10:00 AM"}
+                                    onChange={(val) => {
+                                        setClassFormData(prev => ({ 
+                                            ...prev, 
+                                            pak_start_time: val,
+                                            uk_start_time: convertPkToUk(val)
+                                        }));
+                                    }}
+                                />
+                                {classFormData.pak_start_time && (
+                                    <p className="text-[10px] text-muted-foreground/60 font-medium px-1">
+                                        🇬🇧 UK: {convertPkToUk(classFormData.pak_start_time)}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="space-y-1.5">
+                                <TimeSelect
+                                    label="🇵🇰 PK End Time"
+                                    value={classFormData.pak_end_time || "07:00 PM"}
+                                    onChange={(val) => {
+                                        setClassFormData(prev => ({ 
+                                            ...prev, 
+                                            pak_end_time: val,
+                                            uk_end_time: convertPkToUk(val)
+                                        }));
+                                    }}
+                                />
+                                {classFormData.pak_end_time && (
+                                    <p className="text-[10px] text-muted-foreground/60 font-medium px-1">
+                                        🇬🇧 UK: {convertPkToUk(classFormData.pak_end_time)}
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormInput
-                                label="🇬🇧 UK Start Time"
-                                name="uk_start_time"
-                                value={classFormData.uk_start_time}
-                                onChange={handleClassInputChange}
-                                placeholder="e.g. 9:00 AM"
-                            />
-                            <FormInput
-                                label="🇬🇧 UK End Time"
-                                name="uk_end_time"
-                                value={classFormData.uk_end_time}
-                                onChange={handleClassInputChange}
-                                placeholder="e.g. 10:00 AM"
-                            />
+
+                        {/* Schedule Days */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-foreground uppercase tracking-widest opacity-60">Schedule Days</label>
+                                <Badge variant="outline" className="text-[9px] font-mono">
+                                    {Object.keys(classFormData.schedule_days).length} Days Selected
+                                </Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {DAYS.map(day => (
+                                    <button
+                                        key={day}
+                                        type="button"
+                                        onClick={() => toggleDay(day)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95",
+                                            classFormData.schedule_days[day]
+                                                ? "bg-primary/20 border-primary/30 text-primary shadow-sm"
+                                                : "bg-card border-border text-muted-foreground hover:border-primary/20"
+                                        )}
+                                    >
+                                        {day.slice(0, 3)}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 

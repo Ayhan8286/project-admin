@@ -31,15 +31,20 @@ export async function submitAttendance(records: AttendanceRecord[]): Promise<voi
     }
 }
 
-export async function getAttendanceByDate(date: string): Promise<AttendanceWithStudent[]> {
-    const { data, error } = await supabase
+export async function getAttendanceByDate(date: string, supervisorId?: string): Promise<AttendanceWithStudent[]> {
+    let query = supabase
         .from("attendance")
         .select(`
             *,
-            student:students(id, full_name, reg_no)
+            student:students!inner(id, full_name, reg_no, supervisor_id)
         `)
-        .eq("date", date)
-        .order("created_at", { ascending: false });
+        .eq("date", date);
+
+    if (supervisorId) {
+        query = query.eq("students.supervisor_id", supervisorId);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
         console.error("Error fetching attendance:", error);
@@ -51,6 +56,45 @@ export async function getAttendanceByDate(date: string): Promise<AttendanceWithS
         ...record,
         student: Array.isArray(record.student) ? record.student[0] : record.student,
     }));
+}
+
+export async function getMissingAttendanceStudents(date: string, supervisorId?: string): Promise<any[]> {
+    // 1. Get all active students
+    let studentQuery = supabase
+        .from("students")
+        .select(`
+            id, full_name, reg_no, status, shift, supervisor_id,
+            supervisor:supervisors(name),
+            classes(
+                teacher:teachers(name)
+            )
+        `)
+        .ilike("status", "active");
+
+    if (supervisorId) {
+        studentQuery = studentQuery.eq("supervisor_id", supervisorId);
+    }
+
+    const { data: students, error: studentError } = await studentQuery;
+    if (studentError) throw studentError;
+
+    // 2. Get students who HAVE attendance for this date
+    const { data: attendanceRecords, error: attendanceError } = await supabase
+        .from("attendance")
+        .select("student_id")
+        .eq("date", date);
+    if (attendanceError) throw attendanceError;
+
+    const recordedStudentIds = new Set((attendanceRecords || []).map(r => r.student_id));
+
+    // 3. Filter missing students
+    return (students || [])
+        .filter(s => !recordedStudentIds.has(s.id))
+        .map(s => ({
+            ...s,
+            supervisor: Array.isArray(s.supervisor) ? s.supervisor[0] : s.supervisor,
+            teacher: s.classes?.[0]?.teacher || { name: "Not Assigned" }
+        }));
 }
 
 export async function getAttendanceSummary(date: string): Promise<{

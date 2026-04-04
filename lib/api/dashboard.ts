@@ -19,6 +19,7 @@ export interface DashboardStats {
         late: number;
         leave: number;
     };
+    missingAttendanceCount: number;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -147,6 +148,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         }
     }
 
+    // Calculate missing attendance count (Active Students - total records today)
+    const missingAttendanceCount = Math.max(0, activeStudents - (attendanceData?.length || 0));
+
     return {
         totalStudents,
         activeTeachers: activeTeachersResult.count || 0,
@@ -160,7 +164,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         accountsByPlatform,
         totalAccounts,
         todayAttendancePercentage,
-        attendanceStats
+        attendanceStats,
+        missingAttendanceCount
     };
 }
 

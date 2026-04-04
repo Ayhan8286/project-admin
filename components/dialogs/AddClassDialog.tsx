@@ -3,17 +3,21 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addClass } from "@/lib/api/classes";
+import { updateStudent } from "@/lib/api/students";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormInput } from "@/components/ui/form-input";
 import { cn } from "@/lib/utils";
-import { ClassSchedule, Student } from "@/types/student";
+import { ClassSchedule, Student, Teacher } from "@/types/student";
+import { toTimeInput, fromTimeInput } from "@/lib/utils/time";
+import { TimeSelect } from "@/components/ui/time-select";
 
 interface AddClassDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     teacherId: string;
     teacherName: string;
+    supervisorId?: string | null;
     students: Student[];
     onSuccess?: () => void;
     convertPkToUk: (time: string) => string;
@@ -30,6 +34,7 @@ export function AddClassDialog({
     onOpenChange,
     teacherId,
     teacherName,
+    supervisorId,
     students,
     onSuccess,
     convertPkToUk
@@ -45,10 +50,21 @@ export function AddClassDialog({
     });
 
     const mutation = useMutation({
-        mutationFn: (newClass: Omit<ClassSchedule, "id" | "teacher" | "app_account" | "course">) => addClass(newClass),
+        mutationFn: async (newClass: Omit<ClassSchedule, "id" | "teacher" | "app_account" | "course">) => {
+            // 1. Add the class
+            const result = await addClass(newClass);
+            
+            // 2. Sync student supervisor if teacher has one
+            if (supervisorId) {
+                await updateStudent(newClass.student_id, { supervisor_id: supervisorId });
+            }
+            
+            return result;
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["teacherClasses", teacherId] });
             queryClient.invalidateQueries({ queryKey: ["allClasses"] });
+            queryClient.invalidateQueries({ queryKey: ["student", form.student_id] });
             onOpenChange(false);
             setForm({ student_id: "", pak_start_time: "", pak_end_time: "", uk_start_time: "", uk_end_time: "", selectedDays: new Set() });
             onSuccess?.();
@@ -106,46 +122,34 @@ export function AddClassDialog({
                     <div className="space-y-3 border-t border-border pt-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">🇵🇰 Pakistan Time</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <FormInput
-                                label="PK Start"
-                                value={form.pak_start_time}
-                                onChange={e => {
-                                    const pk = e.target.value;
-                                    setForm(f => ({ ...f, pak_start_time: pk, uk_start_time: convertPkToUk(pk) || f.uk_start_time }));
-                                }}
-                                placeholder="e.g. 2:00 PM"
-                                required
-                            />
-                            <FormInput
-                                label="PK End"
-                                value={form.pak_end_time}
-                                onChange={e => {
-                                    const pk = e.target.value;
-                                    setForm(f => ({ ...f, pak_end_time: pk, uk_end_time: convertPkToUk(pk) || f.uk_end_time }));
-                                }}
-                                placeholder="e.g. 3:00 PM"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-3 border-t border-border pt-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                            🇬🇧 UK Time <span className="normal-case font-normal text-primary/60">⚡ auto-filled</span>
-                        </p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormInput
-                                label="UK Start"
-                                value={form.uk_start_time}
-                                onChange={e => setForm({ ...form, uk_start_time: e.target.value })}
-                                placeholder="e.g. 9:00 AM"
-                            />
-                            <FormInput
-                                label="UK End"
-                                value={form.uk_end_time}
-                                onChange={e => setForm({ ...form, uk_end_time: e.target.value })}
-                                placeholder="e.g. 10:00 AM"
-                            />
+                            <div className="space-y-1.5">
+                                <TimeSelect
+                                    label="PK Start"
+                                    value={form.pak_start_time || "10:00 AM"}
+                                    onChange={(val) => {
+                                        setForm(f => ({ ...f, pak_start_time: val, uk_start_time: convertPkToUk(val) || f.uk_start_time }));
+                                    }}
+                                />
+                                {form.pak_start_time && (
+                                    <p className="text-[10px] text-muted-foreground/60 font-medium px-1">
+                                        🇬🇧 UK: {convertPkToUk(form.pak_start_time)}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="space-y-1.5">
+                                <TimeSelect
+                                    label="PK End"
+                                    value={form.pak_end_time}
+                                    onChange={(val) => {
+                                        setForm(f => ({ ...f, pak_end_time: val, uk_end_time: convertPkToUk(val) || f.uk_end_time }));
+                                    }}
+                                />
+                                {form.pak_end_time && (
+                                    <p className="text-[10px] text-muted-foreground/60 font-medium px-1">
+                                        🇬🇧 UK: {convertPkToUk(form.pak_end_time)}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
 

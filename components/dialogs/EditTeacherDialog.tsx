@@ -95,7 +95,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[520px] rounded-3xl border-border bg-card max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[520px] rounded-[32px] border-border bg-card max-h-[90vh] overflow-y-auto shadow-2xl">
                 <DialogHeader className="pb-2">
                     <div className="flex items-center gap-3">
                         <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-sm">
@@ -166,7 +166,6 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
                                     <SelectContent className="rounded-2xl">
                                         <SelectItem value="none">None</SelectItem>
                                         <SelectItem value="Morning">Morning</SelectItem>
-                                        <SelectItem value="Evening">Evening</SelectItem>
                                         <SelectItem value="Night">Night</SelectItem>
                                     </SelectContent>
                                 </Select>

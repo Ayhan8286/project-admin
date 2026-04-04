@@ -8,7 +8,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       data-slot="input"
       className={cn(
         // Glass base
-        "input-glass h-9 w-full min-w-0 rounded-lg px-3 py-1 text-sm",
+        "input-glass h-11 w-full min-w-0 rounded-2xl px-4 py-2 text-sm",
         // File inputs
         "file:text-slate-300 file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium",
         // States

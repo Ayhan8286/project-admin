@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { getAttendanceByDate, AttendanceWithStudent } from "@/lib/api/attendance";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -26,12 +27,24 @@ import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 type StatusFilter = "all" | "Present" | "Absent" | "Late" | "Leave";
 
 export default function AttendanceRecordsPage() {
+    const searchParams = useSearchParams();
+    const initialStatus = (searchParams.get("status") as StatusFilter) || "all";
+
     const [selectedDate, setSelectedDate] = useState<Date>(subDays(new Date(), 1));
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
 
     const { data: records = [], isLoading } = useQuery({
-        queryKey: ["attendanceRecords", format(selectedDate, "yyyy-MM-dd")],
-        queryFn: () => getAttendanceByDate(format(selectedDate, "yyyy-MM-dd")),
+        queryKey: ["attendanceRecords", format(selectedDate, "yyyy-MM-dd"), (typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) ? document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1] : "admin"],
+        queryFn: () => {
+            const cookies = typeof document !== 'undefined' ? document.cookie.split("; ") : [];
+            const role = cookies.find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
+            const supervisorId = cookies.find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
+
+            return getAttendanceByDate(
+                format(selectedDate, "yyyy-MM-dd"),
+                role === "supervisor" ? supervisorId : undefined
+            );
+        },
     });
 
     const filteredRecords = statusFilter === "all"
