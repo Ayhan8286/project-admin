@@ -61,11 +61,13 @@ export function middleware(request: NextRequest) {
     // 2. All student pages (list and detail)
     // 3. Attendance pages
     // 4. Specific teacher detail pages
+    // 5. Timetable feature
     const isAllowedPath = 
       pathname === `/supervisors/${supervisorId}` ||
       pathname.startsWith("/students") ||
       pathname.startsWith("/attendance") ||
-      pathname.startsWith("/teachers/");
+      pathname.startsWith("/teachers/") ||
+      pathname.startsWith("/timetable");
     
     if (!isAllowedPath && pathname !== "/login") {
        return NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));

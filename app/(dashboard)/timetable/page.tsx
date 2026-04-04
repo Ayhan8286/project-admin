@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTeachers, getAllClasses } from "@/lib/api/classes";
+import { getTeachers, getTeachersBySupervisor, getAllClasses } from "@/lib/api/classes";
 import { getSupervisors } from "@/lib/api/supervisors";
 import { Teacher, ClassSchedule } from "@/types/student";
 import { Supervisor } from "@/types/supervisor";
@@ -70,16 +70,38 @@ export default function TimetablePage() {
         return new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Asia/Karachi" }).format(new Date());
     });
     
+    const [isMounted, setIsMounted] = useState(false);
     const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>("All");
     const [selectedTeacherId, setSelectedTeacherId] = useState<string>("All");
     const [gridTimezone, setGridTimezone] = useState<"pk" | "uk">("pk");
     const [nowMinutes, setNowMinutes] = useState(getCurrentPKMinutes());
+    
+    // Auth State safely loaded on client
+    const [authRole, setAuthRole] = useState("admin");
+    const [authSupervisorId, setAuthSupervisorId] = useState<string | undefined>(undefined);
 
-    // Update 'now' every minute
     useEffect(() => {
+        setIsMounted(true);
+        if (typeof document !== 'undefined') {
+            const roleMatch = document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="));
+            const supMatch = document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="));
+            
+            const r = roleMatch ? roleMatch.split("=")[1] : "admin";
+            const s = supMatch ? supMatch.split("=")[1] : undefined;
+            
+            setAuthRole(r);
+            setAuthSupervisorId(s);
+            
+            if (r === "supervisor" && s) {
+                setSelectedSupervisorId(s);
+            }
+        }
+        
         const timer = setInterval(() => setNowMinutes(getCurrentPKMinutes()), 60000);
         return () => clearInterval(timer);
     }, []);
+
+    const isSupervisor = authRole === "supervisor";
 
     // Manage Dialog State
     const [manageStudentId, setManageStudentId] = useState<string | null>(null);
@@ -87,8 +109,14 @@ export default function TimetablePage() {
 
     // ─── Queries ────────────────────────────────────────────────
     const { data: teachers = [], isLoading: teachersLoading } = useQuery({
-        queryKey: ["teachers"],
-        queryFn: getTeachers,
+        queryKey: isSupervisor && authSupervisorId ? ["teachers", "supervisor", authSupervisorId] : ["teachers"],
+        queryFn: async () => {
+            if (isSupervisor && authSupervisorId) {
+                return await getTeachersBySupervisor(authSupervisorId);
+            }
+            return await getTeachers();
+        },
+        enabled: isMounted, // Wait until role is determined
         ...STALE_SHORT,
     });
 
@@ -221,13 +249,13 @@ export default function TimetablePage() {
                 <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
                     <div className="space-y-1.5 min-w-[170px] flex-1 xl:flex-none">
                         <label className="text-[9px] font-black uppercase text-muted-foreground ml-2 tracking-widest">Level Lead</label>
-                        <Select value={selectedSupervisorId} onValueChange={setSelectedSupervisorId}>
+                        <Select value={selectedSupervisorId} onValueChange={setSelectedSupervisorId} disabled={isSupervisor}>
                             <SelectTrigger className="h-10 rounded-2xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
                                 <Shield className="size-3.5 mr-2 text-primary" />
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border-border shadow-2xl">
-                                <SelectItem value="All">Global Feed</SelectItem>
+                                {!isSupervisor && <SelectItem value="All">Global Feed</SelectItem>}
                                 {supervisors.map((s: Supervisor) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -276,7 +304,10 @@ export default function TimetablePage() {
                         {gridTimezone === "pk" ? "🇵🇰 PKT" : "🇬🇧 UKT"}
                     </button>
                     <button 
-                        onClick={() => { setSelectedSupervisorId("All"); setSelectedTeacherId("All"); }}
+                        onClick={() => { 
+                            setSelectedSupervisorId(isSupervisor && authSupervisorId ? authSupervisorId : "All"); 
+                            setSelectedTeacherId("All"); 
+                        }}
                         className="p-3 rounded-2xl bg-accent text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-all active:scale-90"
                     >
                         <Filter className="size-4" />
