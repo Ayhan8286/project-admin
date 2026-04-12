@@ -59,7 +59,8 @@ export default function TasksPage() {
     const role = (getCookie("auth_role") as 'admin' | 'supervisor') || "admin";
     const supervisorId = getCookie("supervisor_id");
     // Use the supervisorId if available, or 'admin' for admins (now supported by TEXT column)
-    const userId = role === "supervisor" ? supervisorId : "admin";
+    // Coalesce to empty string or 'unknown' to satisfy TypeScript strictness
+    const userId = (role === "supervisor" ? supervisorId : "admin") || "unknown";
     
     // In a real app, you'd fetch the user's name from context or API
     // Here we'll just use a placeholder for name if it's not easily available
