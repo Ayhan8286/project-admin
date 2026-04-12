@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { createNotification } from "./notifications";
 import { Complaint } from "@/types/complaint";
 
 export async function getComplaints(): Promise<Complaint[]> {
@@ -33,6 +34,20 @@ export async function addComplaint(complaint: Partial<Complaint>): Promise<Compl
     if (error) {
         console.error("Error adding complaint:", JSON.stringify(error, null, 2));
         throw error;
+    }
+
+    // Trigger System Notification
+    try {
+        await createNotification({
+            type: 'WARNING',
+            title: 'New Complaint Filed',
+            message: `A new complaint has been registered: ${data.category}`,
+            sender_id: data.supervisor_id || undefined,
+            link: '/complaints',
+            metadata: { student_id: data.student_id }
+        });
+    } catch (notifErr) {
+        console.error("Failed to create notification:", notifErr);
     }
 
     return data;

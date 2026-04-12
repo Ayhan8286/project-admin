@@ -5,15 +5,24 @@ import { getDashboardStats, DashboardStats } from "@/lib/api/dashboard";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import NotificationCenter from "@/components/NotificationCenter";
 
-export default function DashboardClient({ initialStats }: { initialStats: DashboardStats }) {
+export default function DashboardClient({ 
+    initialStats, 
+    role = "admin", 
+    supervisorId 
+}: { 
+    initialStats: DashboardStats, 
+    role?: string, 
+    supervisorId?: string 
+}) {
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
 
     const { data: stats } = useQuery({
-        queryKey: ["dashboardStats"],
-        queryFn: getDashboardStats,
+        queryKey: ["dashboardStats", role, supervisorId],
+        queryFn: () => getDashboardStats(supervisorId),
         initialData: initialStats,
         refetchInterval: 60000, // Refetch every minute for live dashboard feel
     });
@@ -60,9 +69,10 @@ export default function DashboardClient({ initialStats }: { initialStats: Dashbo
                                 <span className="material-symbols-outlined">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
                             </button>
                         )}
-                        <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-colors text-emerald-800 dark:text-emerald-200">
-                            <span className="material-symbols-outlined" data-icon="notifications">notifications</span>
-                        </button>
+                        <NotificationCenter 
+                            userId={role === 'admin' ? undefined : (supervisorId || undefined)} 
+                            role={role} 
+                        />
                     </div>
                 </div>
             </header>

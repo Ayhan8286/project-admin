@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { createNotification } from "./notifications";
 import { ClassSchedule, Teacher, TeacherAvailability } from "@/types/student";
 
 export async function getTeachers(): Promise<Teacher[]> {
@@ -32,6 +33,19 @@ export async function addTeacher(teacher: Omit<Teacher, "id" | "is_active">): Pr
     if (error) {
         console.error("Error adding teacher:", error);
         throw error;
+    }
+
+    // Trigger System Notification
+    try {
+        await createNotification({
+            type: 'SUCCESS',
+            title: 'New Teacher Assigned',
+            message: `${data.name} has been added as a teacher and assigned to a supervisor.`,
+            sender_id: data.supervisor_id || undefined,
+            link: '/teachers'
+        });
+    } catch (notifErr) {
+        console.error("Failed to create notification:", notifErr);
     }
 
     return data;

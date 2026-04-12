@@ -51,22 +51,21 @@ export function middleware(request: NextRequest) {
       return response;
     }
 
-    // Handle root path separately to avoid a secondary redirect
-    if (pathname === "/") {
-      return NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
-    }
-
     // Supervisors are allowed on:
+    // 0. The root dashboard
     // 1. Their own profile page
     // 2. All student pages (list and detail)
     // 3. Attendance pages
     // 4. Specific teacher detail pages
     // 5. Timetable feature
     const isAllowedPath = 
+      pathname === "/" ||
+      pathname === "/teachers" ||
       pathname === `/supervisors/${supervisorId}` ||
       pathname.startsWith("/students") ||
       pathname.startsWith("/attendance") ||
       pathname.startsWith("/teachers/") ||
+      pathname.startsWith("/tasks") ||
       pathname.startsWith("/timetable");
     
     if (!isAllowedPath && pathname !== "/login") {

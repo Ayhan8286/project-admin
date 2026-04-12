@@ -92,7 +92,7 @@ export async function loginAction(prevState: any, formData: FormData) {
     });
 
     revalidatePath("/", "layout");
-    redirect(`/supervisors/${supervisor.id}`);
+    redirect("/");
   }
 }
 

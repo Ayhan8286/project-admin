@@ -1,18 +1,32 @@
 import { unstable_cache } from "next/cache";
 import { getDashboardStats } from "@/lib/api/dashboard";
 import DashboardClient from "@/components/DashboardClient";
+import { cookies } from "next/headers";
 
 // Cache the dashboard stats at the server level for 5 minutes.
-// This means only the FIRST visitor per 5 min window hits Supabase —
-// all others get instant in-memory response.
+// This is only used for Admins (global stats).
 const getCachedDashboardStats = unstable_cache(
-  getDashboardStats,
+  async () => getDashboardStats(),
   ["dashboard-stats"],
   { revalidate: 300 } // 5 minutes
 );
 
 export default async function DashboardPage() {
-  const initialStats = await getCachedDashboardStats();
+  const cookieStore = await cookies();
+  const role = cookieStore.get("auth_role")?.value || "admin";
+  const supervisorId = cookieStore.get("supervisor_id")?.value;
 
-  return <DashboardClient initialStats={initialStats} />;
+  // If it's a supervisor, we fetch fresh stats for their specific view.
+  // For admins, we use the cached global stats.
+  const initialStats = (role === "supervisor" && supervisorId)
+    ? await getDashboardStats(supervisorId)
+    : await getCachedDashboardStats();
+
+  return (
+    <DashboardClient 
+      initialStats={initialStats} 
+      role={role} 
+      supervisorId={supervisorId} 
+    />
+  );
 }

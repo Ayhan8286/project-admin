@@ -22,8 +22,76 @@ export interface DashboardStats {
     missingAttendanceCount: number;
 }
 
-export async function getDashboardStats(): Promise<DashboardStats> {
-    // Get all counts in parallel
+export async function getDashboardStats(supervisorId?: string): Promise<DashboardStats> {
+    // If supervisorId is provided, we need to fetch their specific context first
+    let teacherIds: string[] = [];
+    let studentIds: string[] = [];
+    let classIds: string[] = [];
+    let accountsData: { platform: string | null }[] = [];
+
+    if (supervisorId) {
+        // 1. Get teachers for this supervisor
+        const { data: supervisorTeachers } = await supabase
+            .from("teachers")
+            .select("id")
+            .eq("supervisor_id", supervisorId);
+        
+        teacherIds = supervisorTeachers?.map(t => t.id) || [];
+
+        if (teacherIds.length > 0) {
+            // 2. Get classes for these teachers
+            const { data: supervisorClasses } = await supabase
+                .from("classes")
+                .select("id, student_id, app_account_id, schedule_days, app_account:app_accounts(platform)")
+                .in("teacher_id", teacherIds);
+            
+            if (supervisorClasses) {
+                classIds = supervisorClasses.map(c => c.id);
+                studentIds = Array.from(new Set(supervisorClasses.map(c => c.student_id).filter(id => !!id) as string[]));
+                
+                // Extract unique account platforms
+                const accountsMap = new Map<string, string>();
+                supervisorClasses.forEach(c => {
+                    if (c.app_account_id && c.app_account) {
+                        const platform = (c.app_account as any).platform || "Unknown";
+                        accountsMap.set(c.app_account_id, platform);
+                    }
+                });
+                accountsData = Array.from(accountsMap.values()).map(platform => ({ platform }));
+            }
+        }
+    }
+
+    // Now perform the main dashboard queries, applying filters if needed
+    const queries = [];
+
+    if (supervisorId) {
+        // Filtered counts
+        queries.push(supabase.from("students").select("*", { count: "exact", head: true }).in("id", studentIds));
+        queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }).in("id", teacherIds).eq("is_active", true));
+        queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }).in("id", teacherIds));
+        queries.push(supabase.from("classes").select("*", { count: "exact", head: true }).in("id", classIds));
+        queries.push(supabase.from("students").select("*", { count: "exact", head: true }).in("id", studentIds).ilike("status", "active"));
+        queries.push(supabase.from("students").select("shift").in("id", studentIds));
+        
+        // Schedule data (already fetched for supervisorClasses but let's re-fetch clean if needed or reuse)
+        // Re-fetching classes for clean schedule processing
+        queries.push(supabase.from("classes").select("schedule_days").in("id", classIds));
+        
+        // App accounts (already have platforms from classes join)
+        queries.push(Promise.resolve({ data: accountsData }));
+    } else {
+        // Global counts
+        queries.push(supabase.from("students").select("*", { count: "exact", head: true }));
+        queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true));
+        queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }));
+        queries.push(supabase.from("classes").select("*", { count: "exact", head: true }));
+        queries.push(supabase.from("students").select("*", { count: "exact", head: true }).ilike("status", "active"));
+        queries.push(supabase.from("students").select("shift"));
+        queries.push(supabase.from("classes").select("schedule_days"));
+        queries.push(supabase.from("app_accounts").select("platform"));
+    }
+
     const [
         studentsResult,
         activeTeachersResult,
@@ -33,21 +101,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         shiftResult,
         classScheduleResult,
         appAccountsResult,
-    ] = await Promise.all([
-        supabase.from("students").select("*", { count: "exact", head: true }),
-        supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("teachers").select("*", { count: "exact", head: true }),
-        supabase.from("classes").select("*", { count: "exact", head: true }),
-        supabase.from("students").select("*", { count: "exact", head: true }).ilike("status", "active"),
-        supabase.from("students").select("shift"),
-        supabase.from("classes").select("schedule_days"),
-        supabase.from("app_accounts").select("platform"),
-    ]);
+    ] = await Promise.all(queries as any[]);
 
     // Calculate students by shift
     const studentsByShift: Record<string, number> = {};
     if (shiftResult.data) {
-        shiftResult.data.forEach((student) => {
+        shiftResult.data.forEach((student: any) => {
             const shift = student.shift || "Unassigned";
             studentsByShift[shift] = (studentsByShift[shift] || 0) + 1;
         });
@@ -55,17 +114,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     // Calculate classes per day and hours per day (each class = 30 mins)
     const classesPerDay: Record<string, number> = {
-        Mon: 0,
-        Tue: 0,
-        Wed: 0,
-        Thu: 0,
-        Fri: 0,
-        Sat: 0,
-        Sun: 0,
+        Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0
     };
 
     if (classScheduleResult.data) {
-        classScheduleResult.data.forEach((cls) => {
+        classScheduleResult.data.forEach((cls: any) => {
             if (cls.schedule_days) {
                 Object.keys(cls.schedule_days).forEach((day) => {
                     if (classesPerDay[day] !== undefined) {
@@ -76,7 +129,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         });
     }
 
-    // Convert classes to hours (each class = 30 mins = 0.5 hours)
     const hoursPerDay: Record<string, number> = {};
     Object.keys(classesPerDay).forEach((day) => {
         hoursPerDay[day] = classesPerDay[day] * 0.5;
@@ -88,7 +140,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     // Calculate accounts by platform
     const accountsByPlatform: Record<string, number> = {};
     if (appAccountsResult.data) {
-        appAccountsResult.data.forEach((account) => {
+        appAccountsResult.data.forEach((account: any) => {
             const platform = account.platform || "Unknown";
             accountsByPlatform[platform] = (accountsByPlatform[platform] || 0) + 1;
         });
@@ -97,25 +149,19 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     // Calculate today's attendance stats
     const today = new Date().toISOString().split('T')[0];
-    const { data: attendanceData } = await supabase
-        .from("attendance")
-        .select("status")
-        .eq("date", today);
+    let attendanceQuery = supabase.from("attendance").select("status").eq("date", today);
+    
+    if (supervisorId) {
+        attendanceQuery = attendanceQuery.in("student_id", studentIds);
+    }
+    
+    const { data: attendanceData } = await attendanceQuery;
 
     let todayAttendancePercentage = 0;
-    const attendanceStats = {
-        present: 0,
-        absent: 0,
-        late: 0,
-        leave: 0
-    };
+    const attendanceStats = { present: 0, absent: 0, late: 0, leave: 0 };
 
     if (activeStudents > 0) {
         if (attendanceData) {
-            const presentCount = attendanceData.filter(r => r.status === "Present" || r.status === "Late").length;
-            todayAttendancePercentage = Math.round((presentCount / activeStudents) * 100);
-
-            // Calculate detailed percentages
             const counts = attendanceData.reduce((acc, curr) => {
                 const status = curr.status?.toLowerCase();
                 if (status === 'present') acc.present++;
@@ -125,31 +171,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
                 return acc;
             }, { present: 0, absent: 0, late: 0, leave: 0 });
 
-            // If we have active students, calculate percentages based on total active students
-            // Assuming those without a record are 'Absent' or we just show recorded stats
-            // Let's stick to recorded stats percentage relative to Active Students for better accuracy
-            // Or just percentage of recorded? Typically "Absent" is explicit or implied.
-            // For dashboard, usually we want:
-            // Present % = (Present + Late) / Total Active
-            // Absent % = (Total Active - (Present + Late + Leave)) / Total Active ... or explicit Absent records
-            // The prompt asks for "students today present percentage, absent percentage, leave percentage, late percentage"
-            // Let's calculate based on counts / activeStudents to show coverage.
-
             attendanceStats.present = Math.round((counts.present / activeStudents) * 100);
-            attendanceStats.absent = Math.round((counts.absent / activeStudents) * 100); // Only explicit absents?
-            // If we rely on explicit 'Absent' records:
+            attendanceStats.absent = Math.round((counts.absent / activeStudents) * 100);
             attendanceStats.late = Math.round((counts.late / activeStudents) * 100);
             attendanceStats.leave = Math.round((counts.leave / activeStudents) * 100);
             
-            // NOTE: If 'Absent' is not recorded explicitly for everyone, this might be low. 
-            // Often unrecorded = Absent. But let's stick to what the DB says for now or derived.
-            // If user wants implicit absence, we'd do: absent = 100 - present - late - leave. 
-            // Let's assume explicit for now as per code structure.
+            todayAttendancePercentage = Math.round(((counts.present + counts.late) / activeStudents) * 100);
         }
     }
-
-    // Calculate missing attendance count (Active Students - total records today)
-    const missingAttendanceCount = Math.max(0, activeStudents - (attendanceData?.length || 0));
 
     return {
         totalStudents,
@@ -165,7 +194,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         totalAccounts,
         todayAttendancePercentage,
         attendanceStats,
-        missingAttendanceCount
+        missingAttendanceCount: Math.max(0, activeStudents - (attendanceData?.length || 0))
     };
 }
+
 

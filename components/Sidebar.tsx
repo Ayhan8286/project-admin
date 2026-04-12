@@ -15,6 +15,7 @@ const navItems = [
     { label: "Students", href: "/students", icon: "group" },
     { label: "Platforms", href: "/platforms", icon: "layers" },
     { label: "Attendance", href: "/attendance", icon: "event_available" },
+    { label: "Tasks", href: "/tasks", icon: "assignment" },
     { label: "Complaints", href: "/complaints", icon: "report_problem" },
     { label: "Settings", href: "/settings", icon: "settings" },
 ];
@@ -44,7 +45,7 @@ export function Sidebar({ role = "admin", userName = "Admin", supervisorId }: { 
             
             <nav className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pb-4 pt-2 pr-2">
                 {navItems.map((item) => {
-                    const allowedLabels = ["Supervisors", "Students", "Attendance", "Time Table"];
+                    const allowedLabels = ["Dashboard", "Teachers", "Students", "Attendance", "Time Table", "Tasks"];
                     if (role === "supervisor" && !allowedLabels.includes(item.label)) {
                         return null;
                     }

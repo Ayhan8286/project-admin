@@ -42,6 +42,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${jakarta.variable} ${vietnam.variable} antialiased bg-background text-foreground`}
+        suppressHydrationWarning
       >
         <QueryProvider>
           <ThemeProvider

@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/Sidebar";
 import { Prefetcher } from "@/components/Prefetcher";
+import ChatToggle from "@/components/ChatToggle";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 
@@ -11,6 +12,7 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const role = cookieStore.get("auth_role")?.value || "admin";
   let userName = role === "admin" ? "Admin" : "Supervisor";
+  let userId: string | undefined = undefined;
   let supervisorId: string | undefined = undefined;
 
   if (role === "admin") {
@@ -19,10 +21,12 @@ export default async function DashboardLayout({
       const { data: { user } } = await supabase.auth.getUser(token);
       if (user && user.email) {
         userName = user.email.split('@')[0];
+        userId = user.id;
       }
     }
   } else if (role === "supervisor") {
     supervisorId = cookieStore.get("supervisor_id")?.value;
+    userId = supervisorId;
     if (supervisorId) {
       const { data } = await supabase
         .from('supervisors')
@@ -48,6 +52,11 @@ export default async function DashboardLayout({
       <main className="flex-1 overflow-y-auto relative z-10 bg-transparent flex flex-col custom-scrollbar">
         {children}
       </main>
+      
+      {/* Real-time Chat Integration */}
+      {userId && (
+        <ChatToggle currentUser={{ id: userId, name: userName, role: role as 'admin' | 'supervisor' }} />
+      )}
     </div>
   );
 }

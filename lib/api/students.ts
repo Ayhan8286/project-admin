@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { Student } from "@/types/student";
+import { createNotification } from "./notifications";
 
 export async function getStudents(): Promise<Student[]> {
     const { data, error } = await supabase
@@ -172,6 +173,20 @@ export async function addStudent(
         throw error;
     }
 
+    // Trigger System Notification
+    try {
+        await createNotification({
+            type: 'SUCCESS',
+            title: 'New Student Registered',
+            message: `${data.full_name} has been enrolled in the system.`,
+            sender_id: data.supervisor_id || undefined,
+            link: `/students/${data.id}`,
+            metadata: { student_id: data.id }
+        });
+    } catch (notifErr) {
+        console.error("Failed to create notification:", notifErr);
+    }
+
     return data;
 }
 
@@ -218,5 +233,17 @@ export async function deleteStudent(id: string): Promise<void> {
     if (error) {
         console.error("Error deleting student:", error);
         throw error;
+    }
+
+    // Trigger System Notification
+    try {
+        await createNotification({
+            type: 'WARNING',
+            title: 'Student Removed',
+            message: `A student record (ID: ${id}) has been permanently deleted.`,
+            link: '/students'
+        });
+    } catch (notifErr) {
+        console.error("Failed to create notification:", notifErr);
     }
 }
