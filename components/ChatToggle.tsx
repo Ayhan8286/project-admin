@@ -72,6 +72,10 @@ export default function ChatToggle({
         };
     }, [isChatOpen, currentUser.id, currentUser.role]);
 
+    useEffect(() => {
+        console.log("ChatToggle successfully mounted for user:", currentUser.id);
+    }, [currentUser.id]);
+
     return (
         <>
             {/* Floating Toggle Button */}
@@ -82,7 +86,7 @@ export default function ChatToggle({
                         setHasUnread(false);
                     }}
                     className={cn(
-                        "fixed bottom-8 right-8 z-[90] w-16 h-16 bg-forest text-white rounded-3xl shadow-2xl shadow-forest/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 border-white/20",
+                        "fixed bottom-8 right-8 z-[9999] w-16 h-16 bg-forest text-white rounded-3xl shadow-2xl shadow-forest/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 border-white/20",
                         ping && "animate-bounce"
                     )}
                     aria-label="Toggle Chat"

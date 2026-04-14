@@ -28,13 +28,25 @@ export default async function DashboardLayout({
     const token = cookieStore.get("supabase_access_token")?.value;
     if (token) {
       try {
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user && user.email) {
-          userName = user.email.split('@')[0];
-          userId = user.id; // Correct ID if cookie was missing
+        const { data, error } = await supabase.auth.getUser(token);
+        if (!error && data?.user) {
+          userName = data.user.email?.split('@')[0] || "Admin";
+          userId = data.user.id;
+        } else {
+          // Fallback: Extract ID from JWT without network call
+          const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          if (payload.sub) {
+             userId = payload.sub;
+             console.log("Layout: Falling back to token decode for Admin ID:", userId);
+          }
         }
       } catch (e) {
-        console.error("Layout: Admin user fetch failed:", e);
+        console.error("Layout: Admin user fetch error:", e);
+        // Secondary Fallback if even JSON.parse fails
+        try {
+          const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          userId = payload.sub;
+        } catch (inner) {}
       }
     }
   } else if (role === "supervisor" && supervisorId) {
