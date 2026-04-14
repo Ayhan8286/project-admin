@@ -60,6 +60,14 @@ export async function loginAction(prevState: any, formData: FormData) {
         maxAge: data.session.expires_in,
         path: "/",
       });
+
+      // Also set a non-httpOnly admin_id for UI visibility
+      cookieStore.set("admin_id", data.user.id, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
     }
 
     revalidatePath("/", "layout");
@@ -101,6 +109,7 @@ export async function logoutAction() {
   cookieStore.delete("auth_role");
   cookieStore.delete("supabase_access_token");
   cookieStore.delete("supervisor_id");
+  cookieStore.delete("admin_id");
   await supabase.auth.signOut();
   redirect("/login");
 }

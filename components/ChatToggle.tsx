@@ -17,6 +17,8 @@ export default function ChatToggle({
     const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set());
     const [ping, setPing] = useState(false);
     useEffect(() => {
+        if (!currentUser.id) return;
+
         let subscription: any;
 
         try {
@@ -51,11 +53,11 @@ export default function ChatToggle({
                         }
                     }
                 } catch (e) {
-                    console.error("Listener logic error:", e);
+                    console.error("ChatToggle: Listener logic error:", e);
                 }
             });
         } catch (e) {
-            console.error("Subscription setup error:", e);
+            console.error("ChatToggle: Subscription setup error:", e);
         }
 
         return () => {

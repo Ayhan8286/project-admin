@@ -15,19 +15,30 @@ export default async function DashboardLayout({
   let userId: string | undefined = undefined;
   let supervisorId: string | undefined = undefined;
 
+  // 1. Initial ID identification from cookies (faster & reliable)
   if (role === "admin") {
-    const token = cookieStore.get("supabase_access_token")?.value;
-    if (token) {
-      const { data: { user } } = await supabase.auth.getUser(token);
-      if (user && user.email) {
-        userName = user.email.split('@')[0];
-        userId = user.id;
-      }
-    }
+    userId = cookieStore.get("admin_id")?.value;
   } else if (role === "supervisor") {
     supervisorId = cookieStore.get("supervisor_id")?.value;
     userId = supervisorId;
-    if (supervisorId) {
+  }
+
+  // 2. Fetch extra details from Supabase (optional, but nice for UX)
+  if (role === "admin") {
+    const token = cookieStore.get("supabase_access_token")?.value;
+    if (token) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user && user.email) {
+          userName = user.email.split('@')[0];
+          userId = user.id; // Correct ID if cookie was missing
+        }
+      } catch (e) {
+        console.error("Layout: Admin user fetch failed:", e);
+      }
+    }
+  } else if (role === "supervisor" && supervisorId) {
+    try {
       const { data } = await supabase
         .from('supervisors')
         .select('name')
@@ -36,6 +47,8 @@ export default async function DashboardLayout({
       if (data && data.name) {
         userName = data.name;
       }
+    } catch (e) {
+      console.error("Layout: Supervisor name fetch failed:", e);
     }
   }
 

@@ -180,7 +180,7 @@ export default function ChatPanel({
 
     return (
         <div className={cn(
-            "fixed bottom-26 right-8 z-[100] flex flex-col shadow-[0px_20px_50px_rgba(0,0,0,0.2)] transition-all duration-500 ease-in-out transform w-full sm:max-w-[400px] h-[650px] max-h-[85vh]",
+            "fixed bottom-28 right-8 z-[100] flex flex-col shadow-[0px_20px_50px_rgba(0,0,0,0.2)] transition-all duration-500 ease-in-out transform w-full sm:max-w-[400px] h-[650px] max-h-[85vh]",
             isOpen ? "translate-y-0 opacity-100 scale-100 pointer-events-auto" : "translate-y-20 opacity-0 scale-95 pointer-events-none",
             "bg-white/80 dark:bg-slate-900/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/40 dark:border-white/10 overflow-hidden ring-1 ring-black/5"
         )}>
