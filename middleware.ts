@@ -17,19 +17,51 @@ export function middleware(request: NextRequest) {
   const roleCookie = request.cookies.get("auth_role");
   const isAuthenticated = !!roleCookie;
 
+  // --- Session Repair logic (Fixes old browser states automatically) ---
+  let response = NextResponse.next();
+  if (isAuthenticated && roleCookie?.value === "admin") {
+      const token = request.cookies.get("supabase_access_token")?.value;
+      const adminId = request.cookies.get("admin_id")?.value;
+
+      if (token && !adminId) {
+          try {
+              // Decode JWT payload without Buffer (Edge-safe)
+              const payloadPart = token.split('.')[1];
+              const payload = JSON.parse(atob(payloadPart));
+              if (payload.sub) {
+                  response.cookies.set("admin_id", payload.sub, {
+                      httpOnly: false,
+                      secure: process.env.NODE_ENV === "production",
+                      maxAge: 60 * 60 * 24 * 7,
+                      path: "/",
+                  });
+              }
+          } catch (e) {
+              console.error("Middleware: Session repair failed", e);
+          }
+      }
+  }
+  // ----------------------------------------------------------------------
+
+  // 2. Auth & Redirect Logic
   // If user is trying to access login page
   if (pathname === "/login") {
     if (isAuthenticated && request.method === "GET") {
-      // Direct redirect based on role
       const isSupervisor = roleCookie?.value === "supervisor";
       const supervisorId = request.cookies.get("supervisor_id")?.value;
       
+      let redirectRes;
       if (isSupervisor && supervisorId) {
-        return NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+        redirectRes = NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+      } else {
+        redirectRes = NextResponse.redirect(new URL("/", request.url));
       }
-      return NextResponse.redirect(new URL("/", request.url));
+
+      // Copy repair cookies to redirect response
+      response.cookies.getAll().forEach(c => redirectRes.cookies.set(c.name, c.value, c));
+      return redirectRes;
     }
-    return NextResponse.next();
+    return response;
   }
 
   // If user is trying to access any other page but is not authenticated
@@ -37,27 +69,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   
-  // Optional: Route protections based on role
-  // e.g. If supervisor tries to access /students, redirect to /supervisors
-  // We'll trust the Sidebar restriction for now, but server-side protection is best.
+  // Optional: Route protections
   if (roleCookie?.value === "supervisor") {
-    const supervisorIdCookie = request.cookies.get("supervisor_id");
-    const supervisorId = supervisorIdCookie?.value;
+    const supervisorId = request.cookies.get("supervisor_id")?.value;
 
-    // A supervisor must have a supervisor_id to be valid in this flow
     if (!supervisorId) {
-      const response = NextResponse.redirect(new URL("/login", request.url));
-      response.cookies.delete("auth_role");
-      return response;
+      const errorRes = NextResponse.redirect(new URL("/login", request.url));
+      errorRes.cookies.delete("auth_role");
+      return errorRes;
     }
 
-    // Supervisors are allowed on:
-    // 0. The root dashboard
-    // 1. Their own profile page
-    // 2. All student pages (list and detail)
-    // 3. Attendance pages
-    // 4. Specific teacher detail pages
-    // 5. Timetable feature
     const isAllowedPath = 
       pathname === "/" ||
       pathname === "/teachers" ||
@@ -69,11 +90,13 @@ export function middleware(request: NextRequest) {
       pathname.startsWith("/timetable");
     
     if (!isAllowedPath && pathname !== "/login") {
-       return NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+       const supervisorRedirect = NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+       response.cookies.getAll().forEach(c => supervisorRedirect.cookies.set(c.name, c.value, c));
+       return supervisorRedirect;
     }
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
