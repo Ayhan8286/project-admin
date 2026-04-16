@@ -108,7 +108,7 @@ export default function SupervisorDetailPage() {
 
                 {/* Header Row */}
                 <div className="flex items-center gap-4">
-                    <Link href="/supervisors">
+                    <Link href="/departments/supervisor">
                         <Button variant="ghost" size="icon" className="rounded-full border border-border hover:border-primary/30">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
@@ -182,7 +182,10 @@ export default function SupervisorDetailPage() {
                             const mockEmail = `${teacher.name.toLowerCase().split(' ').join('.')}@qrastudy.edu`;
 
                             return (
-                                <div key={teacher.id} className="card-hover bg-card rounded-2xl border border-border overflow-hidden flex flex-col">
+                                <div key={teacher.id} className="group/card relative card-hover bg-card rounded-2xl border border-border overflow-hidden flex flex-col">
+                                    {/* Clickable Overlay */}
+                                    <Link href={`/teachers/${teacher.id}`} className="absolute inset-0 z-10" />
+                                    
                                     <div className="p-6 pb-4 flex-1">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="relative">
@@ -195,8 +198,12 @@ export default function SupervisorDetailPage() {
                                             </div>
                                             {!isSupervisor && (
                                                 <button
-                                                    onClick={() => handleUnassignTeacher(teacher.id, teacher.name)}
-                                                    className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-500/10"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleUnassignTeacher(teacher.id, teacher.name);
+                                                    }}
+                                                    className="relative z-20 p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-500/10"
                                                     title="Unassign from supervisor"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -219,7 +226,7 @@ export default function SupervisorDetailPage() {
                                             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">Status</p>
                                         </div>
                                     </div>
-                                    <div className="p-4">
+                                    <div className="p-4 relative z-20">
                                         <Link
                                             href={`/teachers/${teacher.id}`}
                                             className="w-full py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black bg-forest text-white fab-glow hover:bg-forest/90 transition-all"

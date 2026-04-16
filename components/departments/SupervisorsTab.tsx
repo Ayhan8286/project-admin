@@ -21,7 +21,8 @@ import {
 import {
     Plus, Search, Loader2, ShieldCheck,
     Mail, Phone, Save, Edit2, Trash2,
-    ChevronLeft, ChevronRight, Clock
+    ChevronLeft, ChevronRight, Clock,
+    MessageSquare, Users
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -155,7 +156,10 @@ export function SupervisorsTab() {
                         const statusColor = stats.teachers > 0 ? "bg-green-500" : "bg-gray-400";
 
                         return (
-                            <div key={supervisor.id} className="card-hover glass-panel rounded-3xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
+                            <div key={supervisor.id} className="group/card relative card-hover glass-panel rounded-3xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
+                                {/* Clickable Overlay */}
+                                <Link href={`/supervisors/${supervisor.id}`} className="absolute inset-0 z-10" />
+                                
                                 <div className="p-6 pb-4 flex-1">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="relative">
@@ -167,8 +171,12 @@ export function SupervisorsTab() {
                                             <div className={`absolute -bottom-2 -right-2 ${statusColor} size-4 rounded-full border-2 border-card`} />
                                         </div>
                                         <button
-                                            onClick={() => handleDelete(supervisor.id, supervisor.name)}
-                                            className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-500/10"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleDelete(supervisor.id, supervisor.name);
+                                            }}
+                                            className="relative z-20 p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-500/10"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </button>
@@ -204,17 +212,32 @@ export function SupervisorsTab() {
                                         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">Students</p>
                                     </div>
                                 </div>
-                                <div className="p-4 grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => handleEditClick(supervisor)}
-                                        className="py-2.5 rounded-full text-sm font-bold border border-white/10 text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Edit2 className="h-3.5 w-3.5" />
-                                        Edit
-                                    </button>
-                                    <Link href={`/supervisors/${supervisor.id}`} className="py-2.5 flex items-center justify-center rounded-full text-sm font-black bg-forest text-white shadow-lg shadow-forest/20 hover:bg-forest/90 transition-all">
-                                        Profile
+                                <div className="p-4 flex flex-col gap-3 relative z-20">
+                                    <Link href={`/supervisors/${supervisor.id}`} className="py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black bg-forest text-white shadow-lg shadow-forest/20 hover:bg-forest/90 transition-all w-full">
+                                        <Users className="h-4 w-4" />
+                                        Teachers & Students
                                     </Link>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleEditClick(supervisor);
+                                            }}
+                                            className="py-2.5 rounded-full text-sm font-bold border border-white/10 text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Edit2 className="h-3.5 w-3.5" />
+                                            Edit
+                                        </button>
+                                        <Link 
+                                            href={`/departments/supervisor/${supervisor.id}`} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-all"
+                                        >
+                                            <MessageSquare className="h-3.5 w-3.5" />
+                                            Tasks & Chat
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         );

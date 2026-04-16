@@ -54,7 +54,7 @@ export function middleware(request: NextRequest) {
       let redirectRes;
       if (isSupervisor && supervisorId) {
         if (deptRole === 'supervisor') {
-            redirectRes = NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+            redirectRes = NextResponse.redirect(new URL(`/`, request.url));
         } else {
             redirectRes = NextResponse.redirect(new URL(`/tasks`, request.url));
         }

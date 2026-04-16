@@ -22,7 +22,8 @@ import {
     Plus, Search, Loader2, ShieldCheck,
     Mail, Phone, Save, Edit2, Trash2,
     ChevronLeft, ChevronRight, Clock,
-    Megaphone, Cpu, Banknote, UserCheck
+    Megaphone, Cpu, Banknote, UserCheck,
+    Users, MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -218,17 +219,42 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
                                     </div>
                                 )}
 
-                                <div className="p-4 grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => handleEditClick(employee)}
-                                        className="py-2.5 rounded-full text-sm font-bold border border-white/10 text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Edit2 className="h-3.5 w-3.5" />
-                                        Edit
-                                    </button>
-                                    <Link href={`/departments/${department.toLowerCase().replace(' ', '-')}/${employee.id}`} className="py-2.5 flex items-center justify-center rounded-full text-sm font-black bg-forest text-white shadow-lg shadow-forest/20 hover:bg-forest/90 transition-all">
-                                        Tasks & Chat
-                                    </Link>
+                                <div className="p-4 flex flex-col gap-3 relative z-20">
+                                    {department === "Supervisor" && (
+                                        <Link 
+                                            href={`/supervisors/${employee.id}`} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black bg-forest text-white shadow-lg shadow-forest/20 hover:bg-forest/90 transition-all w-full"
+                                        >
+                                            <Users className="h-4 w-4" />
+                                            Teachers & Students
+                                        </Link>
+                                    )}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleEditClick(employee);
+                                            }}
+                                            className="py-2.5 rounded-full text-sm font-bold border border-white/10 text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Edit2 className="h-3.5 w-3.5" />
+                                            Edit
+                                        </button>
+                                        <Link 
+                                            href={`/departments/${department.toLowerCase().replace(' ', '-')}/${employee.id}`} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className={`py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black transition-all ${
+                                                department === "Supervisor" 
+                                                ? "border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10" 
+                                                : "bg-forest text-white shadow-lg shadow-forest/20 hover:bg-forest/90"
+                                            }`}
+                                        >
+                                            <MessageSquare className="h-3.5 w-3.5" />
+                                            Tasks & Chat
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         );

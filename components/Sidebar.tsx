@@ -69,11 +69,9 @@ export function Sidebar({
                     }
 
                     let href = item.href;
-                    // Point Dashboard to correct personal URL
+                    // Point Dashboard to correct personal URL for specialized departments
                     if (role === "supervisor" && item.label === "Dashboard" && supervisorId) {
-                        if (deptRole === 'supervisor') {
-                            href = `/supervisors/${supervisorId}`;
-                        } else {
+                        if (deptRole !== 'supervisor') {
                             href = `/departments/${deptRole}/${supervisorId}`;
                         }
                     }
