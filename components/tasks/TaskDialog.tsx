@@ -72,12 +72,23 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'comments'>('details');
+  const [selectedDept, setSelectedDept] = useState<string>("all");
+
+  const departments = ["Supervisor", "Marketing", "Tech Team", "Finance"];
 
   useEffect(() => {
     if (task) {
       setFormData(task);
       loadComments(task.id);
       setActiveTab('details');
+
+      // Auto-detect department
+      if (task.supervisor_id) {
+          const sup = supervisors.find(s => s.id === task.supervisor_id);
+          if (sup) setSelectedDept(sup.department || "Supervisor");
+      } else {
+          setSelectedDept("all");
+      }
     } else {
       setFormData({
         title: "",
@@ -89,8 +100,9 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
       });
       setComments([]);
       setActiveTab('details');
+      setSelectedDept("all");
     }
-  }, [task, initialStatus, isOpen]);
+  }, [task, initialStatus, isOpen, supervisors]);
 
   const loadComments = async (taskId: string) => {
     setIsLoadingComments(true);
@@ -291,7 +303,29 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-emerald-900 dark:text-emerald-100 font-semibold">Supervisor</Label>
+                    <Label className="text-emerald-900 dark:text-emerald-100 font-semibold">Department</Label>
+                    {!isAdmin && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded text-emerald-600">Read Only</span>}
+                  </div>
+                  <Select
+                    value={selectedDept}
+                    onValueChange={setSelectedDept}
+                    disabled={!isAdmin}
+                  >
+                    <SelectTrigger className={`bg-white dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800/40 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-[#0c1a0d] border-emerald-100 dark:border-emerald-800/40">
+                      <SelectItem value="all">All Departments</SelectItem>
+                      {departments.map((d) => (
+                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-emerald-900 dark:text-emerald-100 font-semibold">Assign To</Label>
                     {!isAdmin && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded text-emerald-600">Read Only</span>}
                   </div>
                   <Select
@@ -305,14 +339,21 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
                     <SelectTrigger className={`bg-white dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800/40 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}>
                       <div className="flex items-center">
                         <User className="w-4 h-4 mr-2 opacity-50" />
-                        <SelectValue placeholder="Assign supervisor" />
+                        <SelectValue placeholder="Search employee..." />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-[#0c1a0d] border-emerald-100 dark:border-emerald-800/40">
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {supervisors.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
+                      <SelectItem value="unassigned">Not Assigned</SelectItem>
+                      {supervisors
+                        .filter(s => selectedDept === "all" || s.department === selectedDept)
+                        .map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            <div className="flex items-center justify-between w-full min-w-[140px]">
+                              <span>{s.name}</span>
+                              <span className="text-[9px] opacity-40 uppercase font-black ml-4">{s.department || "Supervisor"}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>

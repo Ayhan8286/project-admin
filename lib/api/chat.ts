@@ -45,16 +45,15 @@ export async function getMessages(participantId?: string): Promise<Message[]> {
         .order("created_at", { ascending: true });
 
     if (participantId) {
-        query = query.or(`sender_id.eq.${participantId},recipient_id.eq.${participantId},recipient_id.is.null`);
+        // Strict isolation: only messages TO or FROM the participant
+        query = query.or(`sender_id.eq.${participantId},recipient_id.eq.${participantId}`);
     }
 
     const { data, error } = await query;
-
     if (error) {
         console.error("Error fetching messages:", error);
         throw error;
     }
-
     return data || [];
 }
 

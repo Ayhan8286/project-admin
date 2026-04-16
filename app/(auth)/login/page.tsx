@@ -2,15 +2,33 @@
 
 import { useActionState, useState } from "react";
 import { loginAction } from "./actions";
-import { GraduationCap, Mail, Lock, AlertCircle, ShieldCheck, UserCog } from "lucide-react";
+import { 
+  GraduationCap, 
+  Mail, 
+  Lock, 
+  AlertCircle, 
+  ShieldCheck, 
+  UserCog, 
+  Megaphone, 
+  Terminal, 
+  Wallet 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Provide an initial state for the form action
 const initialState = { error: "" };
 
 export default function LoginPage() {
-  const [roleType, setRoleType] = useState<"admin" | "supervisor">("admin");
+  const [roleType, setRoleType] = useState<"admin" | "supervisor" | "marketing" | "finance" | "tech-team">("admin");
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
+
+  const roles = [
+    { id: "admin", label: "Admin", icon: ShieldCheck },
+    { id: "supervisor", label: "Supervisor", icon: UserCog },
+    { id: "marketing", label: "Marketing", icon: Megaphone },
+    { id: "tech-team", label: "Tech Team", icon: Terminal },
+    { id: "finance", label: "Finance", icon: Wallet },
+  ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden bg-[#f4f6f4] dark:bg-[#0c1a0d] p-4">
@@ -20,7 +38,7 @@ export default function LoginPage() {
         <div className="absolute top-1/2 left-1/2 translate-x-[20%] -translate-y-[20%] w-[440px] h-[440px] rounded-full bg-emerald-500/[0.06] dark:bg-emerald-400/[0.04] blur-[100px]" />
       </div>
 
-      <div className="w-full max-w-[420px] relative z-10">
+      <div className="w-full max-w-[480px] relative z-10">
         <div className="flex flex-col items-center mb-8">
           <div className="relative w-16 h-16 flex items-center justify-center mb-4">
             <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-md" />
@@ -36,33 +54,23 @@ export default function LoginPage() {
 
         <div className="bg-white dark:bg-[#102212]/80 backdrop-blur-xl border border-slate-200 dark:border-primary/20 rounded-3xl p-8 shadow-2xl shadow-primary/5">
           {/* Role Tabs */}
-          <div className="flex p-1 bg-slate-100 dark:bg-black/20 rounded-xl mb-8">
-            <button
-              type="button"
-              onClick={() => setRoleType("admin")}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200",
-                roleType === "admin" 
-                  ? "bg-white dark:bg-primary/20 text-slate-900 dark:text-white shadow-sm" 
-                  : "text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white/80"
-              )}
-            >
-              <ShieldCheck className="h-4 w-4" />
-              Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => setRoleType("supervisor")}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200",
-                roleType === "supervisor"
-                  ? "bg-white dark:bg-primary/20 text-slate-900 dark:text-white shadow-sm"
-                  : "text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white/80"
-              )}
-            >
-              <UserCog className="h-4 w-4" />
-              Supervisor
-            </button>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-100 dark:bg-black/20 p-1 rounded-2xl mb-8">
+            {roles.map((role) => (
+              <button
+                key={role.id}
+                type="button"
+                onClick={() => setRoleType(role.id as any)}
+                className={cn(
+                  "flex items-center justify-center gap-2 py-2.5 text-[11px] font-bold rounded-xl transition-all duration-200 uppercase tracking-widest",
+                  roleType === role.id
+                    ? "bg-white dark:bg-primary/20 text-slate-900 dark:text-white shadow-sm"
+                    : "text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white/80"
+                )}
+              >
+                <role.icon className="h-3.5 w-3.5" />
+                {role.label}
+              </button>
+            ))}
           </div>
 
           <form action={formAction} className="space-y-5">

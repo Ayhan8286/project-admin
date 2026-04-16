@@ -14,7 +14,7 @@ export async function loginAction(prevState: any, formData: FormData) {
   const rawEmail = formData.get("email") as string;
   const email = rawEmail?.trim().toLowerCase();
   const password = formData.get("password") as string;
-  const roleType = formData.get("roleType") as "admin" | "supervisor";
+  const roleType = formData.get("roleType") as "admin" | "supervisor" | "marketing" | "finance" | "tech-team";
 
   if (!email || !password || !roleType) {
     return { error: "Please provide all required fields." };
@@ -23,7 +23,7 @@ export async function loginAction(prevState: any, formData: FormData) {
   const cookieStore = await cookies();
 
   if (roleType === "admin") {
-    // Admin login uses Supabase Auth
+    // ... (existing admin logic)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -42,7 +42,7 @@ export async function loginAction(prevState: any, formData: FormData) {
 
     if (supervisorMatch) {
       await supabase.auth.signOut();
-      return { error: "Access Denied: You are registered as a Supervisor, not an Admin." };
+      return { error: "Access Denied: You are registered as Staff, not an Admin." };
     }
 
     // Set Admin cookies
@@ -73,18 +73,24 @@ export async function loginAction(prevState: any, formData: FormData) {
     revalidatePath("/", "layout");
     redirect("/");
   } else {
-    // Supervisor login uses Database Table lookup (Bypasses RLS)
-    const { data: supervisor, error } = await supabaseAdmin
+    // Supervisor/Staff login uses Database Table lookup
+    const { data: staff, error } = await supabaseAdmin
       .from("supervisors")
-      .select("id, email, password")
+      .select("id, email, password, department")
       .ilike("email", email)
       .maybeSingle();
 
-    if (error || !supervisor || supervisor.password !== password) {
+    if (error || !staff || staff.password !== password) {
       return { error: "Invalid login credentials." };
     }
 
-    // Set Supervisor cookies
+    // Validate that the chosen tab matches the user's department
+    const userDept = (staff.department || "Supervisor").toLowerCase().replace(' ', '-');
+    if (roleType !== "supervisor" && roleType !== userDept) {
+        return { error: `Your account is registered under the ${staff.department} department. Please use the ${staff.department} tab.` };
+    }
+
+    // Set Base Auth cookies
     cookieStore.set("auth_role", "supervisor", {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
@@ -92,7 +98,15 @@ export async function loginAction(prevState: any, formData: FormData) {
       path: "/",
     });
 
-    cookieStore.set("supervisor_id", supervisor.id, {
+    cookieStore.set("supervisor_id", staff.id, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    // Set Department cookie (default to 'Supervisor' if not set)
+    cookieStore.set("dept_role", staff.department || "Supervisor", {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 7,
@@ -100,7 +114,13 @@ export async function loginAction(prevState: any, formData: FormData) {
     });
 
     revalidatePath("/", "layout");
-    redirect("/");
+    
+    // Redirect to /tasks if specialized staff, otherwise to home dashboard
+    if (staff.department && staff.department !== 'Supervisor') {
+        redirect("/tasks");
+    } else {
+        redirect("/");
+    }
   }
 }
 
@@ -110,6 +130,7 @@ export async function logoutAction() {
   cookieStore.delete("supabase_access_token");
   cookieStore.delete("supervisor_id");
   cookieStore.delete("admin_id");
+  cookieStore.delete("dept_role");
   await supabase.auth.signOut();
   redirect("/login");
 }

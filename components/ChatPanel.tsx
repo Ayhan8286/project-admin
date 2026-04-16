@@ -26,6 +26,7 @@ export default function ChatPanel({
     const [messages, setMessages] = useState<Message[]>([]);
     const [selectedSupervisor, setSelectedSupervisor] = useState<Supervisor | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedDept, setSelectedDept] = useState("all");
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
 
@@ -75,7 +76,7 @@ export default function ChatPanel({
 
         const subscription = subscribeToMessages((newMessage) => {
             const isToMe = 
-                (currentUser.role === 'admin' && (newMessage.recipient_id === null || newMessage.recipient_id === currentUser.id || !newMessage.recipient_id)) ||
+                (currentUser.role === 'admin' && (newMessage.recipient_id === null || newMessage.recipient_id === currentUser.id)) ||
                 (currentUser.role === 'supervisor' && newMessage.recipient_id === currentUser.id);
 
             const belongsToCurrentThread = 
@@ -164,10 +165,12 @@ export default function ChatPanel({
             const dateB = summaries[b.id]?.last_message_at || '0';
             return dateB.localeCompare(dateA); 
         })
-        .filter(s => 
-            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.email?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        .filter(s => {
+            const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                 s.email?.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesDept = selectedDept === "all" || s.department === selectedDept;
+            return matchesSearch && matchesDept;
+        });
 
     const showThreadView = currentUser.role === 'supervisor' || !!selectedSupervisor;
 
@@ -231,7 +234,7 @@ export default function ChatPanel({
                 {(!showThreadView && currentUser.role === 'admin') ? (
                     /* Floating List View */
                     <div className="flex-1 flex flex-col overflow-hidden bg-white/30 dark:bg-slate-900/30">
-                        <div className="p-5">
+                        <div className="px-5 pt-5 pb-2">
                             <div className="relative group">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-forest transition-colors" />
                                 <input
@@ -242,6 +245,24 @@ export default function ChatPanel({
                                     className="w-full pl-11 pr-5 py-3 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-[13px] font-semibold focus:ring-2 focus:ring-forest/20 transition-all placeholder:text-slate-400 outline-none"
                                 />
                             </div>
+                        </div>
+
+                        {/* Department Filters */}
+                        <div className="px-5 pb-3 flex gap-2 overflow-x-auto custom-scrollbar no-scrollbar">
+                            {["all", "Supervisor", "Marketing", "Tech Team", "Finance"].map((dept) => (
+                                <button
+                                    key={dept}
+                                    onClick={() => setSelectedDept(dept)}
+                                    className={cn(
+                                        "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap transition-all",
+                                        selectedDept === dept 
+                                            ? "bg-forest text-white shadow-md shadow-forest/20" 
+                                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-forest"
+                                    )}
+                                >
+                                    {dept}
+                                </button>
+                            ))}
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-1 pb-6">
                             {isLoadingSupervisors ? (
@@ -274,7 +295,8 @@ export default function ChatPanel({
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-semibold leading-snug opacity-70">
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-semibold leading-snug opacity-70 flex items-center gap-1.5">
+                                            <span className="text-[9px] px-1.5 py-0.5 bg-forest/5 text-forest rounded-md">{s.department || "Staff"}</span>
                                             {summaries[s.id]?.last_message || "Secure internal line..."}
                                         </p>
                                     </div>

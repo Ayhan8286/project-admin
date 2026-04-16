@@ -25,7 +25,7 @@ export default function ChatToggle({
             subscription = subscribeToMessages((newMessage) => {
                 try {
                     const isToMe = 
-                        (currentUser.role === 'admin' && (newMessage.recipient_id === null || newMessage.recipient_id === currentUser.id || !newMessage.recipient_id)) ||
+                        (currentUser.role === 'admin' && (newMessage.recipient_id === null || newMessage.recipient_id === currentUser.id)) ||
                         (currentUser.role === 'supervisor' && newMessage.recipient_id === currentUser.id);
 
                     if (newMessage.sender_id !== currentUser.id && isToMe) {

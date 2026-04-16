@@ -9,7 +9,7 @@ import { Menu, X } from "lucide-react";
 
 const navItems = [
     { label: "Dashboard", href: "/", icon: "dashboard" },
-    { label: "Supervisors", href: "/supervisors", icon: "supervisor_account" },
+    { label: "Departments", href: "/departments/supervisor", icon: "corporate_fare" },
     { label: "Teachers", href: "/teachers", icon: "school" },
     { label: "Time Table", href: "/timetable", icon: "calendar_month" },
     { label: "Students", href: "/students", icon: "group" },
@@ -20,9 +20,20 @@ const navItems = [
     { label: "Settings", href: "/settings", icon: "settings" },
 ];
 
-export function Sidebar({ role = "admin", userName = "Admin", supervisorId }: { role?: string, userName?: string, supervisorId?: string }) {
+export function Sidebar({ 
+    role = "admin", 
+    userName = "Admin", 
+    supervisorId,
+    department = "Supervisor" 
+}: { 
+    role?: string, 
+    userName?: string, 
+    supervisorId?: string,
+    department?: string
+}) {
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const deptRole = department.toLowerCase().replace(' ', '-');
 
     useEffect(() => {
         setMobileOpen(false);
@@ -45,21 +56,32 @@ export function Sidebar({ role = "admin", userName = "Admin", supervisorId }: { 
             
             <nav className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pb-4 pt-2 pr-2">
                 {navItems.map((item) => {
-                    const allowedLabels = ["Dashboard", "Teachers", "Students", "Attendance", "Time Table", "Tasks"];
-                    if (role === "supervisor" && !allowedLabels.includes(item.label)) {
-                        return null;
+                    // Role-based visibility
+                    if (role === "supervisor") {
+                        if (deptRole === 'supervisor') {
+                            const allowed = ["Dashboard", "Teachers", "Students", "Attendance", "Time Table", "Tasks"];
+                            if (!allowed.includes(item.label)) return null;
+                        } else {
+                            // Specialized departments only see Tasks
+                            const allowed = ["Tasks"];
+                            if (!allowed.includes(item.label)) return null;
+                        }
                     }
 
-                    // Dynamically point the Supervisors tab to the specific supervisor's ID if logged in as supervisor
                     let href = item.href;
-                    if (role === "supervisor" && item.label === "Supervisors" && supervisorId) {
-                        href = `/supervisors/${supervisorId}`;
+                    // Point Dashboard to correct personal URL
+                    if (role === "supervisor" && item.label === "Dashboard" && supervisorId) {
+                        if (deptRole === 'supervisor') {
+                            href = `/supervisors/${supervisorId}`;
+                        } else {
+                            href = `/departments/${deptRole}/${supervisorId}`;
+                        }
                     }
 
                     const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
                     return (
                         <Link
-                            key={item.href}
+                            key={item.label}
                             href={href}
                             className={cn(
                                 "flex items-center space-x-3 px-4 py-3 rounded-full transition-all duration-200",
@@ -87,7 +109,7 @@ export function Sidebar({ role = "admin", userName = "Admin", supervisorId }: { 
                             {userName}
                         </p>
                         <p className="text-xs text-emerald-800/60 dark:text-emerald-200/60 truncate capitalize">
-                            {role}
+                            {role === "admin" ? "Administrator" : `${department} Team`}
                         </p>
                     </div>
                 </div>

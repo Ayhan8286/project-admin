@@ -49,10 +49,15 @@ export function middleware(request: NextRequest) {
     if (isAuthenticated && request.method === "GET") {
       const isSupervisor = roleCookie?.value === "supervisor";
       const supervisorId = request.cookies.get("supervisor_id")?.value;
+      const deptRole = request.cookies.get("dept_role")?.value?.toLowerCase()?.replace(' ', '-');
       
       let redirectRes;
       if (isSupervisor && supervisorId) {
-        redirectRes = NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+        if (deptRole === 'supervisor') {
+            redirectRes = NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+        } else {
+            redirectRes = NextResponse.redirect(new URL(`/tasks`, request.url));
+        }
       } else {
         redirectRes = NextResponse.redirect(new URL("/", request.url));
       }
@@ -72,25 +77,30 @@ export function middleware(request: NextRequest) {
   // Optional: Route protections
   if (roleCookie?.value === "supervisor") {
     const supervisorId = request.cookies.get("supervisor_id")?.value;
-
-    if (!supervisorId) {
-      const errorRes = NextResponse.redirect(new URL("/login", request.url));
-      errorRes.cookies.delete("auth_role");
-      return errorRes;
-    }
+    const deptRole = request.cookies.get("dept_role")?.value?.toLowerCase()?.replace(' ', '-');
 
     const isAllowedPath = 
-      pathname === "/" ||
-      pathname === "/teachers" ||
-      pathname === `/supervisors/${supervisorId}` ||
-      pathname.startsWith("/students") ||
-      pathname.startsWith("/attendance") ||
-      pathname.startsWith("/teachers/") ||
-      pathname.startsWith("/tasks") ||
-      pathname.startsWith("/timetable");
+      pathname === "/login" ||
+      pathname === "/tasks" ||
+      pathname.startsWith(`/departments/${deptRole}/`) ||
+      (deptRole === 'supervisor' && (
+        pathname === "/" ||
+        pathname === "/teachers" ||
+        pathname === `/supervisors/${supervisorId}` ||
+        pathname.startsWith("/students") ||
+        pathname.startsWith("/attendance") ||
+        pathname.startsWith("/teachers/") ||
+        pathname.startsWith("/timetable")
+      ));
     
-    if (!isAllowedPath && pathname !== "/login") {
-       const supervisorRedirect = NextResponse.redirect(new URL(`/supervisors/${supervisorId}`, request.url));
+    if (!isAllowedPath) {
+       let redirectUrl;
+       if (deptRole === 'supervisor') {
+           redirectUrl = `/supervisors/${supervisorId}`;
+       } else {
+           redirectUrl = `/tasks`;
+       }
+       const supervisorRedirect = NextResponse.redirect(new URL(redirectUrl, request.url));
        response.cookies.getAll().forEach(c => supervisorRedirect.cookies.set(c.name, c.value, c));
        return supervisorRedirect;
     }

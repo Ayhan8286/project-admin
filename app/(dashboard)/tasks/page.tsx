@@ -216,7 +216,7 @@ export default function TasksPage() {
           </h1>
           <p className="text-emerald-800/60 dark:text-emerald-200/60 font-medium">
             {user?.role === 'admin' 
-              ? "Oversee and assign tasks to supervisors" 
+              ? "Oversee and assign tasks to department staff" 
               : "Manage and update your assigned tasks"}
           </p>
         </div>
@@ -262,13 +262,18 @@ export default function TasksPage() {
               <SelectTrigger className="w-full md:w-[200px] bg-white/60 dark:bg-emerald-950/40 border-none rounded-2xl">
                 <div className="flex items-center">
                   <UserCircle2 className="w-4 h-4 mr-2 opacity-50" />
-                  <SelectValue placeholder="All Supervisors" />
+                  <SelectValue placeholder="All Staff" />
                 </div>
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-[#0c1a0d] border-emerald-100 dark:border-emerald-800/40 rounded-2xl">
-                <SelectItem value="all">All Supervisors</SelectItem>
+                <SelectItem value="all">All Staff</SelectItem>
                 {supervisors.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  <SelectItem key={s.id} value={s.id}>
+                    <div className="flex items-center justify-between w-full gap-4">
+                      <span>{s.name}</span>
+                      <span className="text-[10px] opacity-40 uppercase font-black">{s.department || "Supervisor"}</span>
+                    </div>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

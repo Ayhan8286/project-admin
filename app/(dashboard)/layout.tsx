@@ -11,6 +11,7 @@ export default async function DashboardLayout({
 }) {
   const cookieStore = await cookies();
   const role = cookieStore.get("auth_role")?.value || "admin";
+  const department = cookieStore.get("dept_role")?.value || "Supervisor";
   let userName = role === "admin" ? "Admin" : "Supervisor";
   let userId: string | undefined = undefined;
   let supervisorId: string | undefined = undefined;
@@ -73,7 +74,7 @@ export default async function DashboardLayout({
         <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-teal-300/30 dark:bg-teal-400/10 blur-[100px]" />
       </div>
       <Prefetcher />
-      <Sidebar role={role} userName={userName} supervisorId={supervisorId} />
+      <Sidebar role={role} userName={userName} supervisorId={supervisorId} department={department} />
       <main className="flex-1 overflow-y-auto relative z-10 bg-transparent flex flex-col custom-scrollbar">
         {children}
       </main>
