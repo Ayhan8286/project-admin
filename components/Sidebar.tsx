@@ -16,6 +16,7 @@ const navItems = [
     { label: "Platforms", href: "/platforms", icon: "layers" },
     { label: "Attendance", href: "/attendance", icon: "event_available" },
     { label: "Tasks", href: "/tasks", icon: "assignment" },
+    { label: "Daily Reports", href: "/reports", icon: "history_edu" },
     { label: "Complaints", href: "/complaints", icon: "report_problem" },
     { label: "Settings", href: "/settings", icon: "settings" },
 ];
@@ -59,7 +60,7 @@ export function Sidebar({
                     // Role-based visibility
                     if (role === "supervisor") {
                         if (deptRole === 'supervisor') {
-                            const allowed = ["Dashboard", "Teachers", "Students", "Attendance", "Time Table", "Tasks"];
+                            const allowed = ["Dashboard", "Teachers", "Students", "Attendance", "Time Table", "Tasks", "Daily Reports"];
                             if (!allowed.includes(item.label)) return null;
                         } else {
                             // Specialized departments only see Tasks
