@@ -15,13 +15,15 @@ import {
     MessageSquareQuote,
     Filter,
     Shield,
-    BookOpen
+    BookOpen,
+    History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getStudentsForReporting, submitDailyReport, getDailyReports, DailyReport } from "@/lib/api/reports";
 import { getSupervisors } from "@/lib/api/supervisors";
 import { getTeachers } from "@/lib/api/classes";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
+import { toast } from "sonner";
 import {
     Select,
     SelectContent,
@@ -124,14 +126,16 @@ export default function DailyReportsPage() {
                 description
             });
             setSubmitSuccess(true);
+            toast.success("Daily report submitted successfully!");
             setDescription("");
             queryClient.invalidateQueries({ queryKey: ["dailyReports"] });
             setTimeout(() => {
                 setSubmitSuccess(false);
                 setIsReportDialogOpen(false);
-            }, 1500);
+            }, 1000);
         } catch (error) {
             console.error("Failed to submit report:", error);
+            toast.error("Failed to submit report. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
@@ -141,7 +145,16 @@ export default function DailyReportsPage() {
         setSelectedStudentForReport(student);
         setReportDate(new Date());
         setReportTime(format(new Date(), "hh:mm a"));
-        setDescription("");
+        
+        // Find if there's already a report for this student today
+        const existingReport = reports.find(r => r.student_id === student.id);
+        if (existingReport) {
+            setDescription(existingReport.description);
+            setReportTime(existingReport.time);
+        } else {
+            setDescription("");
+        }
+        
         setIsReportDialogOpen(true);
     };
 
@@ -219,33 +232,69 @@ export default function DailyReportsPage() {
                             <p className="text-lg font-black text-foreground">No students assigned</p>
                         </div>
                     ) : (
-                        filteredStudents.map((student) => (
-                            <button
-                                key={student.id}
-                                onClick={() => handleOpenReport(student)}
-                                className="group relative bg-card rounded-[32px] border border-border p-8 shadow-sm hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-300 text-left"
-                            >
-                                <div className="flex flex-col h-full gap-5">
-                                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-xl text-primary border border-primary/20 group-hover:bg-primary group-hover:text-white transition-colors">
-                                        {student.full_name.substring(0, 1).toUpperCase()}
-                                    </div>
+                        filteredStudents.map((student) => {
+                            const isReportedToday = reports.some(r => r.student_id === student.id);
+                            
+                            return (
+                                <button
+                                    key={student.id}
+                                    onClick={() => handleOpenReport(student)}
+                                    className={cn(
+                                        "group relative bg-card rounded-[32px] border p-8 shadow-sm transition-all duration-300 text-left overflow-hidden",
+                                        isReportedToday 
+                                            ? "border-green-500/30 bg-green-500/[0.02] opacity-80" 
+                                            : "border-border hover:shadow-xl hover:scale-[1.02] active:scale-95"
+                                    )}
+                                >
+                                    {isReportedToday && (
+                                        <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-green-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-green-500/20">
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            Submitted
+                                        </div>
+                                    )}
 
-                                    <div>
-                                        <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">
-                                            {student.full_name}
-                                        </h3>
-                                        <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-wider">
-                                            ID: #{student.reg_no}
-                                        </p>
-                                    </div>
+                                    <div className="flex flex-col h-full gap-5">
+                                        <div className={cn(
+                                            "w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl border transition-colors",
+                                            isReportedToday
+                                                ? "bg-green-500/10 text-green-600 border-green-500/20"
+                                                : "bg-primary/10 text-primary border-primary/20 group-hover:bg-primary group-hover:text-white"
+                                        )}>
+                                            {student.full_name.substring(0, 1).toUpperCase()}
+                                        </div>
 
-                                    <div className="mt-2 flex items-center gap-2 text-primary font-black text-[11px] uppercase tracking-widest border-t border-border/50 pt-4">
-                                        <Plus className="h-3 w-3" />
-                                        Add Report
+                                        <div>
+                                            <h3 className={cn(
+                                                "text-xl font-black transition-colors leading-tight",
+                                                isReportedToday ? "text-foreground/60" : "text-foreground group-hover:text-primary"
+                                            )}>
+                                                {student.full_name}
+                                            </h3>
+                                            <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-wider">
+                                                ID: #{student.reg_no}
+                                            </p>
+                                        </div>
+
+                                        <div className={cn(
+                                            "mt-2 flex items-center gap-2 font-black text-[11px] uppercase tracking-widest border-t border-border/50 pt-4",
+                                            isReportedToday ? "text-green-600" : "text-primary"
+                                        )}>
+                                            {isReportedToday ? (
+                                                <>
+                                                    <History className="h-3 w-3" />
+                                                    View / Edit Report
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Plus className="h-3 w-3" />
+                                                    Add Report
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </button>
-                        ))
+                                </button>
+                            );
+                        })
                     )}
                 </div>
             )}
