@@ -4,21 +4,18 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { 
-    History, 
-    Plus, 
     Search, 
-    Filter, 
     User, 
-    BookOpen, 
     Clock, 
     Calendar as CalendarIcon,
     Loader2,
     CheckCircle2,
-    Shield,
+    Plus,
     Users,
-    GraduationCap,
-    ArrowUpRight,
-    MessageSquareQuote
+    MessageSquareQuote,
+    Filter,
+    Shield,
+    BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getStudentsForReporting, submitDailyReport, getDailyReports, DailyReport } from "@/lib/api/reports";
@@ -49,7 +46,7 @@ import {
 export default function DailyReportsPage() {
     const queryClient = useQueryClient();
     const [isMounted, setIsMounted] = useState(false);
-    const [authRole, setAuthRole] = useState("admin");
+    const [authRole, setAuthRole] = useState<string | null>(null);
     const [authSupervisorId, setAuthSupervisorId] = useState<string | undefined>(undefined);
 
     // Supervisor Interaction State
@@ -72,32 +69,33 @@ export default function DailyReportsPage() {
     const [filterDate, setFilterDate] = useState<Date>(new Date());
 
     useEffect(() => {
-        setIsMounted(true);
         const role = document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1] || "admin";
         const supId = document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
         setAuthRole(role);
         setAuthSupervisorId(supId);
+        setIsMounted(true);
     }, []);
 
     const isAdmin = authRole === "admin";
+    const isSupervisor = authRole === "supervisor";
 
     // Queries
     const { data: students = [], isLoading: isLoadingStudents } = useQuery({
         queryKey: ["studentsForReporting", authSupervisorId],
-        queryFn: () => getStudentsForReporting(!isAdmin ? authSupervisorId : undefined),
-        enabled: isMounted
+        queryFn: () => getStudentsForReporting(isSupervisor ? authSupervisorId : undefined),
+        enabled: isMounted && !!authRole
     });
 
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
         queryFn: () => getSupervisors(),
-        enabled: isAdmin
+        enabled: isMounted && isAdmin
     });
 
     const { data: teachers = [] } = useQuery({
         queryKey: ["teachers"],
         queryFn: getTeachers,
-        enabled: isMounted 
+        enabled: isMounted && !!authRole
     });
 
     const { data: reports = [], isLoading: isLoadingReports } = useQuery({
@@ -108,7 +106,7 @@ export default function DailyReportsPage() {
             teacherId: filterTeacherId === "All" ? undefined : filterTeacherId,
             studentId: filterStudentId === "All" ? undefined : filterStudentId
         }),
-        enabled: isMounted
+        enabled: isMounted && !!authRole
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -147,7 +145,13 @@ export default function DailyReportsPage() {
         setIsReportDialogOpen(true);
     };
 
-    if (!isMounted) return null;
+    if (!isMounted || !authRole) {
+        return (
+            <div className="w-full h-[60vh] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" />
+            </div>
+        );
+    }
 
     // Filter students for supervisor view
     const filteredStudents = students.filter(s => {
@@ -165,13 +169,13 @@ export default function DailyReportsPage() {
                         Daily <span className="text-primary italic">Reports</span>
                     </h1>
                     <p className="text-muted-foreground mt-3 text-sm max-w-md font-medium">
-                        {isAdmin 
-                            ? "Overview of student progress and lesson tracking."
-                            : "Select a student to log their daily progress."}
+                        {isSupervisor 
+                            ? "Select a student to log their daily progress."
+                            : "Overview of student progress and lesson tracking."}
                     </p>
                 </div>
 
-                {!isAdmin && (
+                {isSupervisor && (
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -202,54 +206,53 @@ export default function DailyReportsPage() {
                 )}
             </div>
 
-            {/* Content Area */}
-            {!isAdmin ? (
-                <div className="space-y-8">
-                    {/* Student Grid for Supervisors - Simplified Card */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {isLoadingStudents ? (
-                            Array.from({ length: 8 }).map((_, i) => (
-                                <div key={i} className="h-40 rounded-[32px] bg-accent/20 animate-pulse" />
-                            ))
-                        ) : filteredStudents.length === 0 ? (
-                            <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-card/50 rounded-[32px] border-2 border-dashed border-border">
-                                <Users className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-                                <p className="text-lg font-black text-foreground">No students assigned</p>
-                            </div>
-                        ) : (
-                            filteredStudents.map((student) => (
-                                <button
-                                    key={student.id}
-                                    onClick={() => handleOpenReport(student)}
-                                    className="group relative bg-card rounded-[32px] border border-border p-6 shadow-sm hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-300 text-left"
-                                >
-                                    <div className="flex flex-col h-full gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-primary border border-primary/20">
-                                            {student.full_name.substring(0, 2).toUpperCase()}
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-lg font-black text-foreground group-hover:text-primary transition-colors leading-tight">
-                                                {student.full_name}
-                                            </h3>
-                                            <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-wider">
-                                                ID: #{student.reg_no}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase">
-                                            <Plus className="h-3 w-3" />
-                                            Add Daily Report
-                                        </div>
+            {/* Supervisor View: ONLY Student List and Popup */}
+            {isSupervisor && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {isLoadingStudents ? (
+                        Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="h-40 rounded-[32px] bg-accent/20 animate-pulse" />
+                        ))
+                    ) : filteredStudents.length === 0 ? (
+                        <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-card/50 rounded-[32px] border-2 border-dashed border-border">
+                            <Users className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                            <p className="text-lg font-black text-foreground">No students assigned</p>
+                        </div>
+                    ) : (
+                        filteredStudents.map((student) => (
+                            <button
+                                key={student.id}
+                                onClick={() => handleOpenReport(student)}
+                                className="group relative bg-card rounded-[32px] border border-border p-8 shadow-sm hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-300 text-left"
+                            >
+                                <div className="flex flex-col h-full gap-5">
+                                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-xl text-primary border border-primary/20 group-hover:bg-primary group-hover:text-white transition-colors">
+                                        {student.full_name.substring(0, 1).toUpperCase()}
                                     </div>
-                                </button>
-                            ))
-                        )}
-                    </div>
+
+                                    <div>
+                                        <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">
+                                            {student.full_name}
+                                        </h3>
+                                        <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-wider">
+                                            ID: #{student.reg_no}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-2 flex items-center gap-2 text-primary font-black text-[11px] uppercase tracking-widest border-t border-border/50 pt-4">
+                                        <Plus className="h-3 w-3" />
+                                        Add Report
+                                    </div>
+                                </div>
+                            </button>
+                        ))
+                    )}
                 </div>
-            ) : (
+            )}
+
+            {/* Admin View: Full Analytics and Records */}
+            {isAdmin && (
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-                    {/* Admin View - Keep existing logic for overview */}
                     <div className="xl:col-span-4">
                         <div className="bg-card rounded-[32px] border border-border p-8 shadow-sm card-hover sticky top-8">
                             <h3 className="text-xl font-black mb-6 flex items-center gap-2 text-foreground">
@@ -312,6 +315,14 @@ export default function DailyReportsPage() {
                     </div>
 
                     <div className="xl:col-span-8 space-y-6">
+                        <div className="flex items-center justify-between mb-2 px-1">
+                            <h3 className="text-xl font-black text-foreground flex items-center gap-2">
+                                <BookOpen className="h-5 w-5 text-primary" />
+                                Global Records
+                                <span className="text-sm font-bold text-muted-foreground ml-2">({reports.length})</span>
+                            </h3>
+                        </div>
+
                         {isLoadingReports ? (
                             <LoadingShimmer rows={3} rowHeight="h-40" />
                         ) : reports.length === 0 ? (
@@ -329,7 +340,7 @@ export default function DailyReportsPage() {
                 </div>
             )}
 
-            {/* Submission Dialog */}
+            {/* Submission Dialog (Universal) */}
             <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
                 <DialogContent className="sm:max-w-[500px] rounded-[40px] border-border bg-card p-0 overflow-hidden shadow-2xl">
                     <div className="bg-primary/10 p-8 flex items-center gap-4 border-b border-primary/10">
@@ -415,7 +426,7 @@ function ReportCard({ report }: { report: DailyReport }) {
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-primary border border-primary/20">
-                                {(report.student?.full_name || "S").substring(0, 2).toUpperCase()}
+                                {(report.student?.full_name || "S").substring(0, 1).toUpperCase()}
                             </div>
                             <div>
                                 <h4 className="text-[17px] font-black text-foreground">{report.student?.full_name}</h4>
