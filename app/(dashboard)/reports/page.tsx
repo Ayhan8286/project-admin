@@ -117,10 +117,18 @@ export default function DailyReportsPage() {
 
         setIsSubmitting(true);
         try {
+            const teacherId = selectedStudentForReport.teacher?.id;
+            const supervisorId = selectedStudentForReport.supervisor_id || authSupervisorId;
+
+            if (!teacherId || !supervisorId) {
+                toast.error("This student is missing a teacher or supervisor assignment. Please contact admin.");
+                return;
+            }
+
             await submitDailyReport({
                 student_id: selectedStudentForReport.id,
-                teacher_id: selectedStudentForReport.teacher?.id || "",
-                supervisor_id: selectedStudentForReport.supervisor?.id || "",
+                teacher_id: teacherId,
+                supervisor_id: supervisorId,
                 date: format(reportDate, "yyyy-MM-dd"),
                 time: reportTime,
                 description

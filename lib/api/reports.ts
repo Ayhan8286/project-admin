@@ -22,12 +22,19 @@ export interface DailyReport {
 }
 
 export async function submitDailyReport(report: Omit<DailyReport, "id" | "created_at">): Promise<void> {
+    console.log("Submitting daily report:", report);
+    
     const { error } = await supabase
         .from("daily_reports")
-        .insert([report]);
+        .upsert([report], { onConflict: 'student_id, date' });
 
     if (error) {
-        console.error("Error submitting daily report:", error);
+        console.error("Daily report submission error details:", {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+        });
         throw error;
     }
 }
