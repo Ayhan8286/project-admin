@@ -232,7 +232,6 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="title" className="text-emerald-900 dark:text-emerald-100 font-semibold">Title</Label>
-                  {!isAdmin && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded text-emerald-600">Read Only</span>}
                 </div>
                 <Input
                   id="title"
@@ -248,15 +247,14 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="description" className="text-emerald-900 dark:text-emerald-100 font-semibold">Description</Label>
-                  {!isAdmin && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded text-emerald-600">Read Only</span>}
                 </div>
                 <Textarea
                   id="description"
                   placeholder="Add more details about this task..."
                   value={formData.description || ""}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  disabled={!isAdmin}
-                  className={`bg-white dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800/40 min-h-[100px] focus:ring-emerald-500 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  readOnly={!isAdmin}
+                  className={`bg-white dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800/40 min-h-[100px] focus:ring-emerald-500 ${!isAdmin ? 'opacity-70' : ''}`}
                 />
               </div>
 
@@ -304,7 +302,6 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-emerald-900 dark:text-emerald-100 font-semibold">Department</Label>
-                    {!isAdmin && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded text-emerald-600">Read Only</span>}
                   </div>
                   <Select
                     value={selectedDept}
@@ -326,7 +323,6 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-emerald-900 dark:text-emerald-100 font-semibold">Assign To</Label>
-                    {!isAdmin && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded text-emerald-600">Read Only</span>}
                   </div>
                   <Select
                     value={formData.supervisor_id || "unassigned"}
