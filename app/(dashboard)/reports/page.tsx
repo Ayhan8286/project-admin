@@ -19,7 +19,8 @@ import {
     History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getStudentsForReporting, submitDailyReport, getDailyReports, DailyReport } from "@/lib/api/reports";
+import { getStudentsForReporting, getDailyReports, DailyReport } from "@/lib/api/reports";
+import { submitDailyReportAction } from "@/lib/actions/reports";
 import { getSupervisors } from "@/lib/api/supervisors";
 import { getTeachers } from "@/lib/api/classes";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
@@ -42,7 +43,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
 } from "@/components/ui/dialog";
 
 export default function DailyReportsPage() {
@@ -122,10 +122,11 @@ export default function DailyReportsPage() {
 
             if (!teacherId || !supervisorId) {
                 toast.error("This student is missing a teacher or supervisor assignment. Please contact admin.");
+                setIsSubmitting(false);
                 return;
             }
 
-            await submitDailyReport({
+            await submitDailyReportAction({
                 student_id: selectedStudentForReport.id,
                 teacher_id: teacherId,
                 supervisor_id: supervisorId,
