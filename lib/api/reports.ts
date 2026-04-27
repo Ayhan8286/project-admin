@@ -24,16 +24,16 @@ export interface DailyReport {
 export async function submitDailyReport(report: Omit<DailyReport, "id" | "created_at">): Promise<void> {
     console.log("Submitting daily report:", report);
     
-    const { error } = await supabase
+    const { error, status, statusText } = await supabase
         .from("daily_reports")
         .insert([report]);
 
     if (error) {
-        console.error("Daily report submission error details:", {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint
+        console.error("Daily report submission failure:", {
+            error,
+            status,
+            statusText,
+            payload: report
         });
         throw error;
     }
