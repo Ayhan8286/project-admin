@@ -24,7 +24,7 @@ import { CalendarIcon, UserCheck, UserX, Clock, Loader2, ArrowLeft, CalendarOff,
 import { cn } from "@/lib/utils";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 
-type StatusFilter = "all" | "Present" | "Absent" | "Late" | "Leave";
+type StatusFilter = "all" | "Present" | "Absent" | "Late" | "Leave" | "Unmarked";
 
 export default function AttendanceRecordsPage() {
     const searchParams = useSearchParams();
@@ -63,11 +63,12 @@ export default function AttendanceRecordsPage() {
     });
 
     const summary = {
-        total: records.length,
-        present: records.filter((r) => r.status === "Present").length,
-        absent: records.filter((r) => r.status === "Absent").length,
-        late: records.filter((r) => r.status === "Late").length,
-        leave: records.filter((r) => r.status === "Leave").length,
+        total: allRecords.length,
+        present: allRecords.filter((r) => r.status === "Present").length,
+        absent: allRecords.filter((r) => r.status === "Absent").length,
+        late: allRecords.filter((r) => r.status === "Late").length,
+        leave: allRecords.filter((r) => r.status === "Leave").length,
+        unmarked: allRecords.filter((r) => r.status === "Unmarked").length,
     };
 
     const getStatusConfig = (status: string) => {
@@ -173,13 +174,14 @@ export default function AttendanceRecordsPage() {
                     {isLoading ? (
                         <LoadingShimmer rows={2} rowHeight="h-10" />
                     ) : (
-                        <div className="grid grid-cols-5 gap-3">
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                             {([
                                 { key: "all" as StatusFilter, label: "Total", value: summary.total, color: "text-foreground", activeBg: "bg-primary/10 border-primary/30" },
                                 { key: "Present" as StatusFilter, label: "Present", value: summary.present, color: "text-green-500", activeBg: "bg-green-500/10 border-green-500/30" },
                                 { key: "Absent" as StatusFilter, label: "Absent", value: summary.absent, color: "text-red-500", activeBg: "bg-red-500/10 border-red-500/30" },
                                 { key: "Late" as StatusFilter, label: "Late", value: summary.late, color: "text-yellow-500", activeBg: "bg-yellow-500/10 border-yellow-500/30" },
                                 { key: "Leave" as StatusFilter, label: "Leave", value: summary.leave, color: "text-blue-500", activeBg: "bg-blue-500/10 border-blue-500/30" },
+                                { key: "Unmarked" as StatusFilter, label: "Unmarked", value: summary.unmarked, color: "text-slate-500", activeBg: "bg-slate-500/10 border-slate-500/30" },
                             ]).map(({ key, label, value, color, activeBg }) => (
                                 <button
                                     key={key}
