@@ -90,7 +90,8 @@ export function middleware(request: NextRequest) {
         pathname.startsWith("/students") ||
         pathname.startsWith("/attendance") ||
         pathname.startsWith("/teachers/") ||
-        pathname.startsWith("/timetable")
+        pathname.startsWith("/timetable") ||
+        pathname === "/reports"
       ));
     
     if (!isAllowedPath) {
