@@ -1,11 +1,21 @@
 import { supabase } from "@/lib/supabase";
 import { Supervisor } from "@/types/supervisor";
 
-export async function getSupervisors(): Promise<Supervisor[]> {
-    const { data, error } = await supabase
+export async function getSupervisors(department?: string): Promise<Supervisor[]> {
+    let query = supabase
         .from("supervisors")
         .select("*")
         .order("name");
+
+    if (department) {
+        query = query.eq("department", department);
+    } else {
+        // Default: Only show academic supervisors (department = 'Supervisor' or NULL)
+        // This prevents other department members (Tech, Marketing, etc.) from appearing in global dropdowns.
+        query = query.or("department.eq.Supervisor,department.is.null");
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error("Error fetching supervisors:", error);

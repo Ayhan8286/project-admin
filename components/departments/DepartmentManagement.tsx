@@ -92,9 +92,7 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
     const { data: staff = [], isLoading } = useQuery({
         queryKey: ["staff", department],
         queryFn: async () => {
-            const allStaff = await getSupervisors();
-            // Filter by department - this is a client-side bridge until API is updated
-            return allStaff.filter(s => (s as any).department === department || (! (s as any).department && department === "Supervisor"));
+            return await getSupervisors(department);
         },
         ...STALE_LONG,
     });
