@@ -69,6 +69,20 @@ export default function AttendanceRecordsPage() {
         return configs[status] || { bg: "bg-muted", text: "text-muted-foreground", dot: "bg-muted-foreground", shadow: "" };
     };
 
+    const supervisorBreakdown = records.reduce((acc, record) => {
+        const supervisorName = record.student?.supervisor?.name || "Unassigned";
+        if (!acc[supervisorName]) {
+            acc[supervisorName] = { present: 0, absent: 0, late: 0, leave: 0, total: 0 };
+        }
+        acc[supervisorName].total++;
+        const status = record.status;
+        if (status === "Present") acc[supervisorName].present++;
+        else if (status === "Absent") acc[supervisorName].absent++;
+        else if (status === "Late") acc[supervisorName].late++;
+        else if (status === "Leave") acc[supervisorName].leave++;
+        return acc;
+    }, {} as Record<string, { present: number, absent: number, late: number, leave: number, total: number }>);
+
     return (
         <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
             {/* Header */}
@@ -141,7 +155,7 @@ export default function AttendanceRecordsPage() {
                 <div className="bg-card rounded-3xl border border-border p-6 shadow-sm card-hover flex flex-col justify-center">
                     <h3 className="text-lg font-black mb-4 flex items-center gap-2 text-foreground">
                         <Filter className="h-5 w-5 text-primary" />
-                        Summary · {format(selectedDate, "MMM d")}
+                        Overall Summary · {format(selectedDate, "MMM d")}
                     </h3>
                     {isLoading ? (
                         <LoadingShimmer rows={2} rowHeight="h-10" />
@@ -172,6 +186,42 @@ export default function AttendanceRecordsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Supervisor Breakdown */}
+            {!isLoading && records.length > 0 && (
+                <div className="bg-card rounded-3xl border border-border p-6 shadow-sm card-hover">
+                    <h3 className="text-lg font-black mb-4 flex items-center gap-2 text-foreground">
+                        <UserCheck className="h-5 w-5 text-primary" />
+                        Supervisor Breakdown
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {Object.entries(supervisorBreakdown).map(([name, stats]) => (
+                            <div key={name} className="bg-accent/20 rounded-2xl p-4 border border-border flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold text-foreground">{name}</span>
+                                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                                        {stats.total} Students
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="text-center p-2 rounded-xl bg-green-500/5 border border-green-500/10">
+                                        <p className="text-lg font-black text-green-500">{stats.present}</p>
+                                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Present</p>
+                                    </div>
+                                    <div className="text-center p-2 rounded-xl bg-red-500/5 border border-red-500/10">
+                                        <p className="text-lg font-black text-red-500">{stats.absent}</p>
+                                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Absent</p>
+                                    </div>
+                                    <div className="text-center p-2 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                                        <p className="text-lg font-black text-blue-500">{stats.late + stats.leave}</p>
+                                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Leave/Late</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Records Table */}
             <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col flex-1 card-hover">
@@ -207,6 +257,7 @@ export default function AttendanceRecordsPage() {
                                 <tr>
                                     <th className="px-6 py-4 border-b border-border">Student Name</th>
                                     <th className="px-6 py-4 border-b border-border">Reg. No.</th>
+                                    <th className="px-6 py-4 border-b border-border">Supervisor</th>
                                     <th className="px-6 py-4 text-center border-b border-border">Status</th>
                                     <th className="px-6 py-4 border-b border-border">Remarks</th>
                                 </tr>
@@ -237,6 +288,11 @@ export default function AttendanceRecordsPage() {
                                             </td>
                                             <td className="px-6 py-4 text-muted-foreground font-semibold">
                                                 #{record.student?.reg_no || "—"}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-xs font-bold text-foreground bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10">
+                                                    {record.student?.supervisor?.name || "Unassigned"}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <span className={cn(

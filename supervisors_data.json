@@ -5,7 +5,8 @@
     "email": "nimra.supervisor@email.com",
     "phone": "12345678",
     "timing": "Evening",
-    "password": "supervisor@"
+    "password": "supervisor@",
+    "department": "Supervisor"
   },
   {
     "id": "a25074e4-cf5e-4583-b66b-5d2693ec9f62",
@@ -13,7 +14,8 @@
     "email": "fatima.supervisor@email.com",
     "phone": "123456788",
     "timing": "Evening",
-    "password": "supervisor@"
+    "password": "supervisor@",
+    "department": "Supervisor"
   },
   {
     "id": "870286da-6c6b-4c09-a7bf-3648a01261c7",
@@ -21,6 +23,34 @@
     "email": "maryum.supervisor@email.com",
     "phone": "123456789",
     "timing": "Morning",
-    "password": "supervisor@"
+    "password": "supervisor@",
+    "department": "Supervisor"
+  },
+  {
+    "id": "faf1a674-840b-4fc5-9ba7-710cea59063d",
+    "name": "Rimsha Ilyas",
+    "email": "rimsha.supervisor@email.com",
+    "phone": "123456789",
+    "timing": "Night",
+    "password": "supervisor@",
+    "department": "Supervisor"
+  },
+  {
+    "id": "58cbe316-ea70-48e9-b524-af9d8955cb55",
+    "name": "Usman Mirza",
+    "email": "usman.marketing@email.com",
+    "phone": "123456789",
+    "timing": null,
+    "password": "marketing@",
+    "department": "Marketing"
+  },
+  {
+    "id": "8dc7adb5-a4fe-4831-bef1-30a554106a6d",
+    "name": "Ayhan Mirza",
+    "email": "ayhan.tech@email.com",
+    "phone": "123456789",
+    "timing": null,
+    "password": "tech@",
+    "department": "Tech Team"
   }
 ]

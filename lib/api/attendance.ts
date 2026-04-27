@@ -6,6 +6,10 @@ export interface AttendanceWithStudent extends AttendanceRecord {
         id: string;
         full_name: string;
         reg_no: string;
+        supervisor_id: string | null;
+        supervisor?: {
+            name: string;
+        } | null;
     };
 }
 
@@ -36,7 +40,13 @@ export async function getAttendanceByDate(date: string, supervisorId?: string): 
         .from("attendance")
         .select(`
             *,
-            student:students!inner(id, full_name, reg_no, supervisor_id)
+            student:students!inner(
+                id, 
+                full_name, 
+                reg_no, 
+                supervisor_id,
+                supervisor:supervisors(name)
+            )
         `)
         .eq("date", date);
 
