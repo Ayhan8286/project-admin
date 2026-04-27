@@ -26,7 +26,7 @@ export async function submitDailyReport(report: Omit<DailyReport, "id" | "create
     
     const { error } = await supabase
         .from("daily_reports")
-        .upsert([report], { onConflict: 'student_id, date' });
+        .insert([report]);
 
     if (error) {
         console.error("Daily report submission error details:", {
@@ -78,7 +78,7 @@ export async function getStudentsForReporting(supervisorId?: string): Promise<an
     let query = supabase
         .from("students")
         .select(`
-            id, full_name, reg_no, supervisor_id,
+            id, full_name, reg_no, status, shift, guardian_name, supervisor_id,
             supervisor:supervisors(id, name),
             classes(
                 teacher:teachers(id, name)

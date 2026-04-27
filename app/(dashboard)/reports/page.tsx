@@ -400,13 +400,38 @@ export default function DailyReportsPage() {
             {/* Submission Dialog (Universal) */}
             <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
                 <DialogContent className="sm:max-w-[500px] rounded-[40px] border-border bg-card p-0 overflow-hidden shadow-2xl">
-                    <div className="bg-primary/10 p-8 flex items-center gap-4 border-b border-primary/10">
-                        <div className="w-16 h-16 rounded-[24px] bg-primary flex items-center justify-center text-white">
-                            <MessageSquareQuote className="h-8 w-8" />
+                    <div className="bg-primary/10 p-8 border-b border-primary/10">
+                        <div className="flex items-center gap-6 mb-6">
+                            <div className="w-20 h-20 rounded-[28px] bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20">
+                                <User className="h-10 w-10" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-3xl font-black text-foreground leading-tight">
+                                    {selectedStudentForReport?.full_name}
+                                </DialogTitle>
+                                <p className="text-sm font-bold text-primary/70 uppercase tracking-[0.1em]">
+                                    #{selectedStudentForReport?.reg_no} · {selectedStudentForReport?.status}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <DialogTitle className="text-2xl font-black text-foreground">Daily Report</DialogTitle>
-                            <DialogDescription className="text-sm font-bold text-primary/60">{selectedStudentForReport?.full_name}</DialogDescription>
+                        
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="bg-card/50 p-3 rounded-2xl border border-primary/5">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">Guardian</p>
+                                <p className="text-xs font-bold text-foreground truncate">{selectedStudentForReport?.guardian_name || "N/A"}</p>
+                            </div>
+                            <div className="bg-card/50 p-3 rounded-2xl border border-primary/5">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">Shift</p>
+                                <p className="text-xs font-bold text-foreground">{selectedStudentForReport?.shift || "N/A"}</p>
+                            </div>
+                            <div className="bg-card/50 p-3 rounded-2xl border border-primary/5">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">Teacher</p>
+                                <p className="text-xs font-bold text-foreground truncate">{selectedStudentForReport?.teacher?.name || "N/A"}</p>
+                            </div>
+                            <div className="bg-card/50 p-3 rounded-2xl border border-primary/5">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">Supervisor</p>
+                                <p className="text-xs font-bold text-foreground truncate">{selectedStudentForReport?.supervisor?.name || "N/A"}</p>
+                            </div>
                         </div>
                     </div>
 
