@@ -311,7 +311,7 @@ export default function AttendanceRecordsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {filteredRecords.map((record: AttendanceWithStudent) => {
+                                {filteredRecords.map((record) => {
                                     const statusCfg = getStatusConfig(record.status);
                                     return (
                                         <tr key={record.id} className="group hover:bg-accent/20 transition-colors">
