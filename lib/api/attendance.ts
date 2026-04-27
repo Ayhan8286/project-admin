@@ -65,7 +65,7 @@ export async function getAttendanceByDate(date: string, supervisorId?: string): 
     return (data || []).map((record) => ({
         ...record,
         student: Array.isArray(record.student) ? record.student[0] : record.student,
-    }));
+    } as AttendanceWithStudent));
 }
 
 export async function getMissingAttendanceStudents(date: string, supervisorId?: string): Promise<any[]> {

@@ -46,18 +46,18 @@ export default function AttendanceRecordsPage() {
 
     const isLoading = isLoadingMarked || isLoadingMissing;
 
-    const unmarkedRecords = missingStudents.map(s => ({
+    const unmarkedRecords: AttendanceWithStudent[] = missingStudents.map(s => ({
         id: `unmarked-${s.id}`,
         student_id: s.id,
         date: format(selectedDate, "yyyy-MM-dd"),
-        status: "Unmarked" as const,
+        status: "Unmarked" as any, // Use any here because Unmarked is a UI state not in the DB enum
         student: s,
         remarks: null,
         class_id: null,
         marked_by: null
     }));
 
-    const allRecords = [...records, ...unmarkedRecords];
+    const allRecords: AttendanceWithStudent[] = [...records, ...unmarkedRecords];
 
     const filteredRecords = allRecords.filter((r) => {
         const matchesStatus = statusFilter === "all" ? true : r.status === statusFilter;
@@ -71,7 +71,7 @@ export default function AttendanceRecordsPage() {
         absent: allRecords.filter((r) => r.status === "Absent").length,
         late: allRecords.filter((r) => r.status === "Late").length,
         leave: allRecords.filter((r) => r.status === "Leave").length,
-        unmarked: allRecords.filter((r) => r.status === "Unmarked").length,
+        unmarked: allRecords.filter((r) => (r.status as any) === "Unmarked").length,
     };
 
     const getStatusConfig = (status: string) => {
@@ -355,7 +355,7 @@ export default function AttendanceRecordsPage() {
                                                     {record.status === "Absent" && <UserX className="h-3 w-3" />}
                                                     {record.status === "Late" && <Clock className="h-3 w-3" />}
                                                     {record.status === "Leave" && <CalendarOff className="h-3 w-3" />}
-                                                    {record.status === "Unmarked" && <UserMinus className="h-3 w-3" />}
+                                                    {(record.status as any) === "Unmarked" && <UserMinus className="h-3 w-3" />}
                                                     {record.status}
                                                 </span>
                                             </td>
