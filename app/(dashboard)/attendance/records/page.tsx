@@ -51,7 +51,10 @@ export default function AttendanceRecordsPage() {
         student_id: s.id,
         date: format(selectedDate, "yyyy-MM-dd"),
         status: "Unmarked" as const,
-        student: s
+        student: s,
+        remarks: null,
+        class_id: null,
+        marked_by: null
     }));
 
     const allRecords = [...records, ...unmarkedRecords];
