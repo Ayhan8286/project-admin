@@ -38,14 +38,32 @@ import { Badge } from "@/components/ui/badge";
 
 // ─── HELPERS ───────────────────────────────────────────────────
 
-/** Converts "10:30 AM" to minutes from 00:00 */
+/** Converts "10:30 AM" or "10:30AM" to minutes from 00:00 */
 const timeToMinutes = (timeStr?: string) => {
     if (!timeStr) return 0;
-    const [time, modifier] = timeStr.split(" ");
-    let [hours, minutes] = time.split(":").map(Number);
+    const match = timeStr.trim().match(/^(\d+):(\d+)\s*(AM|PM|am|pm)$/i);
+    if (!match) return 0;
+    
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const modifier = match[3].toUpperCase();
+    
     if (hours === 12) hours = 0;
-    if (modifier?.toUpperCase() === "PM") hours += 12;
+    if (modifier === "PM") hours += 12;
     return hours * 60 + minutes;
+};
+
+/** Normalizes "10:3 am" to "10:03 AM" for consistent grouping keys */
+const normalizeTime = (timeStr?: string) => {
+    if (!timeStr) return "";
+    const match = timeStr.trim().match(/^(\d+):(\d+)\s*(AM|PM|am|pm)$/i);
+    if (!match) return timeStr.trim();
+    
+    const hours = parseInt(match[1], 10);
+    const minutes = match[2].padStart(2, '0');
+    const modifier = match[3].toUpperCase();
+    
+    return `${hours}:${minutes} ${modifier}`;
 };
 
 /** Get current time in Pakistan (UTC+5) as minutes from 00:00 */
@@ -73,6 +91,7 @@ export default function TimetablePage() {
     const [isMounted, setIsMounted] = useState(false);
     const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>("All");
     const [selectedTeacherId, setSelectedTeacherId] = useState<string>("All");
+    const [selectedTime, setSelectedTime] = useState<string>("All");
     const [gridTimezone, setGridTimezone] = useState<"pk" | "uk">("pk");
     const [nowMinutes, setNowMinutes] = useState(getCurrentPKMinutes());
     
@@ -158,20 +177,32 @@ export default function TimetablePage() {
             };
         });
 
-        // 2. Group by Start Time
+        // 2. Group by Normalized Start Time
         const groups: Record<string, any[]> = {};
         sessions.forEach(cls => {
-            if (!groups[cls.pak_start_time]) groups[cls.pak_start_time] = [];
-            groups[cls.pak_start_time].push(cls);
+            const timeKey = normalizeTime(cls.pak_start_time);
+            if (!groups[timeKey]) groups[timeKey] = [];
+            groups[timeKey].push(cls);
         });
 
-        // 3. Convert to Array and Sort by Time
+        // 3. Convert to Array, Sort by Time, and apply Time Filter
         return Object.entries(groups).map(([time, sessions]) => ({
             time,
             startMinutes: sessions[0].startMinutes,
             sessions: sessions.sort((a, b) => a.student?.full_name.localeCompare(b.student?.full_name || ""))
-        })).sort((a, b) => a.startMinutes - b.startMinutes);
-    }, [allClasses, teachers, supervisors, selectedDay, selectedSupervisorId, selectedTeacherId]);
+        }))
+        .filter(block => selectedTime === "All" || block.time === selectedTime)
+        .sort((a, b) => a.startMinutes - b.startMinutes);
+    }, [allClasses, teachers, supervisors, selectedDay, selectedSupervisorId, selectedTeacherId, selectedTime]);
+
+    // Extract all unique normalized times for the filter dropdown
+    const uniqueTimes = useMemo(() => {
+        const times = new Set<string>();
+        allClasses.forEach(cls => {
+            if (cls.pak_start_time) times.add(normalizeTime(cls.pak_start_time));
+        });
+        return Array.from(times).sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
+    }, [allClasses]);
 
     // ─── SCROLL TO RELEVANT BLOCK ───
     const currentBlockIdx = useMemo(() => {
@@ -274,6 +305,22 @@ export default function TimetablePage() {
                             </SelectContent>
                         </Select>
                     </div>
+
+                    <div className="space-y-1.5 min-w-[170px] flex-1 xl:flex-none">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground ml-2 tracking-widest">Time Slot</label>
+                        <Select value={selectedTime} onValueChange={setSelectedTime}>
+                            <SelectTrigger className="h-10 rounded-2xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                <Clock className="size-3.5 mr-2 text-primary" />
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border-border shadow-2xl">
+                                <SelectItem value="All">All Times</SelectItem>
+                                {uniqueTimes.map((time) => (
+                                    <SelectItem key={time} value={time}>{time}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
 
                 <div className="flex-1 flex items-center justify-center">
@@ -307,6 +354,7 @@ export default function TimetablePage() {
                         onClick={() => { 
                             setSelectedSupervisorId(isSupervisor && authSupervisorId ? authSupervisorId : "All"); 
                             setSelectedTeacherId("All"); 
+                            setSelectedTime("All");
                         }}
                         className="p-3 rounded-2xl bg-accent text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-all active:scale-90"
                     >
