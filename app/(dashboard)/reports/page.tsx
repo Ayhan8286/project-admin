@@ -90,7 +90,7 @@ export default function DailyReportsPage() {
 
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
         enabled: isAdmin
     });
 

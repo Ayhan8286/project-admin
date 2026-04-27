@@ -28,7 +28,7 @@ export default function MissingAttendancePage() {
 
     const { data: supervisors = [], isLoading: supervisorsLoading } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
     });
 
     return (

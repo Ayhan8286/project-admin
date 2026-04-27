@@ -78,7 +78,7 @@ export function SupervisorsTab() {
 
     const { data: supervisors = [], isLoading } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
         ...STALE_LONG,
     });
 

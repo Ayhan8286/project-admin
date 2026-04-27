@@ -147,7 +147,7 @@ export default function TimetablePage() {
 
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
     });
 
     // ─── Data Grouping & Sorting ─────────────────────────────────

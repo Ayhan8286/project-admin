@@ -58,7 +58,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
 
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
     });
 
     const updateMutation = useMutation({

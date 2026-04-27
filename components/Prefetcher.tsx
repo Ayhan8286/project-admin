@@ -49,7 +49,7 @@ export function Prefetcher() {
         const t1 = setTimeout(() => {
             // Only admins see the full supervisors/complaints list
             if (!isSupervisor) {
-                queryClient.prefetchQuery({ queryKey: ["supervisors"], queryFn: getSupervisors });
+                queryClient.prefetchQuery({ queryKey: ["supervisors"], queryFn: () => getSupervisors() });
                 queryClient.prefetchQuery({ queryKey: ["complaints"], queryFn: getComplaints });
             }
         }, 800);

@@ -41,7 +41,7 @@ export default function ChatPanel({
     // Fetch Supervisors for Admin
     const { data: supervisors = [], isLoading: isLoadingSupervisors } = useQuery({
         queryKey: ["supervisors-chat"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
         enabled: isOpen && currentUser.role === 'admin',
     });
 

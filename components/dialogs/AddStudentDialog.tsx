@@ -53,7 +53,7 @@ export function AddStudentDialog({ open, onOpenChange, onSuccess, defaultTeacher
 
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
     });
 
     // Form States

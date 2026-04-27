@@ -43,7 +43,7 @@ export function AddTeacherDialog({ open, onOpenChange, onSuccess }: AddTeacherDi
 
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
     });
 
     const addMutation = useMutation({

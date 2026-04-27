@@ -63,7 +63,7 @@ export function ManageStudentDialog({ studentId, open, onOpenChange, onSuccess }
 
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
         enabled: open,
     });
 

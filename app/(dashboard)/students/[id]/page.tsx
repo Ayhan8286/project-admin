@@ -72,7 +72,7 @@ export default function StudentProfilePage({
 
     const { data: supervisors = [] } = useQuery({
         queryKey: ["supervisors"],
-        queryFn: getSupervisors,
+        queryFn: () => getSupervisors(),
     });
 
     // Handlers
