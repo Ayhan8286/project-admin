@@ -427,49 +427,42 @@ export default function DailyReportsPage() {
 
             {/* Submission Dialog (Universal) */}
             <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-                <DialogContent className="sm:max-w-[500px] rounded-[40px] border-border bg-card p-0 overflow-hidden shadow-2xl">
-                    <div className="bg-primary/10 p-8 border-b border-primary/10">
-                        <div className="flex items-center gap-6 mb-6">
-                            <div className="w-20 h-20 rounded-[28px] bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20">
-                                <User className="h-10 w-10" />
+                <DialogContent className="sm:max-w-[500px] max-h-[90vh] rounded-[32px] border-border bg-card p-0 overflow-hidden shadow-2xl flex flex-col">
+                    <div className="bg-primary/10 p-6 border-b border-primary/10">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                                <User className="h-7 w-7" />
                             </div>
                             <div>
-                                <DialogTitle className="text-3xl font-black text-foreground leading-tight">
+                                <DialogTitle className="text-2xl font-black text-foreground leading-tight">
                                     {selectedStudentForReport?.full_name}
                                 </DialogTitle>
-                                <p className="text-sm font-bold text-primary/70 uppercase tracking-[0.1em]">
+                                <p className="text-xs font-bold text-primary/70 uppercase tracking-[0.1em]">
                                     #{selectedStudentForReport?.reg_no} · {selectedStudentForReport?.status}
                                 </p>
                             </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <div className="bg-card/50 p-3 rounded-2xl border border-primary/5">
-                                <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">Guardian</p>
-                                <p className="text-xs font-bold text-foreground truncate">{selectedStudentForReport?.guardian_name || "N/A"}</p>
-                            </div>
-                            <div className="bg-card/50 p-3 rounded-2xl border border-primary/5">
-                                <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">Shift</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-card/50 p-2.5 rounded-xl border border-primary/5">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase mb-0.5">Shift</p>
                                 <p className="text-xs font-bold text-foreground">{selectedStudentForReport?.shift || "N/A"}</p>
                             </div>
-                            <div className="bg-card/50 p-3 rounded-2xl border border-primary/5">
-                                <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">Teacher</p>
+                            <div className="bg-card/50 p-2.5 rounded-xl border border-primary/5">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase mb-0.5">Teacher</p>
                                 <p className="text-xs font-bold text-foreground truncate">{selectedStudentForReport?.teacher?.name || "N/A"}</p>
-                            </div>
-                            <div className="bg-card/50 p-3 rounded-2xl border border-primary/5">
-                                <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">Supervisor</p>
-                                <p className="text-xs font-bold text-foreground truncate">{selectedStudentForReport?.supervisor?.name || "N/A"}</p>
                             </div>
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="overflow-y-auto flex-1 custom-scrollbar">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Date</label>
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <button type="button" className="w-full h-12 rounded-2xl border border-border bg-accent/20 px-4 font-bold text-xs shadow-sm flex items-center gap-2">
+                                        <button type="button" className="w-full h-11 rounded-xl border border-border bg-accent/20 px-4 font-bold text-xs shadow-sm flex items-center gap-2">
                                             <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                                             {format(reportDate, "MMM d, yyyy")}
                                         </button>
@@ -483,7 +476,7 @@ export default function DailyReportsPage() {
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Time</label>
                                 <div className="relative">
                                     <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary" />
@@ -491,7 +484,7 @@ export default function DailyReportsPage() {
                                         type="text"
                                         value={reportTime}
                                         onChange={(e) => setReportTime(e.target.value)}
-                                        className="w-full h-12 rounded-2xl border border-border bg-accent/20 pl-10 pr-4 font-bold text-xs shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        className="w-full h-11 rounded-xl border border-border bg-accent/20 pl-10 pr-4 font-bold text-xs shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
                                     />
                                 </div>
                             </div>
@@ -499,14 +492,14 @@ export default function DailyReportsPage() {
 
 
 
-                        <div className="grid grid-cols-2 gap-4 border-t border-border pt-6">
-                            <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-4 border-t border-border pt-5">
+                            <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Lesson Type</label>
                                 <Select value={lessonType} onValueChange={setLessonType}>
-                                    <SelectTrigger className="w-full h-12 rounded-2xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                    <SelectTrigger className="w-full h-11 rounded-xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-border shadow-2xl">
+                                    <SelectContent className="rounded-xl border-border shadow-2xl">
                                         <SelectItem value="Nazra">Nazra (Recitation)</SelectItem>
                                         <SelectItem value="Hifz">Hifz (Memorization)</SelectItem>
                                         <SelectItem value="Tajweed">Tajweed</SelectItem>
@@ -518,13 +511,13 @@ export default function DailyReportsPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Performance / Grade</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Grade</label>
                                 <Select value={performanceGrade} onValueChange={setPerformanceGrade}>
-                                    <SelectTrigger className="w-full h-12 rounded-2xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                    <SelectTrigger className="w-full h-11 rounded-xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
                                         <SelectValue placeholder="Select grade" />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-border shadow-2xl">
+                                    <SelectContent className="rounded-xl border-border shadow-2xl">
                                         <SelectItem value="Excellent">Excellent (A+)</SelectItem>
                                         <SelectItem value="Good">Good (A)</SelectItem>
                                         <SelectItem value="Average">Average (B)</SelectItem>
@@ -534,45 +527,45 @@ export default function DailyReportsPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Surah / Book Name</label>
                             <input 
                                 type="text"
-                                placeholder="e.g. Al-Baqarah, Yaseen, Qaida Part 1"
+                                placeholder="e.g. Al-Baqarah, Yaseen"
                                 value={surahOrBook}
                                 onChange={(e) => setSurahOrBook(e.target.value)}
-                                className="w-full h-12 rounded-2xl border border-border bg-accent/20 px-4 font-bold text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                className="w-full h-11 rounded-xl border border-border bg-accent/20 px-4 font-bold text-xs shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Start (Ayat / Page)</label>
                                 <input 
                                     type="text"
-                                    placeholder="e.g. Ayat 1"
+                                    placeholder="Ayat 1"
                                     value={ayatOrPageFrom}
                                     onChange={(e) => setAyatOrPageFrom(e.target.value)}
-                                    className="w-full h-12 rounded-2xl border border-border bg-accent/20 px-4 font-bold text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                    className="w-full h-11 rounded-xl border border-border bg-accent/20 px-4 font-bold text-xs shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
                                 />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">End (Ayat / Page)</label>
                                 <input 
                                     type="text"
-                                    placeholder="e.g. Ayat 5"
+                                    placeholder="Ayat 5"
                                     value={ayatOrPageTo}
                                     onChange={(e) => setAyatOrPageTo(e.target.value)}
-                                    className="w-full h-12 rounded-2xl border border-border bg-accent/20 px-4 font-bold text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                    className="w-full h-11 rounded-xl border border-border bg-accent/20 px-4 font-bold text-xs shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Additional Remarks (Optional)</label>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Remarks</label>
                             <textarea 
-                                placeholder="Describe any specific feedback or notes..."
-                                className="w-full min-h-[100px] rounded-[24px] border border-border bg-accent/10 p-6 font-medium text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                placeholder="Any specific feedback..."
+                                className="w-full min-h-[80px] rounded-xl border border-border bg-accent/10 p-4 font-medium text-xs outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 autoFocus
@@ -580,19 +573,20 @@ export default function DailyReportsPage() {
                         </div>
 
                         <div className="flex gap-3 pt-2">
-                            <button type="button" onClick={() => setIsReportDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-black text-sm uppercase bg-accent/50 text-foreground">Cancel</button>
+                            <button type="button" onClick={() => setIsReportDialogOpen(false)} className="flex-1 h-12 rounded-xl font-black text-xs uppercase bg-accent/50 text-foreground">Cancel</button>
                             <button 
                                 type="submit" 
                                 disabled={isSubmitting || !description}
                                 className={cn(
-                                    "flex-[2] h-14 rounded-2xl font-black text-sm uppercase transition-all flex items-center justify-center gap-3 shadow-xl",
+                                    "flex-[2] h-12 rounded-xl font-black text-xs uppercase transition-all flex items-center justify-center gap-3 shadow-xl",
                                     submitSuccess ? "bg-green-500 text-white" : "bg-primary text-white hover:bg-primary/90"
                                 )}
                             >
-                                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : submitSuccess ? <CheckCircle2 className="h-5 w-5" /> : "Submit Report"}
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : submitSuccess ? <CheckCircle2 className="h-4 w-4" /> : "Submit Report"}
                             </button>
                         </div>
                     </form>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>
