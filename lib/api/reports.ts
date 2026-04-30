@@ -88,21 +88,43 @@ export async function getStudentsForReporting(supervisorId?: string): Promise<an
             id, full_name, reg_no, status, shift, guardian_name, supervisor_id,
             supervisor:supervisors(id, name),
             classes(
-                teacher:teachers(id, name)
+                teacher:teachers(
+                    id, 
+                    name,
+                    supervisor:supervisors(id, name)
+                )
             )
         `)
         .ilike("status", "active");
 
     if (supervisorId) {
-        query = query.eq("supervisor_id", supervisorId);
+        // Resolve linked students via teachers first
+        const { data: teachers } = await supabase.from("teachers").select("id").eq("supervisor_id", supervisorId);
+        const teacherIds = (teachers || []).map(t => t.id);
+        const { data: classStudents } = await supabase.from("classes").select("student_id").in("teacher_id", teacherIds);
+        const linkedStudentIds = (classStudents || []).map(cs => cs.student_id);
+        
+        // Filter by direct supervisor_id OR linked via teacher classes
+        query = query.or(`supervisor_id.eq.${supervisorId},id.in.(${linkedStudentIds.length > 0 ? linkedStudentIds.join(',') : 'null'})`);
     }
 
     const { data, error } = await query;
     if (error) throw error;
 
-    return (data || []).map(s => ({
-        ...s,
-        supervisor: Array.isArray(s.supervisor) ? s.supervisor[0] : s.supervisor,
-        teacher: s.classes?.[0]?.teacher || null
-    }));
+    return (data || []).map(s => {
+        let supervisor = Array.isArray(s.supervisor) ? s.supervisor[0] : s.supervisor;
+        const teacherInfo = s.classes?.[0]?.teacher;
+        const teacher = Array.isArray(teacherInfo) ? teacherInfo[0] : teacherInfo;
+
+        // Fallback to teacher's supervisor if student's direct supervisor is missing
+        if (!supervisor && teacher?.supervisor) {
+            supervisor = Array.isArray(teacher.supervisor) ? teacher.supervisor[0] : teacher.supervisor;
+        }
+
+        return {
+            ...s,
+            supervisor,
+            teacher: teacher || null
+        };
+    });
 }
