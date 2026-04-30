@@ -25,6 +25,8 @@ import { getSupervisors } from "@/lib/api/supervisors";
 import { getTeachers } from "@/lib/api/classes";
 import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 import { toast } from "sonner";
+import { generateMonthlyReportPDF } from "@/lib/utils/pdf-generator";
+import { FileDown } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -66,6 +68,13 @@ export default function DailyReportsPage() {
     const [ayatOrPageFrom, setAyatOrPageFrom] = useState<string>("");
     const [ayatOrPageTo, setAyatOrPageTo] = useState<string>("");
     const [performanceGrade, setPerformanceGrade] = useState<string>("Good");
+    const [namazCount, setNamazCount] = useState<string>("5");
+    const [durationMinutes, setDurationMinutes] = useState<string>("30");
+    const [lessonPractice, setLessonPractice] = useState<string>("Yes");
+    const [behavior, setBehavior] = useState<string>("Very Good");
+    const [attendanceStatus, setAttendanceStatus] = useState<string>("Present");
+    const [sittingArrangement, setSittingArrangement] = useState<string>("Acceptable");
+    const [memorizationLesson, setMemorizationLesson] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
 
@@ -116,6 +125,42 @@ export default function DailyReportsPage() {
         enabled: isMounted && !!authRole
     });
 
+    const handleDownloadPDF = async () => {
+        if (filterStudentId === "All") {
+            toast.error("Please select a specific student to generate a monthly report.");
+            return;
+        }
+        
+        const student = students.find(s => s.id === filterStudentId);
+        const loadingToast = toast.loading("Fetching monthly records and generating PDF...");
+        
+        try {
+            const startOfMonth = format(new Date(filterDate.getFullYear(), filterDate.getMonth(), 1), "yyyy-MM-dd");
+            const endOfMonth = format(new Date(filterDate.getFullYear(), filterDate.getMonth() + 1, 0), "yyyy-MM-dd");
+            
+            const monthlyReports = await getDailyReports({
+                startDate: startOfMonth,
+                endDate: endOfMonth,
+                studentId: filterStudentId
+            });
+            
+            if (monthlyReports.length === 0) {
+                toast.dismiss(loadingToast);
+                toast.error("No reports found for this student in the selected month.");
+                return;
+            }
+            
+            const monthName = format(filterDate, "MMMM yyyy");
+            await generateMonthlyReportPDF(monthlyReports, student?.full_name || "Student", student?.reg_no || "N/A", monthName);
+            toast.dismiss(loadingToast);
+            toast.success("Monthly report generated successfully!");
+        } catch (error) {
+            toast.dismiss(loadingToast);
+            console.error(error);
+            toast.error("Failed to generate report.");
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedStudentForReport || !description) return;
@@ -143,7 +188,14 @@ export default function DailyReportsPage() {
                     surahOrBook,
                     ayatOrPageFrom,
                     ayatOrPageTo,
-                    performanceGrade
+                    performanceGrade,
+                    namazCount: parseInt(namazCount),
+                    durationMinutes: parseInt(durationMinutes),
+                    lessonPractice,
+                    behavior,
+                    attendanceStatus,
+                    sittingArrangement,
+                    memorizationLesson
                 }
             });
             setSubmitSuccess(true);
@@ -154,6 +206,13 @@ export default function DailyReportsPage() {
             setAyatOrPageFrom("");
             setAyatOrPageTo("");
             setPerformanceGrade("Good");
+            setNamazCount("5");
+            setDurationMinutes("30");
+            setLessonPractice("Yes");
+            setBehavior("Very Good");
+            setAttendanceStatus("Present");
+            setSittingArrangement("Acceptable");
+            setMemorizationLesson("");
             queryClient.invalidateQueries({ queryKey: ["dailyReports"] });
             setTimeout(() => {
                 setSubmitSuccess(false);
@@ -182,6 +241,13 @@ export default function DailyReportsPage() {
             setAyatOrPageFrom(existingReport.metadata?.ayatOrPageFrom || "");
             setAyatOrPageTo(existingReport.metadata?.ayatOrPageTo || "");
             setPerformanceGrade(existingReport.metadata?.performanceGrade || "Good");
+            setNamazCount(existingReport.metadata?.namazCount?.toString() || "5");
+            setDurationMinutes(existingReport.metadata?.durationMinutes?.toString() || "30");
+            setLessonPractice(existingReport.metadata?.lessonPractice || "Yes");
+            setBehavior(existingReport.metadata?.behavior || "Very Good");
+            setAttendanceStatus(existingReport.metadata?.attendanceStatus || "Present");
+            setSittingArrangement(existingReport.metadata?.sittingArrangement || "Acceptable");
+            setMemorizationLesson(existingReport.metadata?.memorizationLesson || "");
         } else {
             setDescription("");
             setLessonType("Nazra");
@@ -189,6 +255,13 @@ export default function DailyReportsPage() {
             setAyatOrPageFrom("");
             setAyatOrPageTo("");
             setPerformanceGrade("Good");
+            setNamazCount("5");
+            setDurationMinutes("30");
+            setLessonPractice("Yes");
+            setBehavior("Very Good");
+            setAttendanceStatus("Present");
+            setSittingArrangement("Acceptable");
+            setMemorizationLesson("");
         }
         
         setIsReportDialogOpen(true);
@@ -490,7 +563,101 @@ export default function DailyReportsPage() {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Attendance</label>
+                                <Select value={attendanceStatus} onValueChange={setAttendanceStatus}>
+                                    <SelectTrigger className="w-full h-11 rounded-xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                        <SelectValue placeholder="Status" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-border shadow-2xl">
+                                        <SelectItem value="Present">Present</SelectItem>
+                                        <SelectItem value="Absent">Absent</SelectItem>
+                                        <SelectItem value="Late">Late</SelectItem>
+                                        <SelectItem value="Leave">Leave</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Behavior</label>
+                                <Select value={behavior} onValueChange={setBehavior}>
+                                    <SelectTrigger className="w-full h-11 rounded-xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                        <SelectValue placeholder="Behavior" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-border shadow-2xl">
+                                        <SelectItem value="Excellent">Excellent</SelectItem>
+                                        <SelectItem value="Very Good">Very Good</SelectItem>
+                                        <SelectItem value="Good">Good</SelectItem>
+                                        <SelectItem value="Average">Average</SelectItem>
+                                        <SelectItem value="Bad">Bad</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
 
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Sitting Arrangement</label>
+                                <Select value={sittingArrangement} onValueChange={setSittingArrangement}>
+                                    <SelectTrigger className="w-full h-11 rounded-xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                        <SelectValue placeholder="Arrangement" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-border shadow-2xl">
+                                        <SelectItem value="Excellent">Excellent</SelectItem>
+                                        <SelectItem value="Very Good">Very Good</SelectItem>
+                                        <SelectItem value="Acceptable">Acceptable</SelectItem>
+                                        <SelectItem value="Needs Work">Needs Work</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Memorization Lesson</label>
+                                <input 
+                                    type="text"
+                                    placeholder="e.g. Surah Fatiha"
+                                    value={memorizationLesson}
+                                    onChange={(e) => setMemorizationLesson(e.target.value)}
+                                    className="w-full h-11 rounded-xl border border-border bg-accent/20 px-4 font-bold text-xs shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Namaz (0-5)</label>
+                                <Select value={namazCount} onValueChange={setNamazCount}>
+                                    <SelectTrigger className="w-full h-11 rounded-xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                        <SelectValue placeholder="Namaz" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-border shadow-2xl">
+                                        {["0", "1", "2", "3", "4", "5"].map(n => (
+                                            <SelectItem key={n} value={n}>{n}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Duration (Min)</label>
+                                <input 
+                                    type="number"
+                                    value={durationMinutes}
+                                    onChange={(e) => setDurationMinutes(e.target.value)}
+                                    className="w-full h-11 rounded-xl border border-border bg-accent/20 px-4 font-bold text-xs shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Practice</label>
+                                <Select value={lessonPractice} onValueChange={setLessonPractice}>
+                                    <SelectTrigger className="w-full h-11 rounded-xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                        <SelectValue placeholder="Practice" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-border shadow-2xl">
+                                        <SelectItem value="Yes">Yes</SelectItem>
+                                        <SelectItem value="No">No</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
 
                         <div className="grid grid-cols-2 gap-4 border-t border-border pt-5">
                             <div className="space-y-1.5">
@@ -629,6 +796,31 @@ function ReportCard({ report }: { report: DailyReport }) {
                             {(report.metadata.ayatOrPageFrom || report.metadata.ayatOrPageTo) && (
                                 <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest">
                                     Range: {report.metadata.ayatOrPageFrom} - {report.metadata.ayatOrPageTo}
+                                </span>
+                            )}
+                            {report.metadata.attendanceStatus && (
+                                <span className={cn(
+                                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                                    report.metadata.attendanceStatus === "Present" ? "bg-green-500/10 text-green-600 border-green-500/20" : 
+                                    report.metadata.attendanceStatus === "Absent" ? "bg-red-500/10 text-red-600 border-red-500/20" :
+                                    "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                )}>
+                                    {report.metadata.attendanceStatus}
+                                </span>
+                            )}
+                            {report.metadata.behavior && (
+                                <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 border border-purple-500/20 text-[10px] font-black uppercase tracking-widest">
+                                    Behavior: {report.metadata.behavior}
+                                </span>
+                            )}
+                            {report.metadata.namazCount !== undefined && (
+                                <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 border border-cyan-500/20 text-[10px] font-black uppercase tracking-widest">
+                                    Namaz: {report.metadata.namazCount}/5
+                                </span>
+                            )}
+                            {report.metadata.durationMinutes !== undefined && (
+                                <span className="px-3 py-1 rounded-full bg-slate-500/10 text-slate-600 border border-slate-500/20 text-[10px] font-black uppercase tracking-widest">
+                                    {report.metadata.durationMinutes} Min
                                 </span>
                             )}
                             {report.metadata.performanceGrade && (

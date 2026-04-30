@@ -14,6 +14,13 @@ export interface DailyReport {
         ayatOrPageFrom?: string;
         ayatOrPageTo?: string;
         performanceGrade?: string;
+        namazCount?: number;
+        durationMinutes?: number;
+        lessonPractice?: string;
+        behavior?: string;
+        attendanceStatus?: string;
+        sittingArrangement?: string;
+        memorizationLesson?: string;
     };
     created_at?: string;
     student?: {
@@ -48,6 +55,8 @@ export async function submitDailyReport(report: Omit<DailyReport, "id" | "create
 
 export async function getDailyReports(filters: {
     date?: string;
+    startDate?: string;
+    endDate?: string;
     supervisorId?: string;
     teacherId?: string;
     studentId?: string;
@@ -62,6 +71,8 @@ export async function getDailyReports(filters: {
         `);
 
     if (filters.date) query = query.eq("date", filters.date);
+    if (filters.startDate) query = query.gte("date", filters.startDate);
+    if (filters.endDate) query = query.lte("date", filters.endDate);
     if (filters.supervisorId) query = query.eq("supervisor_id", filters.supervisorId);
     if (filters.teacherId) query = query.eq("teacher_id", filters.teacherId);
     if (filters.studentId) query = query.eq("student_id", filters.studentId);
