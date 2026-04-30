@@ -8,6 +8,7 @@ export interface AttendanceWithStudent extends AttendanceRecord {
         reg_no: string;
         supervisor_id: string | null;
         supervisor?: {
+            id?: string;
             name: string;
         } | null;
     };
@@ -45,13 +46,20 @@ export async function getAttendanceByDate(date: string, supervisorId?: string): 
                 full_name, 
                 reg_no, 
                 supervisor_id,
-                supervisor:supervisors(name)
+                supervisor:supervisors(name),
+                classes(
+                    teacher:teachers(
+                        supervisor:supervisors(name)
+                    )
+                )
             )
         `)
         .eq("date", date);
 
     if (supervisorId) {
-        query = query.eq("students.supervisor_id", supervisorId);
+        // We will fetch all and filter in JS because supervisor could be nested via classes
+        // Wait, but what if there's a lot of data? For now, we will handle it in JS.
+        // Or we could use the linkedStudentIds approach, but let's do JS filtering for now as it's safe.
     }
 
     const { data, error } = await query.order("created_at", { ascending: false });
@@ -61,28 +69,68 @@ export async function getAttendanceByDate(date: string, supervisorId?: string): 
         throw error;
     }
 
-    // Handle Supabase nested relations
-    return (data || []).map((record) => ({
-        ...record,
-        student: Array.isArray(record.student) ? record.student[0] : record.student,
-    } as AttendanceWithStudent));
+    // Handle Supabase nested relations and fallback to teacher's supervisor
+    let records = (data || []).map((record) => {
+        const student = Array.isArray(record.student) ? record.student[0] : record.student;
+        
+        let supervisor = Array.isArray(student.supervisor) ? student.supervisor[0] : student.supervisor;
+        
+        if (!supervisor && student.classes && student.classes.length > 0) {
+            const classWithSupervisor = student.classes.find((c: any) => {
+                const t = Array.isArray(c.teacher) ? c.teacher[0] : c.teacher;
+                return t && t.supervisor;
+            });
+            if (classWithSupervisor) {
+                const t = Array.isArray(classWithSupervisor.teacher) ? classWithSupervisor.teacher[0] : classWithSupervisor.teacher;
+                supervisor = Array.isArray(t.supervisor) 
+                    ? t.supervisor[0] 
+                    : t.supervisor;
+            }
+        }
+
+        return {
+            ...record,
+            student: {
+                ...student,
+                supervisor
+            }
+        } as AttendanceWithStudent;
+    });
+
+    if (supervisorId) {
+        // We fetch everything and filter by supervisor here if supervisorId is passed
+        // However currently the app does local filtering in the UI so supervisorId is usually undefined.
+        records = records.filter(r => r.student?.supervisor_id === supervisorId || r.student?.supervisor?.name === supervisorId || r.student?.supervisor?.id === supervisorId);
+    }
+
+    return records;
 }
 
 export async function getMissingAttendanceStudents(date: string, supervisorId?: string): Promise<any[]> {
-    // 1. Get all active students
+    // 1. Get all active students with classes and teachers
     let studentQuery = supabase
         .from("students")
         .select(`
             id, full_name, reg_no, status, shift, supervisor_id,
             supervisor:supervisors(name),
             classes(
-                teacher:teachers(name)
+                teacher:teachers(
+                    name,
+                    supervisor:supervisors(name)
+                )
             )
         `)
         .ilike("status", "active");
 
     if (supervisorId) {
-        studentQuery = studentQuery.eq("supervisor_id", supervisorId);
+        // Resolve linked students via teachers first
+        const { data: teachers } = await supabase.from("teachers").select("id").eq("supervisor_id", supervisorId);
+        const teacherIds = (teachers || []).map(t => t.id);
+        const { data: classStudents } = await supabase.from("classes").select("student_id").in("teacher_id", teacherIds);
+        const linkedStudentIds = (classStudents || []).map(cs => cs.student_id);
+        
+        // Filter by direct supervisor_id OR linked via teacher classes
+        studentQuery = studentQuery.or(`supervisor_id.eq.${supervisorId},id.in.(${linkedStudentIds.length > 0 ? linkedStudentIds.join(',') : 'null'})`);
     }
 
     const { data: students, error: studentError } = await studentQuery;
@@ -97,14 +145,31 @@ export async function getMissingAttendanceStudents(date: string, supervisorId?: 
 
     const recordedStudentIds = new Set((attendanceRecords || []).map(r => r.student_id));
 
-    // 3. Filter missing students
+    // 3. Filter missing students and map supervisor correctly
     return (students || [])
         .filter(s => !recordedStudentIds.has(s.id))
-        .map(s => ({
-            ...s,
-            supervisor: Array.isArray(s.supervisor) ? s.supervisor[0] : s.supervisor,
-            teacher: s.classes?.[0]?.teacher || { name: "Not Assigned" }
-        }));
+        .map(s => {
+            let supervisor = Array.isArray(s.supervisor) ? s.supervisor[0] : s.supervisor;
+            
+            if (!supervisor && s.classes && s.classes.length > 0) {
+                const classWithSupervisor = s.classes.find((c: any) => {
+                    const t = Array.isArray(c.teacher) ? c.teacher[0] : c.teacher;
+                    return t && t.supervisor;
+                });
+                if (classWithSupervisor) {
+                    const t = Array.isArray(classWithSupervisor.teacher) ? classWithSupervisor.teacher[0] : classWithSupervisor.teacher;
+                    supervisor = Array.isArray(t.supervisor) 
+                        ? t.supervisor[0] 
+                        : t.supervisor;
+                }
+            }
+
+            return {
+                ...s,
+                supervisor,
+                teacher: s.classes?.[0]?.teacher || { name: "Not Assigned" }
+            };
+        });
 }
 
 export async function getAttendanceSummary(date: string): Promise<{

@@ -8,6 +8,13 @@ export interface DailyReport {
     date: string;
     time: string;
     description: string;
+    metadata?: {
+        lessonType?: string;
+        surahOrBook?: string;
+        ayatOrPageFrom?: string;
+        ayatOrPageTo?: string;
+        performanceGrade?: string;
+    };
     created_at?: string;
     student?: {
         full_name: string;

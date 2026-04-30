@@ -61,6 +61,11 @@ export default function DailyReportsPage() {
     const [reportDate, setReportDate] = useState<Date>(new Date());
     const [reportTime, setReportTime] = useState(format(new Date(), "hh:mm a"));
     const [description, setDescription] = useState("");
+    const [lessonType, setLessonType] = useState<string>("Nazra");
+    const [surahOrBook, setSurahOrBook] = useState<string>("");
+    const [ayatOrPageFrom, setAyatOrPageFrom] = useState<string>("");
+    const [ayatOrPageTo, setAyatOrPageTo] = useState<string>("");
+    const [performanceGrade, setPerformanceGrade] = useState<string>("Good");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
 
@@ -132,11 +137,23 @@ export default function DailyReportsPage() {
                 supervisor_id: supervisorId,
                 date: format(reportDate, "yyyy-MM-dd"),
                 time: reportTime,
-                description
+                description,
+                metadata: {
+                    lessonType,
+                    surahOrBook,
+                    ayatOrPageFrom,
+                    ayatOrPageTo,
+                    performanceGrade
+                }
             });
             setSubmitSuccess(true);
             toast.success("Daily report submitted successfully!");
             setDescription("");
+            setLessonType("Nazra");
+            setSurahOrBook("");
+            setAyatOrPageFrom("");
+            setAyatOrPageTo("");
+            setPerformanceGrade("Good");
             queryClient.invalidateQueries({ queryKey: ["dailyReports"] });
             setTimeout(() => {
                 setSubmitSuccess(false);
@@ -160,8 +177,18 @@ export default function DailyReportsPage() {
         if (existingReport) {
             setDescription(existingReport.description);
             setReportTime(existingReport.time);
+            setLessonType(existingReport.metadata?.lessonType || "Nazra");
+            setSurahOrBook(existingReport.metadata?.surahOrBook || "");
+            setAyatOrPageFrom(existingReport.metadata?.ayatOrPageFrom || "");
+            setAyatOrPageTo(existingReport.metadata?.ayatOrPageTo || "");
+            setPerformanceGrade(existingReport.metadata?.performanceGrade || "Good");
         } else {
             setDescription("");
+            setLessonType("Nazra");
+            setSurahOrBook("");
+            setAyatOrPageFrom("");
+            setAyatOrPageTo("");
+            setPerformanceGrade("Good");
         }
         
         setIsReportDialogOpen(true);
@@ -470,11 +497,82 @@ export default function DailyReportsPage() {
                             </div>
                         </div>
 
+
+
+                        <div className="grid grid-cols-2 gap-4 border-t border-border pt-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Lesson Type</label>
+                                <Select value={lessonType} onValueChange={setLessonType}>
+                                    <SelectTrigger className="w-full h-12 rounded-2xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-border shadow-2xl">
+                                        <SelectItem value="Nazra">Nazra (Recitation)</SelectItem>
+                                        <SelectItem value="Hifz">Hifz (Memorization)</SelectItem>
+                                        <SelectItem value="Tajweed">Tajweed</SelectItem>
+                                        <SelectItem value="Translation">Translation</SelectItem>
+                                        <SelectItem value="Tafseer">Tafseer</SelectItem>
+                                        <SelectItem value="Revision">Revision (Dour)</SelectItem>
+                                        <SelectItem value="Qaida">Noorani Qaida</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Performance / Grade</label>
+                                <Select value={performanceGrade} onValueChange={setPerformanceGrade}>
+                                    <SelectTrigger className="w-full h-12 rounded-2xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
+                                        <SelectValue placeholder="Select grade" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-border shadow-2xl">
+                                        <SelectItem value="Excellent">Excellent (A+)</SelectItem>
+                                        <SelectItem value="Good">Good (A)</SelectItem>
+                                        <SelectItem value="Average">Average (B)</SelectItem>
+                                        <SelectItem value="Needs Improvement">Needs Improvement (C)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Lesson Details</label>
+                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Surah / Book Name</label>
+                            <input 
+                                type="text"
+                                placeholder="e.g. Al-Baqarah, Yaseen, Qaida Part 1"
+                                value={surahOrBook}
+                                onChange={(e) => setSurahOrBook(e.target.value)}
+                                className="w-full h-12 rounded-2xl border border-border bg-accent/20 px-4 font-bold text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Start (Ayat / Page)</label>
+                                <input 
+                                    type="text"
+                                    placeholder="e.g. Ayat 1"
+                                    value={ayatOrPageFrom}
+                                    onChange={(e) => setAyatOrPageFrom(e.target.value)}
+                                    className="w-full h-12 rounded-2xl border border-border bg-accent/20 px-4 font-bold text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">End (Ayat / Page)</label>
+                                <input 
+                                    type="text"
+                                    placeholder="e.g. Ayat 5"
+                                    value={ayatOrPageTo}
+                                    onChange={(e) => setAyatOrPageTo(e.target.value)}
+                                    className="w-full h-12 rounded-2xl border border-border bg-accent/20 px-4 font-bold text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Additional Remarks (Optional)</label>
                             <textarea 
-                                placeholder="Describe what the student learned today..."
-                                className="w-full min-h-[160px] rounded-[32px] border border-border bg-accent/10 p-6 font-medium text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                placeholder="Describe any specific feedback or notes..."
+                                className="w-full min-h-[100px] rounded-[24px] border border-border bg-accent/10 p-6 font-medium text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 autoFocus
@@ -521,9 +619,36 @@ function ReportCard({ report }: { report: DailyReport }) {
                             <span className="text-primary">{report.time}</span>
                         </div>
                     </div>
-                    <div className="p-4 rounded-2xl bg-accent/20 text-sm font-medium leading-relaxed text-foreground/80 italic">
-                        "{report.description}"
-                    </div>
+
+                    {report.metadata && Object.keys(report.metadata).length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {report.metadata.lessonType && (
+                                <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 text-[10px] font-black uppercase tracking-widest">
+                                    {report.metadata.lessonType}
+                                </span>
+                            )}
+                            {report.metadata.surahOrBook && (
+                                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest">
+                                    Surah/Book: {report.metadata.surahOrBook}
+                                </span>
+                            )}
+                            {(report.metadata.ayatOrPageFrom || report.metadata.ayatOrPageTo) && (
+                                <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest">
+                                    Range: {report.metadata.ayatOrPageFrom} - {report.metadata.ayatOrPageTo}
+                                </span>
+                            )}
+                            {report.metadata.performanceGrade && (
+                                <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] font-black uppercase tracking-widest">
+                                    Grade: {report.metadata.performanceGrade}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                    {report.description && (
+                        <div className="p-4 rounded-2xl bg-accent/20 text-sm font-medium leading-relaxed text-foreground/80 italic">
+                            "{report.description}"
+                        </div>
+                    )}
                     <div className="flex items-center gap-4 pt-2">
                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
                             <User className="h-3 w-3 text-orange-500" />
