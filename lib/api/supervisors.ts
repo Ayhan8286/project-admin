@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { Supervisor } from "@/types/supervisor";
 
-export async function getSupervisors(department?: string): Promise<Supervisor[]> {
+export async function getSupervisors(department?: string, allStaff: boolean = false): Promise<Supervisor[]> {
     let query = supabase
         .from("supervisors")
         .select("*")
@@ -9,7 +9,7 @@ export async function getSupervisors(department?: string): Promise<Supervisor[]>
 
     if (department) {
         query = query.eq("department", department);
-    } else {
+    } else if (!allStaff) {
         // Default: Only show academic supervisors (department = 'Supervisor' or NULL)
         // This prevents other department members (Tech, Marketing, etc.) from appearing in global dropdowns.
         query = query.or("department.eq.Supervisor,department.is.null");

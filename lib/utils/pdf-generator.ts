@@ -59,7 +59,7 @@ export async function generateMonthlyReportPDF(reports: DailyReport[], studentNa
         body: [
             ['Attendance', attendanceRemark],
             ['Namaz Punctuality', namazRemark],
-            ['Average Lesson Duration', durationRemark],
+            ['Average Lesson Duration (Minutes)', durationRemark],
             ['Lesson Practice', practiceRemark],
             ['Completed Quran', "Please continue with your Quran completion journey, working through each Juz at a steady pace."],
             ['Behavior', behaviorRemark],

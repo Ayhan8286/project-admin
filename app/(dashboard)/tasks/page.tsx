@@ -77,7 +77,7 @@ export default function TasksPage() {
     
     // Fetch supervisors independently so they load even if tasks fail
     try {
-        const sups = await getSupervisors();
+        const sups = await getSupervisors(undefined, true);
         setSupervisors(sups);
         
         // Update user name if we found it in supervisors
