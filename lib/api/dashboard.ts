@@ -22,7 +22,7 @@ export interface DashboardStats {
     missingAttendanceCount: number;
 }
 
-export async function getDashboardStats(supervisorId?: string): Promise<DashboardStats> {
+export async function getDashboardStats(supervisorId?: string, teacherId?: string): Promise<DashboardStats> {
     // If supervisorId is provided, we need to fetch their specific context first
     let teacherIds: string[] = [];
     let studentIds: string[] = [];
@@ -60,12 +60,34 @@ export async function getDashboardStats(supervisorId?: string): Promise<Dashboar
                 accountsData = Array.from(accountsMap.values()).map(platform => ({ platform }));
             }
         }
+    } else if (teacherId) {
+        // 1. Get classes for this teacher
+        const { data: teacherClasses } = await supabase
+            .from("classes")
+            .select("id, student_id, app_account_id, schedule_days, app_account:app_accounts(platform)")
+            .eq("teacher_id", teacherId);
+        
+        if (teacherClasses) {
+            teacherIds = [teacherId];
+            classIds = teacherClasses.map(c => c.id);
+            studentIds = Array.from(new Set(teacherClasses.map(c => c.student_id).filter(id => !!id) as string[]));
+            
+            // Extract unique account platforms
+            const accountsMap = new Map<string, string>();
+            teacherClasses.forEach(c => {
+                if (c.app_account_id && c.app_account) {
+                    const platform = (c.app_account as any).platform || "Unknown";
+                    accountsMap.set(c.app_account_id, platform);
+                }
+            });
+            accountsData = Array.from(accountsMap.values()).map(platform => ({ platform }));
+        }
     }
 
     // Now perform the main dashboard queries, applying filters if needed
     const queries = [];
 
-    if (supervisorId) {
+    if (supervisorId || teacherId) {
         // Filtered counts
         queries.push(supabase.from("students").select("*", { count: "exact", head: true }).in("id", studentIds));
         queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }).in("id", teacherIds).eq("is_active", true));
@@ -151,7 +173,7 @@ export async function getDashboardStats(supervisorId?: string): Promise<Dashboar
     const today = new Date().toISOString().split('T')[0];
     let attendanceQuery = supabase.from("attendance").select("status").eq("date", today);
     
-    if (supervisorId) {
+    if (supervisorId || teacherId) {
         attendanceQuery = attendanceQuery.in("student_id", studentIds);
     }
     

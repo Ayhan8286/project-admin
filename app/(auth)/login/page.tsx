@@ -19,12 +19,13 @@ import { cn } from "@/lib/utils";
 const initialState = { error: "" };
 
 export default function LoginPage() {
-  const [roleType, setRoleType] = useState<"admin" | "supervisor" | "marketing" | "finance" | "tech-team">("admin");
+  const [roleType, setRoleType] = useState<"admin" | "supervisor" | "marketing" | "finance" | "tech-team" | "teacher">("admin");
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
   const roles = [
     { id: "admin", label: "Admin", icon: ShieldCheck },
     { id: "supervisor", label: "Supervisor", icon: UserCog },
+    { id: "teacher", label: "Teacher", icon: GraduationCap },
     { id: "marketing", label: "Marketing", icon: Megaphone },
     { id: "tech-team", label: "Tech Team", icon: Terminal },
     { id: "finance", label: "Finance", icon: Wallet },
@@ -86,7 +87,13 @@ export default function LoginPage() {
                   type="email"
                   name="email"
                   required
-                  placeholder={roleType === "admin" ? "alhudanetwork7860@gmail.com" : "super@demo.com"}
+                  placeholder={
+                    roleType === "admin" 
+                      ? "alhudanetwork7860@gmail.com" 
+                      : roleType === "teacher" 
+                        ? "name.teacher@email.com" 
+                        : "super@demo.com"
+                  }
                   className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-primary/10 rounded-xl py-3 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground"
                 />
               </div>
@@ -109,7 +116,13 @@ export default function LoginPage() {
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1.5 ml-1">
-                Hint: Password is <span className="font-mono bg-slate-100 dark:bg-black/30 px-1 py-0.5 rounded">{roleType === "admin" ? "Alhudanetwrok@" : "password"}</span>
+                Hint: Password is <span className="font-mono bg-slate-100 dark:bg-black/30 px-1 py-0.5 rounded">{
+                  roleType === "admin" 
+                    ? "Alhudanetwrok@" 
+                    : roleType === "teacher" 
+                      ? "teacher@" 
+                      : "password"
+                }</span>
               </p>
             </div>
 

@@ -23,7 +23,7 @@ import {
     Mail, Phone, Save, Edit2, Trash2,
     ChevronLeft, ChevronRight, Clock,
     Megaphone, Cpu, Banknote, UserCheck,
-    Users, MessageSquare
+    Users, MessageSquare, GraduationCap
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -31,7 +31,7 @@ import { FormInput } from "@/components/ui/form-input";
 import { STALE_LONG } from "@/lib/query-config";
 
 interface DepartmentManagementProps {
-    department: "Supervisor" | "Marketing" | "Tech Team" | "Finance";
+    department: "Supervisor" | "Marketing" | "Tech Team" | "Finance" | "Teacher";
 }
 
 const placeholderAvatars = [
@@ -47,14 +47,16 @@ const departmentColors = {
     "Supervisor": "text-primary bg-primary/10",
     "Marketing": "text-blue-500 bg-blue-500/10",
     "Tech Team": "text-emerald-500 bg-emerald-500/10",
-    "Finance": "text-amber-500 bg-amber-500/10"
+    "Finance": "text-amber-500 bg-amber-500/10",
+    "Teacher": "text-forest bg-forest/10"
 };
 
 const departmentIcons = {
     "Supervisor": ShieldCheck,
     "Marketing": Megaphone,
     "Tech Team": Cpu,
-    "Finance": Banknote
+    "Finance": Banknote,
+    "Teacher": GraduationCap
 };
 
 export function DepartmentManagement({ department }: DepartmentManagementProps) {

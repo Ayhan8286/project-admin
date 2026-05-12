@@ -10,19 +10,21 @@ import NotificationCenter from "@/components/NotificationCenter";
 export default function DashboardClient({ 
     initialStats, 
     role = "admin", 
-    supervisorId 
+    supervisorId,
+    teacherId
 }: { 
     initialStats: DashboardStats, 
     role?: string, 
-    supervisorId?: string 
+    supervisorId?: string,
+    teacherId?: string
 }) {
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
 
     const { data: stats } = useQuery({
-        queryKey: ["dashboardStats", role, supervisorId],
-        queryFn: () => getDashboardStats(supervisorId),
+        queryKey: ["dashboardStats", role, supervisorId, teacherId],
+        queryFn: () => getDashboardStats(supervisorId, teacherId),
         initialData: initialStats,
         refetchInterval: 60000, // Refetch every minute for live dashboard feel
     });
@@ -70,7 +72,7 @@ export default function DashboardClient({
                             </button>
                         )}
                         <NotificationCenter 
-                            userId={role === 'admin' ? undefined : (supervisorId || undefined)} 
+                            userId={role === 'admin' ? undefined : (supervisorId || teacherId || undefined)} 
                             role={role} 
                         />
                     </div>

@@ -4,15 +4,16 @@ import { use, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DepartmentManagement } from "@/components/departments/DepartmentManagement";
-import { ShieldCheck, Megaphone, Cpu, Banknote } from "lucide-react";
+import { ShieldCheck, Megaphone, Cpu, Banknote, GraduationCap } from "lucide-react";
 
-type DepartmentSlug = "supervisor" | "marketing" | "tech-team" | "finance";
+type DepartmentSlug = "supervisor" | "marketing" | "tech-team" | "finance" | "teacher";
 
-const slugToDept: Record<string, "Supervisor" | "Marketing" | "Tech Team" | "Finance"> = {
+const slugToDept: Record<string, "Supervisor" | "Marketing" | "Tech Team" | "Finance" | "Teacher"> = {
     "supervisor": "Supervisor",
     "marketing": "Marketing",
     "tech-team": "Tech Team",
-    "finance": "Finance"
+    "finance": "Finance",
+    "teacher": "Teacher"
 };
 
 export default function DepartmentPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -61,6 +62,10 @@ export default function DepartmentPage({ params }: { params: Promise<{ slug: str
                         <TabsTrigger value="finance" className="rounded-xl py-3 px-6 data-[state=active]:bg-forest data-[state=active]:text-white transition-all duration-300">
                             <Banknote className="h-4 w-4 mr-2" />
                             Finance
+                        </TabsTrigger>
+                        <TabsTrigger value="teacher" className="rounded-xl py-3 px-6 data-[state=active]:bg-forest data-[state=active]:text-white transition-all duration-300">
+                            <GraduationCap className="h-4 w-4 mr-2" />
+                            Teachers
                         </TabsTrigger>
                     </TabsList>
 

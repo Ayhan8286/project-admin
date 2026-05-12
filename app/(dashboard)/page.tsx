@@ -15,18 +15,22 @@ export default async function DashboardPage() {
   const cookieStore = await cookies();
   const role = cookieStore.get("auth_role")?.value || "admin";
   const supervisorId = cookieStore.get("supervisor_id")?.value;
+  const teacherId = cookieStore.get("teacher_id")?.value;
 
-  // If it's a supervisor, we fetch fresh stats for their specific view.
+  // If it's a supervisor or teacher, we fetch fresh stats for their specific view.
   // For admins, we use the cached global stats.
   const initialStats = (role === "supervisor" && supervisorId)
     ? await getDashboardStats(supervisorId)
-    : await getCachedDashboardStats();
+    : (role === "teacher" && teacherId)
+      ? await getDashboardStats(undefined, teacherId)
+      : await getCachedDashboardStats();
 
   return (
     <DashboardClient 
       initialStats={initialStats} 
       role={role} 
       supervisorId={supervisorId} 
+      teacherId={teacherId}
     />
   );
 }

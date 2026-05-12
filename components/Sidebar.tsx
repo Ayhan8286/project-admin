@@ -69,6 +69,11 @@ export function Sidebar({
                         }
                     }
 
+                    if (role === "teacher") {
+                        const allowed = ["Dashboard", "Time Table", "Attendance", "Daily Reports", "Students"];
+                        if (!allowed.includes(item.label)) return null;
+                    }
+
                     let href = item.href;
                     // Point Dashboard to correct personal URL for specialized departments
                     if (role === "supervisor" && item.label === "Dashboard" && supervisorId) {

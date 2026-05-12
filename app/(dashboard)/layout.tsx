@@ -15,6 +15,7 @@ export default async function DashboardLayout({
   let userName = role === "admin" ? "Admin" : "Supervisor";
   let userId: string | undefined = undefined;
   let supervisorId: string | undefined = undefined;
+  let teacherId: string | undefined = undefined;
 
   // 1. Initial ID identification from cookies (faster & reliable)
   if (role === "admin") {
@@ -22,6 +23,9 @@ export default async function DashboardLayout({
   } else if (role === "supervisor") {
     supervisorId = cookieStore.get("supervisor_id")?.value;
     userId = supervisorId;
+  } else if (role === "teacher") {
+    teacherId = cookieStore.get("teacher_id")?.value;
+    userId = teacherId;
   }
 
   // 2. Fetch extra details from Supabase (optional, but nice for UX)
@@ -62,6 +66,19 @@ export default async function DashboardLayout({
       }
     } catch (e) {
       console.error("Layout: Supervisor name fetch failed:", e);
+    }
+  } else if (role === "teacher" && teacherId) {
+    try {
+      const { data } = await supabase
+        .from('teachers')
+        .select('name')
+        .eq('id', teacherId)
+        .single();
+      if (data && data.name) {
+        userName = data.name;
+      }
+    } catch (e) {
+      console.error("Layout: Teacher name fetch failed:", e);
     }
   }
 

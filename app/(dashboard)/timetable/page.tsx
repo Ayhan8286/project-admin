@@ -98,21 +98,27 @@ export default function TimetablePage() {
     // Auth State safely loaded on client
     const [authRole, setAuthRole] = useState("admin");
     const [authSupervisorId, setAuthSupervisorId] = useState<string | undefined>(undefined);
+    const [authTeacherId, setAuthTeacherId] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         setIsMounted(true);
         if (typeof document !== 'undefined') {
             const roleMatch = document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="));
             const supMatch = document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="));
+            const teacherMatch = document.cookie.split("; ").find(c => c.trim().startsWith("teacher_id="));
             
             const r = roleMatch ? roleMatch.split("=")[1] : "admin";
             const s = supMatch ? supMatch.split("=")[1] : undefined;
+            const t = teacherMatch ? teacherMatch.split("=")[1] : undefined;
             
             setAuthRole(r);
             setAuthSupervisorId(s);
+            setAuthTeacherId(t);
             
             if (r === "supervisor" && s) {
                 setSelectedSupervisorId(s);
+            } else if (r === "teacher" && t) {
+                setSelectedTeacherId(t);
             }
         }
         
@@ -121,6 +127,7 @@ export default function TimetablePage() {
     }, []);
 
     const isSupervisor = authRole === "supervisor";
+    const isTeacher = authRole === "teacher";
 
     // Manage Dialog State
     const [manageStudentId, setManageStudentId] = useState<string | null>(null);
@@ -128,7 +135,11 @@ export default function TimetablePage() {
 
     // ─── Queries ────────────────────────────────────────────────
     const { data: teachers = [], isLoading: teachersLoading } = useQuery({
-        queryKey: isSupervisor && authSupervisorId ? ["teachers", "supervisor", authSupervisorId] : ["teachers"],
+        queryKey: (isSupervisor && authSupervisorId) 
+            ? ["teachers", "supervisor", authSupervisorId] 
+            : (isTeacher && authTeacherId)
+                ? ["teachers", "self", authTeacherId]
+                : ["teachers"],
         queryFn: async () => {
             if (isSupervisor && authSupervisorId) {
                 return await getTeachersBySupervisor(authSupervisorId);
@@ -280,7 +291,7 @@ export default function TimetablePage() {
                 <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
                     <div className="space-y-1.5 min-w-[170px] flex-1 xl:flex-none">
                         <label className="text-[9px] font-black uppercase text-muted-foreground ml-2 tracking-widest">Level Lead</label>
-                        <Select value={selectedSupervisorId} onValueChange={setSelectedSupervisorId} disabled={isSupervisor}>
+                        <Select value={selectedSupervisorId} onValueChange={setSelectedSupervisorId} disabled={isSupervisor || isTeacher}>
                             <SelectTrigger className="h-10 rounded-2xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
                                 <Shield className="size-3.5 mr-2 text-primary" />
                                 <SelectValue />
@@ -294,7 +305,7 @@ export default function TimetablePage() {
 
                     <div className="space-y-1.5 min-w-[170px] flex-1 xl:flex-none">
                         <label className="text-[9px] font-black uppercase text-muted-foreground ml-2 tracking-widest">Faculty Member</label>
-                        <Select value={selectedTeacherId} onValueChange={setSelectedTeacherId}>
+                        <Select value={selectedTeacherId} onValueChange={setSelectedTeacherId} disabled={isTeacher}>
                             <SelectTrigger className="h-10 rounded-2xl border-border bg-accent/20 px-4 font-bold text-xs shadow-sm">
                                 <Search className="size-3.5 mr-2 text-primary" />
                                 <SelectValue />

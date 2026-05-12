@@ -107,6 +107,24 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  if (roleCookie?.value === "teacher") {
+    const teacherId = request.cookies.get("teacher_id")?.value;
+    const isAllowedPath = 
+      pathname === "/login" ||
+      pathname === "/" ||
+      pathname === "/timetable" ||
+      pathname === "/attendance" ||
+      pathname === "/reports" ||
+      pathname.startsWith("/teachers/") ||
+      pathname.startsWith("/students/"); // Teachers might need to see student details
+
+    if (!isAllowedPath) {
+       const teacherRedirect = NextResponse.redirect(new URL("/", request.url));
+       response.cookies.getAll().forEach(c => teacherRedirect.cookies.set(c.name, c.value, c));
+       return teacherRedirect;
+    }
+  }
+
   return response;
 }
 

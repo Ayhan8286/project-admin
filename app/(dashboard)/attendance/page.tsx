@@ -56,6 +56,9 @@ function AttendanceContent() {
     useEffect(() => {
         if (teacherFromUrl) {
             setSelectedTeacher(teacherFromUrl);
+        } else if (typeof document !== 'undefined' && document.cookie.includes("auth_role=teacher")) {
+            const teacherId = document.cookie.split("; ").find(c => c.trim().startsWith("teacher_id="))?.split("=")[1];
+            if (teacherId) setSelectedTeacher(teacherId);
         }
     }, [teacherFromUrl]);
 
@@ -183,18 +186,24 @@ function AttendanceContent() {
                     <h3 className="text-lg font-black mb-2 text-foreground">Select Class</h3>
                     <p className="text-xs text-muted-foreground mb-6 font-medium">Choose a teacher to load their students.</p>
                     <div className="relative z-10">
-                        <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
-                            <SelectTrigger className="pill-input h-14 bg-accent/20 border-border rounded-2xl px-5 text-sm font-bold text-foreground focus:ring-2 focus:ring-primary focus:border-primary shadow-sm outline-none transition-all">
-                                <SelectValue placeholder={teachersLoading ? "Loading..." : "Select Teacher..."} />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-border shadow-xl">
-                                {teachers.map((teacher: Teacher) => (
-                                    <SelectItem key={teacher.id} value={teacher.id} className="cursor-pointer font-medium hover:bg-accent focus:bg-accent rounded-xl m-1 transition-colors">
-                                        {teacher.name} ({teacher.staff_id})
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        {typeof document !== 'undefined' && document.cookie.includes("auth_role=teacher") ? (
+                            <div className="pill-input h-14 bg-accent/10 border-border rounded-2xl px-5 flex items-center text-sm font-bold text-foreground opacity-70">
+                                {teachers.find((t: Teacher) => t.id === selectedTeacher)?.name || "Your Assigned Class"}
+                            </div>
+                        ) : (
+                            <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
+                                <SelectTrigger className="pill-input h-14 bg-accent/20 border-border rounded-2xl px-5 text-sm font-bold text-foreground focus:ring-2 focus:ring-primary focus:border-primary shadow-sm outline-none transition-all">
+                                    <SelectValue placeholder={teachersLoading ? "Loading..." : "Select Teacher..."} />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border-border shadow-xl">
+                                    {teachers.map((teacher: Teacher) => (
+                                        <SelectItem key={teacher.id} value={teacher.id} className="cursor-pointer font-medium hover:bg-accent focus:bg-accent rounded-xl m-1 transition-colors">
+                                            {teacher.name} ({teacher.staff_id})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
 
                     {!selectedTeacher && (
