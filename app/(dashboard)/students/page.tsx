@@ -24,12 +24,26 @@ export default function StudentsPage() {
     const initialShift = searchParams.get("shift") || "All Shifts";
 
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState(initialStatus);
     const [shiftFilter, setShiftFilter] = useState(initialShift);
+    const [page, setPage] = useState(1);
+    const limit = 20;
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Reset page on filter change
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch, statusFilter, shiftFilter]);
     const role = typeof document !== 'undefined' ? document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1] : "admin";
     const isSupervisor = role === "supervisor";
     const isTeacher = role === "teacher";
@@ -40,26 +54,30 @@ export default function StudentsPage() {
     };
 
     // Queries
-    const { data: students = [], isLoading, error, refetch } = useQuery({
-        queryKey: (typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) 
-            ? ["students", "supervisor", document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1]]
-            : ["students"],
+    const { data, isLoading, error, refetch } = useQuery({
+        queryKey: ["students", debouncedSearch, statusFilter, shiftFilter, page],
         queryFn: async () => {
             const cookies = document.cookie.split("; ");
             const role = cookies.find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
             const supervisorId = cookies.find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
             const teacherId = cookies.find(c => c.trim().startsWith("teacher_id="))?.split("=")[1];
 
-            if (role === "supervisor" && supervisorId) {
-                return await getStudentsBySupervisor(supervisorId);
-            }
-            if (role === "teacher" && teacherId) {
-                return await getStudentsByTeacher(teacherId);
-            }
-            return await getStudents();
+            return await getStudents({
+                page,
+                limit,
+                search: debouncedSearch,
+                status: statusFilter,
+                shift: shiftFilter,
+                supervisorId: role === "supervisor" ? supervisorId : undefined,
+                teacherId: role === "teacher" ? teacherId : undefined
+            });
         },
         ...STALE_LONG,
     });
+
+    const students = data?.data || [];
+    const totalCount = data?.count || 0;
+    const totalPages = Math.ceil(totalCount / limit);
 
     const deleteMutation = useMutation({
         mutationFn: deleteStudent,
@@ -74,21 +92,7 @@ export default function StudentsPage() {
         }
     };
 
-    const filteredStudents = useMemo(() => {
-        return students.filter((student: Student) => {
-            const matchesSearch = !searchQuery.trim() || 
-                student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (student.reg_no && student.reg_no.toLowerCase().includes(searchQuery.toLowerCase()));
-            
-            const matchesStatus = statusFilter === "All Status" || 
-                student.status?.toLowerCase() === statusFilter.toLowerCase();
-            
-            const matchesShift = shiftFilter === "All Shifts" || 
-                student.shift?.toLowerCase() === shiftFilter.toLowerCase();
-
-            return matchesSearch && matchesStatus && matchesShift;
-        });
-    }, [students, searchQuery, statusFilter, shiftFilter]);
+    const filteredStudents = students; // Filtering now happens server-side
 
     if (error) {
         return <ErrorState message="Failed to load students. Please check your Supabase connection." onRetry={() => refetch()} />;
@@ -152,10 +156,10 @@ export default function StudentsPage() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: "Total Students", value: students.length, sub: "Enrolled", accent: "#13ec37", Icon: Users },
-                    { label: "New Enrollments", value: 48, sub: "This Month", accent: "#60a5fa", Icon: UserPlus },
-                    { label: "Active Status", value: students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "Currently active", accent: "#34d399", Icon: Users },
-                    { label: "Inactive/Leave", value: students.length - students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "On leave", accent: "#f87171", Icon: Users },
+                    { label: "Total Students", value: totalCount, sub: "In Library", accent: "#13ec37", Icon: Users },
+                    { label: "Showing Results", value: students.length, sub: "This Page", accent: "#60a5fa", Icon: UserPlus },
+                    { label: "Active Pool", value: students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "Current view", accent: "#34d399", Icon: Users },
+                    { label: "Inactive/Other", value: students.length - students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "Current view", accent: "#f87171", Icon: Users },
                 ].map(({ label, value, sub, accent, Icon }, i) => (
                     <div key={i} className="card-hover relative glass-panel rounded-3xl p-5 border border-white/20 dark:border-white/5 overflow-hidden group flex flex-col gap-3 shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                         <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: accent }} />
@@ -395,11 +399,58 @@ export default function StudentsPage() {
                     </table>
                 </div>
 
-                {filteredStudents.length > 0 && (
-                    <div className="px-6 py-4 bg-slate-50 dark:bg-[#1a331d]/50 flex items-center justify-between gap-4 border-t border-slate-200 dark:border-[#2a452e]">
-                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                            Showing <span className="font-bold text-foreground">{filteredStudents.length}</span> {filteredStudents.length === 1 ? "student" : "students"}
+                {totalCount > 0 && (
+                    <div className="px-6 py-4 bg-slate-50 dark:bg-[#1a331d]/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 dark:border-[#2a452e]">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium order-2 sm:order-1">
+                            Showing <span className="font-bold text-foreground">{(page - 1) * limit + 1}</span> to <span className="font-bold text-foreground">{Math.min(page * limit, totalCount)}</span> of <span className="font-bold text-foreground">{totalCount}</span> students
                         </p>
+                        
+                        {/* Pagination Controls */}
+                        <div className="flex items-center gap-2 order-1 sm:order-2">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1 || isLoading}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl border border-border bg-card text-foreground disabled:opacity-30 disabled:cursor-not-allowed hover:border-primary/30 transition-all"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                                    // Basic pagination window logic
+                                    let pageNum = i + 1;
+                                    if (totalPages > 5 && page > 3) {
+                                        pageNum = page - 3 + i;
+                                        if (pageNum + (5 - i) > totalPages) pageNum = totalPages - 4 + i;
+                                    }
+                                    if (pageNum <= 0) return null;
+                                    if (pageNum > totalPages) return null;
+
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setPage(pageNum)}
+                                            className={cn(
+                                                "w-10 h-10 rounded-xl text-xs font-black transition-all",
+                                                page === pageNum 
+                                                    ? "bg-primary text-white shadow-md shadow-primary/20" 
+                                                    : "bg-card border border-border text-foreground hover:border-primary/30"
+                                            )}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages || isLoading}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl border border-border bg-card text-foreground disabled:opacity-30 disabled:cursor-not-allowed hover:border-primary/30 transition-all"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

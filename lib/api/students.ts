@@ -2,8 +2,22 @@ import { supabase } from "@/lib/supabase";
 import { Student } from "@/types/student";
 import { createNotification } from "./notifications";
 
-export async function getStudents(): Promise<Student[]> {
-    const { data, error } = await supabase
+export interface GetStudentsParams {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    shift?: string;
+    supervisorId?: string;
+    teacherId?: string;
+}
+
+export async function getStudents(params: GetStudentsParams = {}): Promise<{ data: Student[], count: number }> {
+    const { page = 1, limit = 20, search, status, shift, supervisorId, teacherId } = params;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
         .from("students")
         .select(`
             id, full_name, reg_no, guardian_name, status, shift, guardian_id, shift_id, supervisor_id,
@@ -11,14 +25,43 @@ export async function getStudents(): Promise<Student[]> {
             classes(
                 course:courses(name)
             )
-        `);
+        `, { count: 'exact' });
+
+    // Apply Filters
+    if (search) {
+        query = query.or(`full_name.ilike.%${search}%,reg_no.ilike.%${search}%`);
+    }
+    if (status && status !== "All Status") {
+        query = query.ilike("status", status);
+    }
+    if (shift && shift !== "All Shifts") {
+        query = query.ilike("shift", shift);
+    }
+    
+    // Role based filtering
+    if (supervisorId) {
+        // Since we can't easily join deep relations with 'or' in a single filter-heavy query,
+        // we might need to stick to the specific supervisor/teacher logic or use a view/rpc.
+        // For now, I'll keep the direct supervisor_id filter for the paginated list.
+        query = query.eq("supervisor_id", supervisorId);
+    } else if (teacherId) {
+        // For teachers, we fetch linked student IDs first (similar to existing logic but integrated)
+        const { data: teacherClasses } = await supabase.from("classes").select("student_id").eq("teacher_id", teacherId);
+        const ids = (teacherClasses || []).map(tc => tc.student_id);
+        if (ids.length === 0) return { data: [], count: 0 };
+        query = query.in("id", ids);
+    }
+
+    const { data, error, count } = await query
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
     if (error) {
         console.error("Error fetching students:", error);
         throw error;
     }
 
-    return (data || []).map((student: any) => ({
+    const mappedData = (data || []).map((student: any) => ({
         ...student,
         classes: student.classes?.map((cls: any) => ({
             ...cls,
@@ -26,6 +69,8 @@ export async function getStudents(): Promise<Student[]> {
         })),
         supervisor: Array.isArray(student.supervisor) ? student.supervisor[0] : student.supervisor
     }));
+
+    return { data: mappedData, count: count || 0 };
 }
 
 export async function getStudentsBySupervisor(supervisorId: string): Promise<Student[]> {

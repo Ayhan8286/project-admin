@@ -292,74 +292,63 @@ export async function updateTeacher(
  * by fetching all teachers with their classes in a single joined query.
  */
 export async function getSupervisorStats(): Promise<Record<string, { teachers: number; students: number }>> {
-    // Fetch all teachers with their class student_ids
+    // Try to use the optimized view if it exists
     const { data, error } = await supabase
-        .from("teachers")
-        .select(`
-            id,
-            supervisor_id,
-            is_active,
-            classes:classes(student_id)
-        `)
-        .eq("is_active", true);
+        .from("supervisor_stats_summary")
+        .select("*");
 
     if (error) {
-        console.error("Error fetching supervisor stats:", error);
-        throw error;
-    }
-
-    const stats: Record<string, { teachers: number; students: Set<string> }> = {};
-
-    interface TeacherWithClasses {
-        id: string;
-        supervisor_id: string | null;
-        is_active: boolean;
-        classes: { student_id: string }[];
-    }
-
-    (data as unknown as TeacherWithClasses[] || []).forEach((teacher) => {
-        const supId = teacher.supervisor_id;
-        if (!supId) return;
-
-        if (!stats[supId]) {
-            stats[supId] = { teachers: 0, students: new Set() };
-        }
-        stats[supId].teachers += 1;
-        (teacher.classes || []).forEach((cls) => {
-            if (cls.student_id) stats[supId].students.add(cls.student_id);
+        console.warn("Supervisor stats view not found, falling back to manual fetch. Run migration_optimization.sql for better performance.");
+        // Fallback to manual (keeping old logic but slightly optimized)
+        const { data: fallbackData } = await supabase.from("teachers").select("supervisor_id, classes:classes(student_id)").eq("is_active", true);
+        const stats: Record<string, { teachers: number; students: Set<string> }> = {};
+        (fallbackData || []).forEach((t: any) => {
+            if (!t.supervisor_id) return;
+            if (!stats[t.supervisor_id]) stats[t.supervisor_id] = { teachers: 0, students: new Set() };
+            stats[t.supervisor_id].teachers++;
+            t.classes?.forEach((c: any) => c.student_id && stats[t.supervisor_id].students.add(c.student_id));
         });
-    });
+        const res: Record<string, { teachers: number; students: number }> = {};
+        Object.entries(stats).forEach(([id, s]) => res[id] = { teachers: s.teachers, students: s.students.size });
+        return res;
+    }
 
-    // Convert Sets to counts
     const result: Record<string, { teachers: number; students: number }> = {};
-    Object.entries(stats).forEach(([id, { teachers, students }]) => {
-        result[id] = { teachers, students: students.size };
+    data.forEach((row: any) => {
+        if (row.supervisor_id) {
+            result[row.supervisor_id] = { 
+                teachers: parseInt(row.teacher_count), 
+                students: parseInt(row.student_count) 
+            };
+        }
     });
-
     return result;
 }
 
 export async function getTeacherStats(): Promise<Record<string, { students: number }>> {
     const { data, error } = await supabase
-        .from("classes")
-        .select("teacher_id, student_id");
+        .from("teacher_student_counts")
+        .select("*");
 
     if (error) {
-        console.error("Error fetching teacher stats:", error);
-        throw error;
+        console.warn("Teacher stats view not found, falling back. Run migration_optimization.sql.");
+        const { data: fallbackData } = await supabase.from("classes").select("teacher_id, student_id");
+        const stats: Record<string, Set<string>> = {};
+        (fallbackData || []).forEach((c: any) => {
+            if (!c.teacher_id) return;
+            if (!stats[c.teacher_id]) stats[c.teacher_id] = new Set();
+            stats[c.teacher_id].add(c.student_id);
+        });
+        const res: Record<string, { students: number }> = {};
+        Object.entries(stats).forEach(([id, s]) => res[id] = { students: s.size });
+        return res;
     }
 
-    const stats: Record<string, Set<string>> = {};
-    (data || []).forEach((cls: any) => {
-        if (!cls.teacher_id) return;
-        if (!stats[cls.teacher_id]) stats[cls.teacher_id] = new Set();
-        stats[cls.teacher_id].add(cls.student_id);
-    });
-
     const result: Record<string, { students: number }> = {};
-    Object.entries(stats).forEach(([id, students]) => {
-        result[id] = { students: students.size };
+    data.forEach((row: any) => {
+        if (row.teacher_id) {
+            result[row.teacher_id] = { students: parseInt(row.student_count) };
+        }
     });
-
     return result;
 }

@@ -88,28 +88,37 @@ export async function getDashboardStats(supervisorId?: string, teacherId?: strin
     const queries = [];
 
     if (supervisorId || teacherId) {
-        // Filtered counts
-        queries.push(supabase.from("students").select("*", { count: "exact", head: true }).in("id", studentIds));
-        queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }).in("id", teacherIds).eq("is_active", true));
-        queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }).in("id", teacherIds));
-        queries.push(supabase.from("classes").select("*", { count: "exact", head: true }).in("id", classIds));
-        queries.push(supabase.from("students").select("*", { count: "exact", head: true }).in("id", studentIds).ilike("status", "active"));
+        // Filtered counts - select minimal fields
+        queries.push(supabase.from("students").select("id", { count: "exact", head: true }).in("id", studentIds));
+        queries.push(supabase.from("teachers").select("id", { count: "exact", head: true }).in("id", teacherIds).eq("is_active", true));
+        queries.push(supabase.from("teachers").select("id", { count: "exact", head: true }).in("id", teacherIds));
+        queries.push(supabase.from("classes").select("id", { count: "exact", head: true }).in("id", classIds));
+        queries.push(supabase.from("students").select("id", { count: "exact", head: true }).in("id", studentIds).ilike("status", "active"));
         queries.push(supabase.from("students").select("shift").in("id", studentIds));
-        
-        // Schedule data (already fetched for supervisorClasses but let's re-fetch clean if needed or reuse)
-        // Re-fetching classes for clean schedule processing
         queries.push(supabase.from("classes").select("schedule_days").in("id", classIds));
-        
-        // App accounts (already have platforms from classes join)
         queries.push(Promise.resolve({ data: accountsData }));
     } else {
-        // Global counts
-        queries.push(supabase.from("students").select("*", { count: "exact", head: true }));
-        queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true));
-        queries.push(supabase.from("teachers").select("*", { count: "exact", head: true }));
-        queries.push(supabase.from("classes").select("*", { count: "exact", head: true }));
-        queries.push(supabase.from("students").select("*", { count: "exact", head: true }).ilike("status", "active"));
-        queries.push(supabase.from("students").select("shift"));
+        // Global counts using optimized view if available
+        const { data: summary } = await supabase.from("dashboard_summary").select("*").single();
+        if (summary) {
+            queries.push(Promise.resolve({ count: parseInt(summary.total_students) }));
+            queries.push(Promise.resolve({ count: parseInt(summary.active_teachers) }));
+            queries.push(Promise.resolve({ count: parseInt(summary.total_teachers) }));
+            queries.push(Promise.resolve({ count: parseInt(summary.total_classes) }));
+            queries.push(Promise.resolve({ count: parseInt(summary.active_students) }));
+        } else {
+            // Fallback if view not ready
+            queries.push(supabase.from("students").select("id", { count: "exact", head: true }));
+            queries.push(supabase.from("teachers").select("id", { count: "exact", head: true }).eq("is_active", true));
+            queries.push(supabase.from("teachers").select("id", { count: "exact", head: true }));
+            queries.push(supabase.from("classes").select("id", { count: "exact", head: true }));
+            queries.push(supabase.from("students").select("id", { count: "exact", head: true }).ilike("status", "active"));
+        }
+        
+        // Grouped shift counts (using RPC function from migration)
+        const shiftCounts = supabase.rpc('get_student_shift_counts');
+        queries.push(shiftCounts);
+        
         queries.push(supabase.from("classes").select("schedule_days"));
         queries.push(supabase.from("app_accounts").select("platform"));
     }
@@ -128,9 +137,11 @@ export async function getDashboardStats(supervisorId?: string, teacherId?: strin
     // Calculate students by shift
     const studentsByShift: Record<string, number> = {};
     if (shiftResult.data) {
-        shiftResult.data.forEach((student: any) => {
-            const shift = student.shift || "Unassigned";
-            studentsByShift[shift] = (studentsByShift[shift] || 0) + 1;
+        shiftResult.data.forEach((item: any) => {
+            // Handle both array of objects with shift field AND RPC result [shift, count]
+            const shift = item.shift || "Unassigned";
+            const count = item.count ? parseInt(item.count) : 1;
+            studentsByShift[shift] = (studentsByShift[shift] || 0) + count;
         });
     }
 
