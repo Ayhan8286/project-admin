@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSupervisors, addSupervisor, updateSupervisor, deleteSupervisor } from "@/lib/api/supervisors";
-import { getSupervisorStats } from "@/lib/api/classes";
+import { getSupervisorStats, getTeacherStats } from "@/lib/api/classes";
 import { Supervisor } from "@/types/supervisor";
 import {
     Dialog,
@@ -73,6 +73,10 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
         mutationFn: deleteSupervisor,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["staff", department] });
+            if (department === "Teacher") {
+                queryClient.invalidateQueries({ queryKey: ["teachers"] });
+                queryClient.invalidateQueries({ queryKey: ["allClasses"] });
+            }
             toast.success(`${department} member deleted`);
         },
         onError: () => {
@@ -106,6 +110,13 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
         ...STALE_LONG,
     });
 
+    const { data: teacherStats = {} } = useQuery({
+        queryKey: ["teacherStats"],
+        queryFn: getTeacherStats,
+        enabled: department === "Teacher",
+        ...STALE_LONG,
+    });
+
     const filteredStaff = staff.filter((s) =>
         s.name.toLowerCase().includes(search.toLowerCase()) ||
         (s.email && s.email.toLowerCase().includes(search.toLowerCase()))
@@ -120,7 +131,9 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
                         <span className="text-primary ml-2 text-xl">✦</span>
                     </h2>
                     <p className="text-muted-foreground mt-1.5 text-sm">
-                        Manage {department.toLowerCase()} personnel and dashboard access.
+                        {department === "Teacher" 
+                            ? "Manage faculty roster, monitor assigned students, and track teaching progress."
+                            : `Manage ${department.toLowerCase()} personnel and dashboard access.`}
                     </p>
                 </div>
                 <div className="flex gap-3">
@@ -167,7 +180,11 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredStaff.map((employee, index) => {
                         const avatar = placeholderAvatars[index % placeholderAvatars.length];
-                        const stats = department === "Supervisor" ? supervisorStats[employee.id] ?? { teachers: 0, students: 0 } : null;
+                        const stats = department === "Supervisor" ? supervisorStats[employee.id] ?? { teachers: 0, students: 0 } : 
+                                     department === "Teacher" ? teacherStats[employee.id] ?? { students: 0 } : null;
+
+                        const isTeacherDept = department === "Teacher";
+                        const isSupervisorDept = department === "Supervisor";
 
                         return (
                             <div key={employee.id} className="card-hover glass-panel rounded-3xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
@@ -219,8 +236,17 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
                                     </div>
                                 )}
 
+                                {isTeacherDept && stats && (
+                                    <div className="px-6 py-4 bg-forest/[0.03] border-t border-white/5 flex items-center justify-center">
+                                        <div className="text-center">
+                                            <p className="text-2xl font-black text-forest">{stats.students}</p>
+                                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">Active Students</p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="p-4 flex flex-col gap-3 relative z-20">
-                                    {department === "Supervisor" && (
+                                    {isSupervisorDept && (
                                         <Link 
                                             href={`/supervisors/${employee.id}`} 
                                             onClick={(e) => e.stopPropagation()}
@@ -228,6 +254,16 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
                                         >
                                             <Users className="h-4 w-4" />
                                             Teachers & Students
+                                        </Link>
+                                    )}
+                                    {isTeacherDept && (
+                                        <Link 
+                                            href={`/teachers/${employee.id}`} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black bg-forest text-white shadow-lg shadow-forest/20 hover:bg-forest/90 transition-all w-full"
+                                        >
+                                            <Users className="h-4 w-4" />
+                                            Students & Schedule
                                         </Link>
                                     )}
                                     <div className="grid grid-cols-2 gap-3">
@@ -242,18 +278,30 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
                                             <Edit2 className="h-3.5 w-3.5" />
                                             Edit
                                         </button>
-                                        <Link 
-                                            href={`/departments/${department.toLowerCase().replace(' ', '-')}/${employee.id}`} 
-                                            onClick={(e) => e.stopPropagation()}
-                                            className={`py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black transition-all ${
-                                                department === "Supervisor" 
-                                                ? "border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10" 
-                                                : "bg-forest text-white shadow-lg shadow-forest/20 hover:bg-forest/90"
-                                            }`}
-                                        >
-                                            <MessageSquare className="h-3.5 w-3.5" />
-                                            Tasks & Chat
-                                        </Link>
+                                        {!isTeacherDept && (
+                                            <Link 
+                                                href={`/departments/${department.toLowerCase().replace(' ', '-')}/${employee.id}`} 
+                                                onClick={(e) => e.stopPropagation()}
+                                                className={`py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black transition-all ${
+                                                    department === "Supervisor" 
+                                                    ? "border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10" 
+                                                    : "bg-forest text-white shadow-lg shadow-forest/20 hover:bg-forest/90"
+                                                }`}
+                                            >
+                                                <MessageSquare className="h-3.5 w-3.5" />
+                                                Tasks & Chat
+                                            </Link>
+                                        )}
+                                        {isTeacherDept && (
+                                            <Link 
+                                                href={`/departments/teacher/${employee.id}`} 
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-all"
+                                            >
+                                                <MessageSquare className="h-3.5 w-3.5" />
+                                                Tasks & Chat
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -281,6 +329,9 @@ function AddEmployeeDialog({ department, open, onOpenChange }: { department: str
         mutationFn: (data: any) => addSupervisor({ ...data, department }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["staff", department] });
+            if (department === "Teacher") {
+                queryClient.invalidateQueries({ queryKey: ["teachers"] });
+            }
             onOpenChange(false);
             setFormData({ name: "", email: "", phone: "", timing: "", password: "" });
             toast.success(`${department} member added`);
@@ -348,6 +399,9 @@ function EditEmployeeDialog({ department, employee, open, onOpenChange }: { depa
         mutationFn: () => updateSupervisor(employee!.id, formData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["staff", department] });
+            if (department === "Teacher") {
+                queryClient.invalidateQueries({ queryKey: ["teachers"] });
+            }
             onOpenChange(false);
             toast.success("Updated successfully");
         },

@@ -10,7 +10,6 @@ import { Menu, X } from "lucide-react";
 const navItems = [
     { label: "Dashboard", href: "/", icon: "dashboard" },
     { label: "Departments", href: "/departments/supervisor", icon: "corporate_fare" },
-    { label: "Teachers", href: "/teachers", icon: "school" },
     { label: "Time Table", href: "/timetable", icon: "calendar_month" },
     { label: "Students", href: "/students", icon: "group" },
     { label: "Platforms", href: "/platforms", icon: "layers" },
@@ -60,7 +59,7 @@ export function Sidebar({
                     // Role-based visibility
                     if (role === "supervisor") {
                         if (deptRole === 'supervisor') {
-                            const allowed = ["Dashboard", "Teachers", "Students", "Attendance", "Time Table", "Tasks", "Daily Reports"];
+                            const allowed = ["Dashboard", "Students", "Attendance", "Time Table", "Tasks", "Daily Reports"];
                             if (!allowed.includes(item.label)) return null;
                         } else {
                             // Specialized departments only see Tasks

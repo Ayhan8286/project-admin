@@ -42,7 +42,7 @@ export async function addTeacher(teacher: Omit<Teacher, "id" | "is_active">): Pr
             title: 'New Teacher Assigned',
             message: `${data.name} has been added as a teacher and assigned to a supervisor.`,
             sender_id: data.supervisor_id || undefined,
-            link: '/teachers'
+            link: '/departments/teacher'
         });
     } catch (notifErr) {
         console.error("Failed to create notification:", notifErr);
@@ -334,6 +334,31 @@ export async function getSupervisorStats(): Promise<Record<string, { teachers: n
     const result: Record<string, { teachers: number; students: number }> = {};
     Object.entries(stats).forEach(([id, { teachers, students }]) => {
         result[id] = { teachers, students: students.size };
+    });
+
+    return result;
+}
+
+export async function getTeacherStats(): Promise<Record<string, { students: number }>> {
+    const { data, error } = await supabase
+        .from("classes")
+        .select("teacher_id, student_id");
+
+    if (error) {
+        console.error("Error fetching teacher stats:", error);
+        throw error;
+    }
+
+    const stats: Record<string, Set<string>> = {};
+    (data || []).forEach((cls: any) => {
+        if (!cls.teacher_id) return;
+        if (!stats[cls.teacher_id]) stats[cls.teacher_id] = new Set();
+        stats[cls.teacher_id].add(cls.student_id);
+    });
+
+    const result: Record<string, { students: number }> = {};
+    Object.entries(stats).forEach(([id, students]) => {
+        result[id] = { students: students.size };
     });
 
     return result;

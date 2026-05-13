@@ -114,7 +114,7 @@ export default function DashboardClient({
 
                     {/* Summary Column */}
                     <div className="md:col-span-2 lg:col-span-2 grid grid-rows-2 gap-6">
-                        <Link href="/teachers" className="p-6 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex items-center space-x-6 border border-white/20 dark:border-white/5 group hover:border-emerald-500/50 transition-all duration-300">
+                        <Link href="/departments/teacher" className="p-6 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex items-center space-x-6 border border-white/20 dark:border-white/5 group hover:border-emerald-500/50 transition-all duration-300">
                             <div className="w-14 h-14 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-800 dark:text-emerald-200 group-hover:scale-110 transition-transform">
                                 <span className="material-symbols-outlined" data-icon="supervisor_account">supervisor_account</span>
                             </div>

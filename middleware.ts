@@ -85,7 +85,7 @@ export function middleware(request: NextRequest) {
       pathname.startsWith(`/departments/${deptRole}/`) ||
       (deptRole === 'supervisor' && (
         pathname === "/" ||
-        pathname === "/teachers" ||
+        pathname === "/departments/teacher" ||
         pathname === `/supervisors/${supervisorId}` ||
         pathname.startsWith("/students") ||
         pathname.startsWith("/attendance") ||
