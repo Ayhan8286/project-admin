@@ -10,6 +10,7 @@ export interface Student {
     supervisor_id: string | null;
     classes?: { course: { name: string } | null }[];
     supervisor?: { name: string } | null;
+    performance_notes?: string | null;
 }
 
 export interface Course {
@@ -79,6 +80,7 @@ export interface AppAccount {
     platform: string;
     account_identifier: string;
     platform_id: string;
+    meeting_link?: string | null;
 }
 
 export interface StudentByPlatform {
@@ -88,4 +90,5 @@ export interface StudentByPlatform {
     account_identifier: string;
     teacher_name: string;
     pak_time: string;
+    meeting_link?: string | null;
 }

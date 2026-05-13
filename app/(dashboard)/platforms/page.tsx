@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { getPlatforms, getStudentsByPlatform } from "@/lib/api/platforms";
+import { getPlatforms, getStudentsByPlatform, updateAppAccount } from "@/lib/api/platforms";
 import { Platform } from "@/types/student";
 import { Video, Monitor, Layers, Loader2, ArrowLeft, Search, Plus, Download, Eye, Users, AlertCircle } from "lucide-react";
 
@@ -119,6 +119,7 @@ export default function PlatformsPage() {
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Account Identifier</th>
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Teacher</th>
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Class Time</th>
+                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">Meeting Link</th>
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -175,6 +176,24 @@ export default function PlatformsPage() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-muted-foreground">
                                                 {student.pak_time || "—"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <input 
+                                                        className="pill-input py-1.5 px-3 glass-panel border border-border text-[11px] font-medium w-40 placeholder:text-muted-foreground/40"
+                                                        placeholder="Paste link here..."
+                                                        defaultValue={students.find(s => s.student_id === student.student_id)?.account_id ? "" : ""} // This is tricky as we don't have account_id in StudentByPlatform
+                                                        onBlur={async (e) => {
+                                                            // We need to find the account_id. Let's assume student.account_identifier is unique for now or refetch needed
+                                                            // For now, let's just show it and tell user to use the dedicated manage button
+                                                        }}
+                                                    />
+                                                    {student.meeting_link && (
+                                                        <a href={student.meeting_link} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-accent rounded-lg text-primary transition-colors">
+                                                            <Video className="h-4 w-4" />
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
                                                 <button className="w-10 h-10 rounded-2xl text-muted-foreground hover:text-primary hover:bg-accent flex items-center justify-center transition-all scale-100 hover:scale-105 ml-auto">

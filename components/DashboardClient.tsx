@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import NotificationCenter from "@/components/NotificationCenter";
+import { TeacherSchedule } from "@/components/teacher/TeacherSchedule";
 
 export default function DashboardClient({ 
     initialStats, 
@@ -81,7 +82,11 @@ export default function DashboardClient({
 
             {/* Content Area */}
             <div className="p-6 md:p-10 space-y-16 relative z-10 w-full max-w-7xl mx-auto">
-                {/* Bento Grid Section: Primary Stats */}
+                {role === "teacher" ? (
+                    <TeacherSchedule teacherId={teacherId!} />
+                ) : (
+                    <>
+                    {/* Bento Grid Section: Primary Stats */}
                 <section className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
                     {/* Total Students */}
                     <Link href="/students" className="md:col-span-2 lg:col-span-2 p-8 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col justify-between border border-white/20 dark:border-white/5 group hover:border-primary/50 transition-all duration-300">
@@ -294,6 +299,8 @@ export default function DashboardClient({
                         </div>
                     </div>
                 </section>
+                </>
+                )}
             </div>
             
             {/* Bottom Navigation spacer for mobile */}

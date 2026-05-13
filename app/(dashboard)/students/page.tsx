@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { getStudents, getStudentsBySupervisor, deleteStudent } from "@/lib/api/students";
+import { getStudents, getStudentsBySupervisor, getStudentsByTeacher, deleteStudent } from "@/lib/api/students";
 import { Student } from "@/types/student";
 import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
 import { ManageStudentDialog } from "@/components/dialogs/ManageStudentDialog";
@@ -32,6 +32,7 @@ export default function StudentsPage() {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const role = typeof document !== 'undefined' ? document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1] : "admin";
     const isSupervisor = role === "supervisor";
+    const isTeacher = role === "teacher";
 
     const handleEditClick = (student: Student) => {
         setSelectedStudentId(student.id);
@@ -47,9 +48,13 @@ export default function StudentsPage() {
             const cookies = document.cookie.split("; ");
             const role = cookies.find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
             const supervisorId = cookies.find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
+            const teacherId = cookies.find(c => c.trim().startsWith("teacher_id="))?.split("=")[1];
 
             if (role === "supervisor" && supervisorId) {
                 return await getStudentsBySupervisor(supervisorId);
+            }
+            if (role === "teacher" && teacherId) {
+                return await getStudentsByTeacher(teacherId);
             }
             return await getStudents();
         },
@@ -112,14 +117,14 @@ export default function StudentsPage() {
                         onClick={() => {
                             // Check role from cookies to prevent unauthorized dialog opening
                             const role = document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
-                            if (role !== "supervisor") {
+                            if (role !== "supervisor" && role !== "teacher") {
                                 setIsDialogOpen(true);
                             }
                         }}
                         className={cn(
                             "flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all",
-                            // Hide for supervisors
-                            (typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) && "hidden"
+                            // Hide for supervisors and teachers
+                            (typeof document !== 'undefined' && (document.cookie.includes("auth_role=supervisor") || document.cookie.includes("auth_role=teacher"))) && "hidden"
                         )}
                     >
                         <Plus className="h-4 w-4" />
@@ -276,8 +281,8 @@ export default function StudentsPage() {
                                             <p className="text-sm text-muted-foreground mb-6">
                                                 {searchQuery ? "Try adjusting your search query." : "Register your first student to get started."}
                                             </p>
-                                            {/* Hide button for supervisors */}
-                                            {!(typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) && (
+                                            {/* Hide button for supervisors and teachers */}
+                                            {!(typeof document !== 'undefined' && (document.cookie.includes("auth_role=supervisor") || document.cookie.includes("auth_role=teacher"))) && (
                                                 <button
                                                     onClick={() => setIsDialogOpen(true)}
                                                     className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold shadow-md shadow-primary/20 hover:bg-primary-hover transition-colors"
@@ -361,7 +366,7 @@ export default function StudentsPage() {
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Link>
-                                                    {!isSupervisor && (
+                                                    {!isSupervisor && !isTeacher && (
                                                         <>
                                                             <button
                                                                 className="w-8 h-8 rounded text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"

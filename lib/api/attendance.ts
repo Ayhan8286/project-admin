@@ -189,3 +189,18 @@ export async function getAttendanceSummary(date: string): Promise<{
     };
 }
 
+export async function getStudentAttendance(studentId: string): Promise<AttendanceRecord[]> {
+    const { data, error } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("student_id", studentId)
+        .order("date", { ascending: false });
+
+    if (error) {
+        console.error("Error fetching student attendance:", error);
+        throw error;
+    }
+
+    return data || [];
+}
+

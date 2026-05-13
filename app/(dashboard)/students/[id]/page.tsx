@@ -4,6 +4,7 @@ import { use, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { getStudentById, getSiblings, updateStudent } from "@/lib/api/students";
+import { getStudentAttendance } from "@/lib/api/attendance";
 import { getStudentClasses, updateClass, getTeachers } from "@/lib/api/classes";
 import { getAppAccounts } from "@/lib/api/platforms";
 import { getSupervisors } from "@/lib/api/supervisors"; // Keep this import as it's used
@@ -39,11 +40,20 @@ export default function StudentProfilePage({
     const { id } = use(params);
     const queryClient = useQueryClient();
     const [isManageOpen, setIsManageOpen] = useState(false);
+    const [isSavingNotes, setIsSavingNotes] = useState(false);
+    const [perfNotes, setPerfNotes] = useState("");
+
+    const role = typeof document !== 'undefined' ? document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1] : "admin";
+    const isTeacher = role === "teacher";
 
     // Queries
     const { data: student, isLoading: studentLoading, error: studentError, refetch: refetchStudent } = useQuery({
         queryKey: ["student", id],
-        queryFn: () => getStudentById(id),
+        queryFn: async () => {
+            const data = await getStudentById(id);
+            if (data) setPerfNotes(data.performance_notes || "");
+            return data;
+        },
         ...STALE_SHORT,
     });
 
@@ -75,9 +85,24 @@ export default function StudentProfilePage({
         queryFn: () => getSupervisors(),
     });
 
+    const { data: attendance = [] } = useQuery({
+        queryKey: ["studentAttendance", id],
+        queryFn: () => getStudentAttendance(id),
+    });
+
     // Handlers
     const handleManageSuccess = () => {
         refetchStudent();
+    };
+
+    const handleSaveNotes = async () => {
+        setIsSavingNotes(true);
+        try {
+            await updateStudent(id, { performance_notes: perfNotes });
+            refetchStudent();
+        } finally {
+            setIsSavingNotes(false);
+        }
     };
 
 
@@ -139,13 +164,15 @@ export default function StudentProfilePage({
                         )}>
                             {student.status || "Unknown"}
                         </span>
-                        <button
-                            onClick={() => setIsManageOpen(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 border border-border bg-card hover:bg-accent rounded-full text-sm font-bold text-foreground transition-all"
-                        >
-                            <Edit2 className="h-3.5 w-3.5" />
-                            Manage Student
-                        </button>
+                        {!isTeacher && (
+                            <button
+                                onClick={() => setIsManageOpen(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 border border-border bg-card hover:bg-accent rounded-full text-sm font-bold text-foreground transition-all"
+                            >
+                                <Edit2 className="h-3.5 w-3.5" />
+                                Manage Student
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -205,71 +232,126 @@ export default function StudentProfilePage({
                 </div>
             </div>
 
-            {/* Class Schedule */}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Class Schedule */}
+                <div className="lg:col-span-2 bg-card rounded-3xl p-6 border border-border shadow-sm card-hover h-fit">
+                    <div className="flex items-center gap-2 mb-6">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Class Schedule</h3>
+                    </div>
+                    {classes.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10 text-center opacity-60">
+                            <Calendar className="h-10 w-10 text-muted-foreground mb-3" />
+                            <p className="text-sm font-bold text-foreground">No Classes Assigned</p>
+                            <p className="text-xs text-muted-foreground mt-1">This student has no scheduled classes yet.</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-hidden rounded-2xl border border-border">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[500px]">
+                                    <thead>
+                                        <tr className="bg-accent/30 border-b border-border">
+                                            <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">Teacher</th>
+                                            <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">Course</th>
+                                            <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">Timing (PK)</th>
+                                            <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground border-r-0">Days</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                        {classes.map((cls: ClassSchedule) => (
+                                            <tr key={cls.id} className="hover:bg-accent/20 transition-colors group">
+                                                <td className="px-5 py-4 font-bold text-sm text-foreground">
+                                                    {cls.teacher?.name || "—"}
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    <span className="text-sm font-bold text-foreground">{cls.course?.name || "—"}</span>
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    <span className="text-sm font-bold text-foreground">{cls.pak_start_time} – {cls.pak_end_time}</span>
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {cls.schedule_days &&
+                                                            Object.entries(cls.schedule_days).map(([day]) => (
+                                                                <span
+                                                                    key={day}
+                                                                    className="px-2 py-0.5 text-[11px] font-black rounded-lg bg-primary/10 text-primary border border-primary/20"
+                                                                >
+                                                                    {day.slice(0, 3)}
+                                                                </span>
+                                                            ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Performance Notes */}
+                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover h-fit">
+                    <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-2">
+                            <Edit className="h-4 w-4 text-muted-foreground" />
+                            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Performance Notes</h3>
+                        </div>
+                        <button 
+                            onClick={handleSaveNotes}
+                            disabled={isSavingNotes || perfNotes === student.performance_notes}
+                            className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/70 disabled:opacity-30 transition-all"
+                        >
+                            {isSavingNotes ? "Saving..." : "Save Changes"}
+                        </button>
+                    </div>
+                    <textarea 
+                        className="w-full min-h-[200px] p-4 rounded-2xl bg-accent/20 border-border focus:ring-2 focus:ring-primary/20 outline-none resize-none text-sm font-medium leading-relaxed"
+                        placeholder="Update student performance, behavior, or progress here..."
+                        value={perfNotes}
+                        onChange={(e) => setPerfNotes(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {/* Attendance History */}
             <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover">
                 <div className="flex items-center gap-2 mb-6">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Class Schedule</h3>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Attendance History</h3>
                 </div>
-                {classes.length === 0 ? (
+                {attendance.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-center opacity-60">
-                        <Calendar className="h-10 w-10 text-muted-foreground mb-3" />
-                        <p className="text-sm font-bold text-foreground">No Classes Assigned</p>
-                        <p className="text-xs text-muted-foreground mt-1">This student has no scheduled classes yet.</p>
+                        <Clock className="h-10 w-10 text-muted-foreground mb-3" />
+                        <p className="text-sm font-bold text-foreground">No Records Found</p>
                     </div>
                 ) : (
-                    <div className="overflow-hidden rounded-2xl border border-border">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[700px]">
-                                <thead>
-                                    <tr className="bg-accent/30 border-b border-border">
-                                        <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">Teacher</th>
-                                        <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">Platform</th>
-                                        <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">PK Time</th>
-                                        <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground">UK Time</th>
-                                        <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wider text-muted-foreground border-r-0">Days</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {classes.map((cls: ClassSchedule) => (
-                                        <tr key={cls.id} className="hover:bg-accent/20 transition-colors group">
-                                            <td className="px-5 py-4 font-bold text-sm text-foreground">
-                                                {cls.teacher?.name || "—"}
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                {cls.app_account ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-foreground">{cls.app_account.platform}</span>
-                                                        <span className="text-xs text-muted-foreground">{cls.app_account.account_identifier}</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-muted-foreground text-sm">—</span>
-                                                )}
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <span className="text-sm font-bold text-foreground">{cls.pak_start_time} – {cls.pak_end_time}</span>
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <span className="text-sm font-bold text-foreground">{cls.uk_start_time} – {cls.uk_end_time}</span>
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <div className="flex flex-wrap gap-1">
-                                                    {cls.schedule_days &&
-                                                        Object.entries(cls.schedule_days).map(([day]) => (
-                                                            <span
-                                                                key={day}
-                                                                className="px-2 py-0.5 text-[11px] font-black rounded-lg bg-primary/10 text-primary border border-primary/20"
-                                                            >
-                                                                {day.slice(0, 3)}
-                                                            </span>
-                                                        ))}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                        {attendance.slice(0, 24).map((record) => (
+                            <div 
+                                key={record.id}
+                                className={cn(
+                                    "p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all",
+                                    record.status === "Present" ? "bg-green-500/5 border-green-500/20" :
+                                    record.status === "Absent" ? "bg-red-500/5 border-red-500/20" :
+                                    "bg-accent/10 border-border"
+                                )}
+                            >
+                                <span className="text-[10px] font-bold text-muted-foreground">{format(new Date(record.date), "MMM d")}</span>
+                                <span className={cn(
+                                    "text-xs font-black",
+                                    record.status === "Present" ? "text-green-600" :
+                                    record.status === "Absent" ? "text-red-600" :
+                                    "text-muted-foreground"
+                                )}>
+                                    {record.status[0]}
+                                </span>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

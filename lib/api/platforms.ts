@@ -19,7 +19,7 @@ export async function getStudentsByPlatform(platformId: string): Promise<Student
     // Get app_accounts for this platform
     const { data: accounts, error: accountsError } = await supabase
         .from("app_accounts")
-        .select("id, account_identifier")
+        .select("id, account_identifier, meeting_link")
         .eq("platform_id", platformId);
 
     if (accountsError || !accounts?.length) {
@@ -27,7 +27,7 @@ export async function getStudentsByPlatform(platformId: string): Promise<Student
     }
 
     const accountIds = accounts.map(a => a.id);
-    const accountMap = new Map(accounts.map(a => [a.id, a.account_identifier]));
+    const accountMap = new Map(accounts.map(a => [a.id, { identifier: a.account_identifier, link: a.meeting_link }]));
 
     // Get classes that use these accounts
     const { data: classes, error: classesError } = await supabase
@@ -63,7 +63,8 @@ export async function getStudentsByPlatform(platformId: string): Promise<Student
                 student_id: student.id,
                 student_name: student.full_name,
                 student_reg_no: student.reg_no,
-                account_identifier: accountMap.get(cls.app_account_id) || "Unknown",
+                account_identifier: accountMap.get(cls.app_account_id)?.identifier || "Unknown",
+                meeting_link: accountMap.get(cls.app_account_id)?.link || null,
                 teacher_name: teacher?.name || "Unknown",
                 pak_time: `${cls.pak_start_time} - ${cls.pak_end_time}`,
             });
@@ -114,4 +115,20 @@ export async function getAppAccounts(): Promise<AppAccount[]> {
     }
 
     return data || [];
+}
+
+export async function updateAppAccount(id: string, updates: Partial<AppAccount>): Promise<AppAccount> {
+    const { data, error } = await supabase
+        .from("app_accounts")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error updating app account:", error);
+        throw error;
+    }
+
+    return data;
 }

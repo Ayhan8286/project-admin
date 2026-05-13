@@ -247,3 +247,46 @@ export async function deleteStudent(id: string): Promise<void> {
         console.error("Failed to create notification:", notifErr);
     }
 }
+
+export async function getStudentsByTeacher(teacherId: string): Promise<Student[]> {
+    // 1. Get all student IDs linked to this teacher via classes
+    const { data: teacherClasses, error: classesError } = await supabase
+        .from("classes")
+        .select("student_id")
+        .eq("teacher_id", teacherId);
+
+    if (classesError) {
+        console.error("Error fetching students via classes:", classesError);
+        throw classesError;
+    }
+
+    const studentIds = (teacherClasses || []).map(tc => tc.student_id);
+
+    if (studentIds.length === 0) return [];
+
+    // 2. Fetch student details for these IDs
+    const { data, error } = await supabase
+        .from("students")
+        .select(`
+            id, full_name, reg_no, guardian_name, status, shift, guardian_id, shift_id, supervisor_id,
+            supervisor:supervisors(name),
+            classes(
+                course:courses(name)
+            )
+        `)
+        .in("id", studentIds);
+
+    if (error) {
+        console.error("Error fetching students by teacher:", error);
+        throw error;
+    }
+
+    return (data || []).map((student: any) => ({
+        ...student,
+        classes: student.classes?.map((cls: any) => ({
+            ...cls,
+            course: Array.isArray(cls.course) ? cls.course[0] : cls.course
+        })),
+        supervisor: Array.isArray(student.supervisor) ? student.supervisor[0] : student.supervisor
+    }));
+}
