@@ -269,18 +269,6 @@ export default function TeacherProfilePage() {
                         </h1>
                         <p className="text-muted-foreground mt-1 text-sm">Staff ID: {teacher.staff_id} · View and manage assigned classes.</p>
                     </div>
-                    {!isSupervisor && (
-                        <div className="ml-auto">
-                            <button
-                                onClick={handleDeleteTeacher}
-                                disabled={deleteTeacherMutation.isPending}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 font-bold rounded-full text-sm transition-all disabled:opacity-50"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Delete Teacher
-                            </button>
-                        </div>
-                    )}
                 </div>
 
                 {/* ── Stat Cards ── */}
@@ -323,45 +311,13 @@ export default function TeacherProfilePage() {
                 </div>
 
                 {/* ── Timetable Section ── */}
-                <Tabs defaultValue="schedule" className="space-y-4">
+                <Tabs defaultValue="list" className="space-y-4">
                     <div className="flex items-center justify-between flex-wrap gap-3">
-                        <TabsList className="bg-slate-100/50 dark:bg-emerald-900/20 p-1.5 rounded-[20px] border border-border/50">
-                            <TabsTrigger value="schedule" className="rounded-2xl px-5 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-md data-[state=active]:text-primary font-bold">
-                                <Calendar className="h-4 w-4 mr-2" />
-                                Time Table
-                            </TabsTrigger>
-                            <TabsTrigger value="list" className="rounded-2xl px-5 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-md data-[state=active]:text-primary font-bold">
-                                <Clock className="h-4 w-4 mr-2" />
-                                Class List
-                            </TabsTrigger>
-                        </TabsList>
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-primary" />
+                            <h2 className="text-sm font-black uppercase tracking-widest text-foreground">Class List</h2>
+                        </div>
 
-                        <div className="flex gap-2">
-                            {/* Timezone toggle */}
-                            <div className="flex rounded-full overflow-hidden border border-border bg-card p-1">
-                                <button
-                                    className={cn(
-                                        "px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200",
-                                        timezone === "pk"
-                                            ? "bg-primary/15 text-primary shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                    onClick={() => setTimezone("pk")}
-                                >
-                                    🇵🇰 PKT
-                                </button>
-                                <button
-                                    className={cn(
-                                        "px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200",
-                                        timezone === "uk"
-                                            ? "bg-primary/15 text-primary shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                    onClick={() => setTimezone("uk")}
-                                >
-                                    🇬🇧 UKT
-                                </button>
-                            </div>
                             
                             {/* Shift Filter for Timetable */}
                             <div className="flex rounded-full overflow-hidden border border-border bg-card/50 p-1 backdrop-blur-md shadow-sm">
@@ -405,157 +361,6 @@ export default function TeacherProfilePage() {
                         </div>
                     </div>
 
-                    {/* ══════ TAB: Visual Schedule ══════ */}
-                    <TabsContent value="schedule">
-                        <div className="bg-card rounded-3xl border border-border overflow-hidden">
-                            <div className="p-0">
-                                {classesLoading ? (
-                                    <div className="p-6"><LoadingShimmer rows={7} rowHeight="h-12" /></div>
-                                ) : teacherClasses.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                                        <Calendar className="h-10 w-10 mb-3 opacity-40" />
-                                        <p className="text-lg font-medium">No classes assigned</p>
-                                        <p className="text-sm mt-1">Click "Assign Class" to get started.</p>
-                                    </div>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <div style={{ minWidth: `${TOTAL_WIDTH + 140}px` }}>
-                                            {/* ── Timeline Header ── */}
-                                            <div className="flex border-b border-white/8 glass-table-header">
-                                                <div className="w-[140px] flex-shrink-0 p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border flex items-center gap-1.5">
-                                                    <Globe className="h-3.5 w-3.5" />
-                                                    {timezone === "pk" ? "PKT" : "UKT"}
-                                                </div>
-                                                <div className="flex-1 flex">
-                                                    {hours.map((hour) => (
-                                                        <div
-                                                            key={hour}
-                                                            style={{ width: `${HOUR_WIDTH}px` }}
-                                                            className="flex-shrink-0 p-2 text-[10px] font-medium text-center text-muted-foreground border-r border-border/50 last:border-r-0 uppercase"
-                                                        >
-                                                            {formatDisplayHour(hour)}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* ── Day Rows ── */}
-                                            {ALL_DAYS.map((day) => {
-                                                const dayClasses = classesByDay[day];
-                                                const hasClasses = dayClasses.length > 0;
-
-                                                return (
-                                                    <div
-                                                        key={day}
-                                                        className={cn(
-                                                            "flex h-[52px] border-b border-border last:border-b-0 transition-colors",
-                                                            hasClasses && "hover:bg-accent/50"
-                                                        )}
-                                                    >
-                                                        {/* Day label */}
-                                                        <div className="w-[140px] flex-shrink-0 px-3 flex items-center border-r border-border">
-                                                            <span className="text-xs font-semibold uppercase tracking-wide text-foreground">
-                                                                {day}
-                                                            </span>
-                                                            {hasClasses && (
-                                                                <span className="ml-auto text-[10px] text-muted-foreground font-mono">
-                                                                    {dayClasses.length}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Timeline area */}
-                                                        <div className="flex-1 relative">
-                                                            {/* Hour grid lines */}
-                                                            <div className="absolute inset-0 flex pointer-events-none">
-                                                                {hours.map((hour) => (
-                                                                    <div
-                                                                        key={hour}
-                                                                        style={{ width: `${HOUR_WIDTH}px` }}
-                                                                        className="flex-shrink-0 border-r border-border/30 last:border-r-0"
-                                                                    />
-                                                                ))}
-                                                            </div>
-
-                                                            {/* Class blocks */}
-                                                            {dayClasses
-                                                                .filter(cls => {
-                                                                    if (timetableShiftFilter === "All") return true;
-                                                                    return cls.student?.shift === timetableShiftFilter;
-                                                                })
-                                                                .map((cls) => {
-                                                                // Fall back to PK times if UK times are missing
-                                                                const hasPkTime = !!cls.pak_start_time && !!cls.pak_end_time;
-                                                                const hasUkTime = !!cls.uk_start_time && !!cls.uk_end_time;
-                                                                const useUk = timezone === "uk" && hasUkTime;
-                                                                const startTime = useUk ? cls.uk_start_time : cls.pak_start_time;
-                                                                const endTime = useUk ? cls.uk_end_time : cls.pak_end_time;
-                                                                const isFallback = timezone === "uk" && !hasUkTime;
-                                                                const start = timeToDecimal(startTime);
-                                                                const end = timeToDecimal(endTime);
-
-                                                                if (!startTime || !endTime || end <= START_HOUR || start >= END_HOUR) return null;
-
-                                                                const leftPx = Math.max(0, (start - START_HOUR)) * HOUR_WIDTH;
-                                                                const widthPx = Math.max(30, (end - start) * HOUR_WIDTH);
-                                                                const color = studentColorMap.get(cls.student_id) || BLOCK_COLORS[0];
-                                                                const studentName = cls.student?.full_name || "Unknown";
-
-                                                                return (
-                                                                    <div
-                                                                        key={`${day}-${cls.id}`}
-                                                                        className="absolute top-1.5 bottom-1.5 rounded-md z-10 hover:z-50 hover:scale-[1.03] transition-all duration-200 cursor-pointer flex items-center px-2.5 overflow-hidden group/block backdrop-blur-sm"
-                                                                        onClick={() => cls.student?.id && router.push(`/students/${cls.student.id}`)}
-                                                                        style={{
-                                                                            left: `${leftPx}px`,
-                                                                            width: `${widthPx}px`,
-                                                                            background: color.bg,
-                                                                            borderLeft: `3px solid ${color.border}`,
-                                                                            boxShadow: `0 0 12px ${color.glow}`,
-                                                                        }}
-                                                                    >
-                                                                        <div className="flex flex-col min-w-0">
-                                                                            <span className="text-[11px] font-bold truncate leading-tight" style={{ color: color.text }}>
-                                                                                {studentName}
-                                                                            </span>
-                                                                            {widthPx > 80 && (
-                                                                                <span className="text-[9px] text-muted-foreground truncate">
-                                                                                    {startTime} – {endTime}{isFallback ? " (PK)" : ""}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {/* ── Hover Tooltip ── */}
-                                                                        <div className="absolute opacity-0 group-hover/block:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 w-[220px] p-3 rounded-lg shadow-2xl pointer-events-none transition-opacity duration-200 z-[100] bg-card border border-border">
-                                                                            <div className="flex items-center justify-between border-b border-border pb-2 mb-2">
-                                                                                <span className="font-bold text-sm" style={{ color: color.text }}>{studentName}</span>
-                                                                                <Clock className="w-3 h-3 text-muted-foreground" />
-                                                                            </div>
-                                                                            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-                                                                                <span className="text-muted-foreground">Reg No</span>
-                                                                                <span className="font-mono text-foreground">{cls.student?.reg_no || "—"}</span>
-                                                                                <span className="text-muted-foreground">🇵🇰 PK</span>
-                                                                                <span className="text-foreground">{cls.pak_start_time} – {cls.pak_end_time}</span>
-                                                                                <span className="text-muted-foreground">🇬🇧 UK</span>
-                                                                                <span className="text-foreground">{cls.uk_start_time} – {cls.uk_end_time}</span>
-                                                                                <span className="text-muted-foreground">Days</span>
-                                                                                <span className="text-foreground">{cls.schedule_days ? Object.keys(cls.schedule_days).join(", ") : "—"}</span>
-                                                                            </div>
-                                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-card"></div>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </TabsContent>
 
                     {/* ══════ TAB: Class List (existing CRUD table) ══════ */}
                     <TabsContent value="list">
