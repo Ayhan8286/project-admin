@@ -4,16 +4,18 @@ import { use, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DepartmentManagement } from "@/components/departments/DepartmentManagement";
-import { ShieldCheck, Megaphone, Cpu, Banknote, GraduationCap } from "lucide-react";
+import { StudentManagement } from "@/components/students/StudentManagement";
+import { ShieldCheck, Megaphone, Cpu, Banknote, GraduationCap, Users } from "lucide-react";
 
-type DepartmentSlug = "supervisor" | "marketing" | "tech-team" | "finance" | "teacher";
+type DepartmentSlug = "supervisor" | "marketing" | "tech-team" | "finance" | "teacher" | "students";
 
-const slugToDept: Record<string, "Supervisor" | "Marketing" | "Tech Team" | "Finance" | "Teacher"> = {
+const slugToDept: Record<string, "Supervisor" | "Marketing" | "Tech Team" | "Finance" | "Teacher" | "Students"> = {
     "supervisor": "Supervisor",
     "marketing": "Marketing",
     "tech-team": "Tech Team",
     "finance": "Finance",
-    "teacher": "Teacher"
+    "teacher": "Teacher",
+    "students": "Students"
 };
 
 export default function DepartmentPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -67,10 +69,18 @@ export default function DepartmentPage({ params }: { params: Promise<{ slug: str
                             <GraduationCap className="h-4 w-4 mr-2" />
                             Teachers
                         </TabsTrigger>
+                        <TabsTrigger value="students" className="rounded-xl py-3 px-6 data-[state=active]:bg-forest data-[state=active]:text-white transition-all duration-300">
+                            <Users className="h-4 w-4 mr-2" />
+                            Students
+                        </TabsTrigger>
                     </TabsList>
 
                     <div className="mt-8">
-                        <DepartmentManagement department={slugToDept[activeTab]} />
+                        {activeTab === "students" ? (
+                            <StudentManagement />
+                        ) : (
+                            <DepartmentManagement department={slugToDept[activeTab] as any} />
+                        )}
                     </div>
                 </Tabs>
             </div>

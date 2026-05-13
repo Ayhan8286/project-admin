@@ -11,7 +11,6 @@ const navItems = [
     { label: "Dashboard", href: "/", icon: "dashboard" },
     { label: "Departments", href: "/departments/supervisor", icon: "corporate_fare" },
     { label: "Time Table", href: "/timetable", icon: "calendar_month" },
-    { label: "Students", href: "/students", icon: "group" },
     { label: "Platforms", href: "/platforms", icon: "layers" },
     { label: "Attendance", href: "/attendance", icon: "event_available" },
     { label: "Tasks", href: "/tasks", icon: "assignment" },
