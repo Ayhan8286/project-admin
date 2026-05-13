@@ -23,7 +23,6 @@ import {
     Save, 
     User, 
     Calendar, 
-    Plus, 
     Trash2, 
     X,
     Check,
@@ -136,7 +135,7 @@ export function ManageStudentDialog({ studentId, open, onOpenChange, onSuccess }
                             </p>
                         </div>
                     </div>
-                    <button onClick={() => updateProfileMutation.mutate()} className="p-2.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                    <button onClick={() => updateProfileMutation.mutate()} className="p-2.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 mr-8">
                         {updateProfileMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                     </button>
                 </div>
@@ -218,20 +217,7 @@ export function ManageStudentDialog({ studentId, open, onOpenChange, onSuccess }
                                             />
                                         ))}
 
-                                        {/* NEW SESSION GHOST FORM */}
-                                        <div className="pt-6 border-t border-border/50">
-                                            <div className="mb-4 flex items-center gap-2 px-1">
-                                                <Plus className="size-3 text-emerald-600" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Provision New Session</span>
-                                            </div>
-                                            <ClassEditor
-                                                isNew
-                                                teachers={teachers}
-                                                appAccounts={appAccounts}
-                                                studentId={studentId!}
-                                                onSuccess={() => queryClient.invalidateQueries({ queryKey: ["studentClasses", studentId] })}
-                                            />
-                                        </div>
+
                                     </>
                                 )}
                             </div>

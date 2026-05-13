@@ -8,7 +8,7 @@ import { getStudents, deleteStudent } from "@/lib/api/students";
 import { Student } from "@/types/student";
 import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
 import { ManageStudentDialog } from "@/components/dialogs/ManageStudentDialog";
-import { Users, UserPlus, Search, Plus, Trash2, Eye, Edit2, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Search, Plus, Trash2, Edit2, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { exportToCSV } from "@/lib/utils/csv";
 import { STALE_LONG } from "@/lib/query-config";
 import { ErrorState } from "@/components/ui/error-state";
@@ -133,9 +133,6 @@ export function StudentManagement() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                     { label: "Total Students", value: totalCount, sub: "In Library", accent: "#13ec37", Icon: Users },
-                    { label: "Showing Results", value: students.length, sub: "This Page", accent: "#60a5fa", Icon: UserPlus },
-                    { label: "Active Pool", value: students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "Current view", accent: "#34d399", Icon: Users },
-                    { label: "Inactive/Other", value: students.length - students.filter((s: Student) => s.status?.toLowerCase() === 'active').length, sub: "Current view", accent: "#f87171", Icon: Users },
                 ].map(({ label, value, sub, accent, Icon }, i) => (
                     <div key={i} className="card-hover relative glass-panel rounded-3xl p-5 border border-white/20 dark:border-white/5 overflow-hidden group flex flex-col gap-3 shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
                         <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: accent }} />
@@ -268,7 +265,6 @@ export function StudentManagement() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <Link href={`/students/${student.id}`} className="p-2 text-slate-400 hover:text-primary transition-colors"><Eye className="h-4 w-4" /></Link>
                                                     {!isSupervisor && !isTeacher && (
                                                         <button onClick={() => handleDelete(student.id, student.full_name)} className="p-2 text-slate-400 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                                                     )}

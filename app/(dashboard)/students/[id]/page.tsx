@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { format } from "date-fns";
-import { getStudentById, getSiblings, updateStudent } from "@/lib/api/students";
+import { getStudentById, updateStudent } from "@/lib/api/students";
 import { getStudentAttendance } from "@/lib/api/attendance";
 import { getStudentClasses, updateClass, getTeachers } from "@/lib/api/classes";
 import { getAppAccounts } from "@/lib/api/platforms";
@@ -26,7 +26,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Edit, Edit2, Users, Calendar, Loader2, Clock, Save, User } from "lucide-react";
+import { ArrowLeft, Edit2, Calendar, Loader2, Clock, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormInput } from "@/components/ui/form-input";
 import { ErrorState } from "@/components/ui/error-state";
@@ -179,7 +179,7 @@ export default function StudentProfilePage({
             </div>
 
             {/* Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
                 {/* Student Details Card */}
                 <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover">
                     <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-5">Student Details</h3>
@@ -197,45 +197,11 @@ export default function StudentProfilePage({
                         ))}
                     </div>
                 </div>
-
-                {/* Siblings Card */}
-                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover">
-                    <div className="flex items-center gap-2 mb-5">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Siblings</h3>
-                    </div>
-                    {siblings.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-center opacity-60">
-                            <User className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm font-bold text-foreground">No Siblings Found</p>
-                            <p className="text-xs text-muted-foreground mt-1">No students share this guardian.</p>
-                        </div>
-                    ) : (
-                        <ul className="space-y-2">
-                            {siblings.map((sibling) => (
-                                <li key={sibling.id}>
-                                    <Link
-                                        href={`/students/${sibling.id}`}
-                                        className="flex items-center justify-between p-3 rounded-2xl hover:bg-accent/50 transition-colors group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-black text-primary">
-                                                {sibling.full_name?.slice(0, 2).toUpperCase()}
-                                            </div>
-                                            <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{sibling.full_name}</span>
-                                        </div>
-                                        <span className="text-xs font-mono font-bold text-muted-foreground">{sibling.reg_no}</span>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6">
                 {/* Class Schedule */}
-                <div className="lg:col-span-2 bg-card rounded-3xl p-6 border border-border shadow-sm card-hover h-fit">
+                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover h-fit">
                     <div className="flex items-center gap-2 mb-6">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Class Schedule</h3>
@@ -290,29 +256,6 @@ export default function StudentProfilePage({
                             </div>
                         </div>
                     )}
-                </div>
-
-                {/* Performance Notes */}
-                <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover h-fit">
-                    <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-2">
-                            <Edit className="h-4 w-4 text-muted-foreground" />
-                            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Performance Notes</h3>
-                        </div>
-                        <button 
-                            onClick={handleSaveNotes}
-                            disabled={isSavingNotes || perfNotes === student.performance_notes}
-                            className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/70 disabled:opacity-30 transition-all"
-                        >
-                            {isSavingNotes ? "Saving..." : "Save Changes"}
-                        </button>
-                    </div>
-                    <textarea 
-                        className="w-full min-h-[200px] p-4 rounded-2xl bg-accent/20 border-border focus:ring-2 focus:ring-primary/20 outline-none resize-none text-sm font-medium leading-relaxed"
-                        placeholder="Update student performance, behavior, or progress here..."
-                        value={perfNotes}
-                        onChange={(e) => setPerfNotes(e.target.value)}
-                    />
                 </div>
             </div>
 
