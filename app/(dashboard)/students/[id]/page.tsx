@@ -58,12 +58,7 @@ export default function StudentProfilePage({
         ...STALE_SHORT,
     });
 
-    const { data: siblings = [] } = useQuery({
-        queryKey: ["siblings", id],
-        queryFn: () => (student ? getSiblings(student) : Promise.resolve([])),
-        enabled: !!student,
-        ...STALE_SHORT,
-    });
+
 
     const { data: classes = [] } = useQuery({
         queryKey: ["studentClasses", id],
