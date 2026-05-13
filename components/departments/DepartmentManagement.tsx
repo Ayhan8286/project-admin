@@ -223,10 +223,10 @@ export function DepartmentManagement({ department }: DepartmentManagementProps) 
                                     </div>
                                 </div>
                                 
-                                {stats && (
+                                {isSupervisorDept && stats && 'teachers' in stats && (
                                     <div className="px-6 py-4 bg-primary/[0.03] border-t border-white/5 grid grid-cols-2 gap-4">
                                         <div className="text-center">
-                                            <p className="text-2xl font-black text-primary">{stats.teachers}</p>
+                                            <p className="text-2xl font-black text-primary">{(stats as { teachers: number; students: number }).teachers}</p>
                                             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">Teachers</p>
                                         </div>
                                         <div className="text-center border-l border-white/10 pl-4">
