@@ -21,8 +21,7 @@ export async function getStudents(params: GetStudentsParams = {}): Promise<{ dat
         .from("students")
         .select(`
             *,
-            supervisor:supervisors(name),
-            classes(id, course:courses(name))
+            supervisor:supervisors(name)
         `, { count: 'exact' });
 
     // Apply Filters
