@@ -8,7 +8,10 @@ export interface Student {
     guardian_id: string | null;
     shift_id: string | null;
     supervisor_id: string | null;
-    classes?: { course: { name: string } | null }[];
+    classes?: { 
+        course: { name: string } | null;
+        app_account?: { platform: string } | null;
+    }[];
     supervisor?: { name: string } | null;
     performance_notes?: string | null;
 }

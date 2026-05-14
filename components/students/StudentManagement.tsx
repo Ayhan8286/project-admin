@@ -206,6 +206,7 @@ export function StudentManagement() {
                             <tr>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Student Name</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Courses</th>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Platform</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Roll Number</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Guardian Info</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
@@ -252,6 +253,9 @@ export function StudentManagement() {
                                             </td>
                                             <td className="px-6 py-4 text-xs">
                                                 {student.classes?.map(c => c.course?.name).join(", ") || "No active subjects"}
+                                            </td>
+                                            <td className="px-6 py-4 text-xs">
+                                                {Array.from(new Set(student.classes?.map(c => c.app_account?.platform).filter(Boolean))).join(", ") || "Direct"}
                                             </td>
                                             <td className="px-6 py-4 text-sm font-mono font-bold text-muted-foreground">{student.reg_no || "—"}</td>
                                             <td className="px-6 py-4 text-sm text-muted-foreground">{student.guardian_name || "—"}</td>

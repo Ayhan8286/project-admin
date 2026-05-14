@@ -22,7 +22,7 @@ export async function getStudents(params: GetStudentsParams = {}): Promise<{ dat
         .select(`
             *,
             supervisor:supervisors(name),
-            classes(id, course:courses(name))
+            classes(id, course:courses(name), app_account:app_accounts(platform))
         `, { count: 'exact' });
 
     // Apply Filters
