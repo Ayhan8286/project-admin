@@ -41,8 +41,11 @@ import { Badge } from "@/components/ui/badge";
 /** Converts "10:30 AM" or "10:30AM" to minutes from 00:00 */
 const timeToMinutes = (timeStr?: string) => {
     if (!timeStr) return 0;
-    const match = timeStr.trim().match(/^(\d+):(\d+)\s*(AM|PM|am|pm)$/i);
-    if (!match) return 0;
+    const match = timeStr.trim().match(/^(\d+):(\d+)(?::\d+)?\s*(AM|PM|am|pm)$/i);
+    if (!match) {
+        console.warn("Failed to parse time:", timeStr);
+        return 0;
+    }
     
     let hours = parseInt(match[1], 10);
     const minutes = parseInt(match[2], 10);
@@ -56,7 +59,7 @@ const timeToMinutes = (timeStr?: string) => {
 /** Normalizes "10:3 am" to "10:03 AM" for consistent grouping keys */
 const normalizeTime = (timeStr?: string) => {
     if (!timeStr) return "";
-    const match = timeStr.trim().match(/^(\d+):(\d+)\s*(AM|PM|am|pm)$/i);
+    const match = timeStr.trim().match(/^(\d+):(\d+)(?::\d+)?\s*(AM|PM|am|pm)$/i);
     if (!match) return timeStr.trim();
     
     const hours = parseInt(match[1], 10);
