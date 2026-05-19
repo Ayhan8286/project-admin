@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -39,6 +40,7 @@ export default function StudentProfilePage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = use(params);
+    const router = useRouter();
     const queryClient = useQueryClient();
     const [isManageOpen, setIsManageOpen] = useState(false);
     const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -124,10 +126,10 @@ export default function StudentProfilePage({
     return (
         <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 font-display flex-1">
             {/* Back nav */}
-            <Link href="/students" className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold text-sm transition-colors w-fit">
+            <button onClick={() => router.back()} className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold text-sm transition-colors w-fit">
                 <ArrowLeft className="h-4 w-4" />
-                Back to Students
-            </Link>
+                Go Back
+            </button>
 
             {/* Profile Header */}
             <div className="bg-card rounded-3xl p-6 border border-border shadow-sm card-hover">
