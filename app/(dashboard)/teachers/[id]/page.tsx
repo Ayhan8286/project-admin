@@ -254,11 +254,9 @@ export default function TeacherProfilePage() {
             <div className="p-4 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full">
                 {/* ── Header ── */}
                 <div className="flex items-center gap-4">
-                    <Link href={isSupervisor ? `/supervisors/${supervisorIdCookie}` : "/teachers"}>
-                        <button className="rounded-full border border-border hover:border-primary/30 p-2 transition-all text-muted-foreground hover:text-foreground">
-                            <ArrowLeft className="h-4 w-4" />
-                        </button>
-                    </Link>
+                    <button onClick={() => router.back()} className="rounded-full border border-border hover:border-primary/30 p-2 transition-all text-muted-foreground hover:text-foreground">
+                        <ArrowLeft className="h-4 w-4" />
+                    </button>
                     <div>
                         <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-0.5">
                             {isSupervisor ? "Schedule & Students" : "Teacher Profile"}
