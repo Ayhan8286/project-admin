@@ -95,11 +95,6 @@ export default async function DashboardLayout({
       <main className="flex-1 overflow-y-auto relative z-10 bg-transparent flex flex-col custom-scrollbar">
         {children}
       </main>
-      
-      {/* Real-time Chat Integration */}
-      {userId && (
-        <ChatToggle currentUser={{ id: userId, name: userName, role: role as 'admin' | 'supervisor' }} />
-      )}
     </div>
   );
 }

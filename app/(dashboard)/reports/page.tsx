@@ -52,6 +52,7 @@ export default function DailyReportsPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [authRole, setAuthRole] = useState<string | null>(null);
     const [authSupervisorId, setAuthSupervisorId] = useState<string | undefined>(undefined);
+    const [authTeacherId, setAuthTeacherId] = useState<string | undefined>(undefined);
 
     // Supervisor Interaction State
     const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
@@ -85,10 +86,13 @@ export default function DailyReportsPage() {
     const [filterDate, setFilterDate] = useState<Date>(new Date());
 
     useEffect(() => {
-        const role = document.cookie.split("; ").find(c => c.trim().startsWith("auth_role="))?.split("=")[1] || "admin";
-        const supId = document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
+        const cookies = document.cookie.split(';').map(c => c.trim());
+        const role = cookies.find(c => c.startsWith("auth_role="))?.split("=")[1] || "admin";
+        const supId = cookies.find(c => c.startsWith("supervisor_id="))?.split("=")[1];
+        const tId = cookies.find(c => c.startsWith("teacher_id="))?.split("=")[1];
         setAuthRole(role);
         setAuthSupervisorId(supId);
+        setAuthTeacherId(tId);
         setIsMounted(true);
     }, []);
 
@@ -97,8 +101,11 @@ export default function DailyReportsPage() {
 
     // Queries
     const { data: students = [], isLoading: isLoadingStudents } = useQuery({
-        queryKey: ["studentsForReporting", authSupervisorId],
-        queryFn: () => getStudentsForReporting(isSupervisor ? authSupervisorId : undefined),
+        queryKey: ["studentsForReporting", authSupervisorId, authTeacherId],
+        queryFn: () => getStudentsForReporting(
+            isSupervisor ? authSupervisorId : undefined,
+            authRole === "teacher" ? authTeacherId : undefined
+        ),
         enabled: isMounted && !!authRole
     });
 
@@ -115,11 +122,11 @@ export default function DailyReportsPage() {
     });
 
     const { data: reports = [], isLoading: isLoadingReports } = useQuery({
-        queryKey: ["dailyReports", isAdmin ? filterSupervisorId : authSupervisorId, filterTeacherId, filterStudentId, format(filterDate, "yyyy-MM-dd")],
+        queryKey: ["dailyReports", isAdmin ? filterSupervisorId : authSupervisorId, authRole === "teacher" ? authTeacherId : filterTeacherId, filterStudentId, format(filterDate, "yyyy-MM-dd")],
         queryFn: () => getDailyReports({
             date: format(filterDate, "yyyy-MM-dd"),
             supervisorId: isAdmin ? (filterSupervisorId === "All" ? undefined : filterSupervisorId) : authSupervisorId,
-            teacherId: filterTeacherId === "All" ? undefined : filterTeacherId,
+            teacherId: authRole === "teacher" ? authTeacherId : (filterTeacherId === "All" ? undefined : filterTeacherId),
             studentId: filterStudentId === "All" ? undefined : filterStudentId
         }),
         enabled: isMounted && !!authRole
@@ -291,13 +298,13 @@ export default function DailyReportsPage() {
                         Daily <span className="text-primary italic">Reports</span>
                     </h1>
                     <p className="text-muted-foreground mt-3 text-sm max-w-md font-medium">
-                        {isSupervisor 
+                        {(isSupervisor || authRole === "teacher") 
                             ? "Select a student to log their daily progress."
                             : "Overview of student progress and lesson tracking."}
                     </p>
                 </div>
 
-                {isSupervisor && (
+                {(isSupervisor || authRole === "teacher") && (
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -309,27 +316,29 @@ export default function DailyReportsPage() {
                                 onChange={(e) => setStudentSearch(e.target.value)}
                             />
                         </div>
-                        <div className="w-full sm:w-56">
-                            <Select value={supervisorTeacherFilter} onValueChange={setSupervisorTeacherFilter}>
-                                <SelectTrigger className="h-12 rounded-2xl border-border bg-card px-4 font-bold text-sm shadow-sm">
-                                    <User className="h-4 w-4 mr-2 text-primary" />
-                                    <SelectValue placeholder="All Teachers" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-border shadow-2xl">
-                                    <SelectItem value="All">All Teachers</SelectItem>
-                                    {teachers
-                                        .filter(t => t.supervisor_id === authSupervisorId)
-                                        .map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)
-                                    }
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        {authRole !== "teacher" && (
+                            <div className="w-full sm:w-56">
+                                <Select value={supervisorTeacherFilter} onValueChange={setSupervisorTeacherFilter}>
+                                    <SelectTrigger className="h-12 rounded-2xl border-border bg-card px-4 font-bold text-sm shadow-sm">
+                                        <User className="h-4 w-4 mr-2 text-primary" />
+                                        <SelectValue placeholder="All Teachers" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-border shadow-2xl">
+                                        <SelectItem value="All">All Teachers</SelectItem>
+                                        {teachers
+                                            .filter(t => t.supervisor_id === authSupervisorId)
+                                            .map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)
+                                        }
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
             {/* Supervisor View: ONLY Student List and Popup */}
-            {isSupervisor && (
+            {(isSupervisor || authRole === "teacher") && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {isLoadingStudents ? (
                         Array.from({ length: 8 }).map((_, i) => (

@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { createNotification } from "./notifications";
-import { ClassSchedule, Teacher, TeacherAvailability } from "@/types/student";
+import { ClassSchedule, Teacher, TeacherAvailability, Course } from "@/types/student";
 
 export async function getTeachers(): Promise<Teacher[]> {
     const { data, error } = await supabase
@@ -11,6 +11,20 @@ export async function getTeachers(): Promise<Teacher[]> {
 
     if (error) {
         console.error("Error fetching teachers:", error);
+        throw error;
+    }
+
+    return data || [];
+}
+
+export async function getCourses(): Promise<Course[]> {
+    const { data, error } = await supabase
+        .from("courses")
+        .select("*")
+        .order("name");
+
+    if (error) {
+        console.error("Error fetching courses:", error);
         throw error;
     }
 

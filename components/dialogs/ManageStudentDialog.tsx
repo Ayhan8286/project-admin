@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { getStudentById, updateStudent } from "@/lib/api/students";
-import { getStudentClasses, updateClass, addClass, deleteClass, getTeachers } from "@/lib/api/classes";
+import { getStudentClasses, updateClass, addClass, deleteClass, getTeachers, getCourses } from "@/lib/api/classes";
 import { getSupervisors } from "@/lib/api/supervisors";
 import { getAppAccounts } from "@/lib/api/platforms";
 import {
@@ -18,17 +18,19 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { 
     Loader2, 
     Save, 
     User, 
     Calendar, 
+    Plus,
     Trash2, 
     X,
     Check,
     Globe,
 } from "lucide-react";
-import { ClassSchedule, Teacher, AppAccount } from "@/types/student";
+import { ClassSchedule, Teacher, AppAccount, Course } from "@/types/student";
 import { Supervisor } from "@/types/supervisor";
 import { FormInput } from "@/components/ui/form-input";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +80,14 @@ export function ManageStudentDialog({ studentId, open, onOpenChange, onSuccess }
         enabled: open,
     });
 
+    const { data: courses = [] } = useQuery({
+        queryKey: ["courses"],
+        queryFn: getCourses,
+        enabled: open,
+    });
+
+    const [showAddCourse, setShowAddCourse] = useState(false);
+
     // ─── Profile Form State ──────────────────────────────────────
     const [profileForm, setProfileForm] = useState({
         full_name: "",
@@ -100,6 +110,16 @@ export function ManageStudentDialog({ studentId, open, onOpenChange, onSuccess }
             });
         }
     }, [student]);
+
+    useEffect(() => {
+        if (studentClasses.length > 0 && teachers.length > 0) {
+            const firstClass = studentClasses[0];
+            const teacher = teachers.find(t => t.id === firstClass.teacher_id);
+            if (teacher && teacher.supervisor_id) {
+                setProfileForm(f => ({ ...f, supervisor_id: teacher.supervisor_id || "" }));
+            }
+        }
+    }, [studentClasses, teachers]);
 
     // ─── Mutations ───────────────────────────────────────────────
     const updateProfileMutation = useMutation({
@@ -163,6 +183,24 @@ export function ManageStudentDialog({ studentId, open, onOpenChange, onSuccess }
                                     onChange={(e) => setProfileForm(f => ({ ...f, guardian_name: e.target.value }))}
                                     className="h-10 text-xs font-bold"
                                 />
+                                <FormInput
+                                    label="Roll Number"
+                                    value={profileForm.reg_no}
+                                    onChange={(e) => setProfileForm(f => ({ ...f, reg_no: e.target.value }))}
+                                    className="h-10 text-xs font-bold"
+                                />
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-muted-foreground ml-1">Shift</label>
+                                    <Select value={profileForm.shift} onValueChange={(val) => setProfileForm(f => ({ ...f, shift: val }))}>
+                                        <SelectTrigger className="h-10 rounded-xl border-border bg-card text-xs font-bold px-4">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                            <SelectItem value="Morning">Morning</SelectItem>
+                                            <SelectItem value="Night">Night</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-muted-foreground ml-1">Lifecycle Status</label>
                                     <Select value={profileForm.status} onValueChange={(val) => setProfileForm(f => ({ ...f, status: val }))}>
@@ -213,9 +251,42 @@ export function ManageStudentDialog({ studentId, open, onOpenChange, onSuccess }
                                                 initialData={cls}
                                                 teachers={teachers}
                                                 appAccounts={appAccounts}
+                                                courses={courses}
                                                 studentId={studentId!}
                                             />
                                         ))}
+                                        <div className="mt-4">
+                                            {!showAddCourse ? (
+                                                <Button 
+                                                    onClick={() => setShowAddCourse(true)} 
+                                                    variant="outline" 
+                                                    className="w-full h-11 rounded-2xl border-dashed border-border hover:border-primary/50 text-sm font-bold text-muted-foreground hover:text-primary transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <Plus className="size-4" /> Add Course
+                                                </Button>
+                                            ) : (
+                                                <>
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Add New Course</h4>
+                                                        <Button 
+                                                            onClick={() => setShowAddCourse(false)} 
+                                                            variant="ghost" 
+                                                            size="sm"
+                                                            className="text-xs font-bold text-muted-foreground hover:text-foreground h-7 rounded-lg"
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </div>
+                                                    <ClassEditor
+                                                        isNew={true}
+                                                        teachers={teachers}
+                                                        appAccounts={appAccounts}
+                                                        courses={courses}
+                                                        studentId={studentId!}
+                                                    />
+                                                </>
+                                            )}
+                                        </div>
 
 
                                     </>
@@ -236,6 +307,7 @@ function ClassEditor({
     initialData, 
     teachers, 
     appAccounts, 
+    courses,
     studentId,
     isNew = false,
     onSuccess
@@ -243,6 +315,7 @@ function ClassEditor({
     initialData?: ClassSchedule;
     teachers: Teacher[];
     appAccounts: AppAccount[];
+    courses: Course[];
     studentId: string;
     isNew?: boolean;
     onSuccess?: () => void;
@@ -253,6 +326,7 @@ function ClassEditor({
     const [form, setForm] = useState<Partial<ClassSchedule>>({
         teacher_id: initialData?.teacher_id || "",
         app_account_id: initialData?.app_account_id || "",
+        course_id: initialData?.course_id || "",
         pak_start_time: initialData?.pak_start_time || "10:00 AM",
         pak_end_time: initialData?.pak_end_time || "11:00 AM",
         uk_start_time: initialData?.uk_start_time || convertPkToUk("10:00 AM"),
@@ -311,7 +385,19 @@ function ClassEditor({
         )}>
             <div className="space-y-4">
                 {/* Compact Grid */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                        <label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">Course</label>
+                        <Select value={form.course_id || "none"} onValueChange={(val) => setForm(f => ({ ...f, course_id: val === "none" ? "" : val }))}>
+                            <SelectTrigger className="h-9 rounded-xl border-border bg-background text-[11px] font-bold px-3">
+                                <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                                <SelectItem value="none">None</SelectItem>
+                                {courses.map((c: Course) => <SelectItem key={c.id} value={c.id} className="text-xs font-bold">{c.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="space-y-1">
                         <label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">Teacher</label>
                         <Select value={form.teacher_id} onValueChange={(val) => setForm(f => ({ ...f, teacher_id: val }))}>

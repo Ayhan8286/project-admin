@@ -26,9 +26,16 @@ import { LoadingShimmer } from "@/components/ui/LoadingShimmer";
 
 type StatusFilter = "all" | "Present" | "Absent" | "Late" | "Leave" | "Unmarked";
 
-export default function AttendanceRecordsPage() {
+import { Suspense } from "react";
+
+function AttendanceRecordsContent() {
     const searchParams = useSearchParams();
     const initialStatus = (searchParams.get("status") as StatusFilter) || "all";
+
+    const cookies = typeof document !== 'undefined' ? document.cookie.split(';').map(c => c.trim()) : [];
+    const role = cookies.find(c => c.startsWith("auth_role="))?.split("=")[1];
+    const teacherId = cookies.find(c => c.startsWith("teacher_id="))?.split("=")[1];
+    const supervisorId = cookies.find(c => c.startsWith("supervisor_id="))?.split("=")[1];
 
     const [selectedDate, setSelectedDate] = useState<Date>(subDays(new Date(), 1));
     const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
@@ -57,7 +64,35 @@ export default function AttendanceRecordsPage() {
         marked_by: null
     }));
 
-    const allRecords: AttendanceWithStudent[] = [...records, ...unmarkedRecords];
+    const allRecordsRaw: AttendanceWithStudent[] = [...records, ...unmarkedRecords];
+
+    const allRecords = allRecordsRaw.filter((r) => {
+        let matchesRole = true;
+        
+        if (role === "teacher" && teacherId) {
+            const studentClasses = (r.student as any)?.classes || [];
+            matchesRole = studentClasses.some((c: any) => {
+                const t = Array.isArray(c.teacher) ? c.teacher[0] : c.teacher;
+                return t && t.id === teacherId;
+            });
+        } else if (role === "supervisor" && supervisorId) {
+            const sId = r.student?.supervisor_id;
+            const sObj = r.student?.supervisor as any;
+            
+            if (sId === supervisorId || sObj?.id === supervisorId) {
+                matchesRole = true;
+            } else {
+                const studentClasses = (r.student as any)?.classes || [];
+                matchesRole = studentClasses.some((c: any) => {
+                    const t = Array.isArray(c.teacher) ? c.teacher[0] : c.teacher;
+                    const tSup = t?.supervisor;
+                    return tSup && (tSup.id === supervisorId || t.supervisor_id === supervisorId);
+                });
+            }
+        }
+        
+        return matchesRole;
+    });
 
     const filteredRecords = allRecords.filter((r) => {
         const matchesStatus = statusFilter === "all" ? true : r.status === statusFilter;
@@ -117,6 +152,11 @@ export default function AttendanceRecordsPage() {
                             <span className="text-primary ml-2 text-2xl">✦</span>
                         </h1>
                         <p className="text-muted-foreground mt-1.5 text-sm">View recorded attendance by date.</p>
+                        {role === "teacher" && (
+                            <div className="text-xs text-muted-foreground font-mono bg-accent/20 p-2 rounded-lg mt-2 max-w-max">
+                                Debug: role={role}, teacherId={teacherId}, total={allRecords.length}, filtered={filteredRecords.length}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -206,7 +246,7 @@ export default function AttendanceRecordsPage() {
             </div>
 
             {/* Supervisor Breakdown */}
-            {!isLoading && allRecords.length > 0 && (
+            {!isLoading && allRecords.length > 0 && role === "admin" && (
                 <div className="bg-card rounded-3xl border border-border p-6 shadow-sm card-hover">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-black flex items-center gap-2 text-foreground">
@@ -308,7 +348,7 @@ export default function AttendanceRecordsPage() {
                                 <tr>
                                     <th className="px-6 py-4 border-b border-border">Student Name</th>
                                     <th className="px-6 py-4 border-b border-border">Reg. No.</th>
-                                    <th className="px-6 py-4 border-b border-border">Supervisor</th>
+                                    <th className="px-6 py-4 border-b border-border">Teacher</th>
                                     <th className="px-6 py-4 text-center border-b border-border">Status</th>
                                     <th className="px-6 py-4 border-b border-border">Remarks</th>
                                 </tr>
@@ -342,7 +382,12 @@ export default function AttendanceRecordsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-xs font-bold text-foreground bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10">
-                                                    {record.student?.supervisor?.name || "Unassigned"}
+                                                    {(() => {
+                                                        const classes = (record.student as any)?.classes || [];
+                                                        if (classes.length === 0) return "Unassigned";
+                                                        const t = Array.isArray(classes[0].teacher) ? classes[0].teacher[0] : classes[0].teacher;
+                                                        return t?.name || "Unassigned";
+                                                    })()}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
@@ -371,5 +416,13 @@ export default function AttendanceRecordsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AttendanceRecordsPage() {
+    return (
+        <Suspense fallback={<div className="flex h-full items-center justify-center p-8"><LoadingShimmer rows={3} rowHeight="h-16" /></div>}>
+            <AttendanceRecordsContent />
+        </Suspense>
     );
 }

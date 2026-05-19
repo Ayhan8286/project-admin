@@ -338,26 +338,7 @@ export default function TeacherProfilePage() {
                             </div>
 
 
-                            <Link
-                                href={`/attendance?teacherId=${teacherId}`}
-                                className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0"
-                            >
-                                <UserCheck className="h-4 w-4" />
-                                Mark Attendance
-                            </Link>
 
-                            {!isSupervisor && (
-                                <>
-                                    <button onClick={() => setIsCreateStudentOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full text-sm font-bold hover:border-primary/30 transition-all text-foreground">
-                                        <Plus className="h-4 w-4" />
-                                        Create Student
-                                    </button>
-                                    <button onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-forest hover:bg-forest/90 text-white font-black rounded-full text-sm fab-glow transition-all shrink-0">
-                                        <Plus className="h-4 w-4" />
-                                        Assign Class
-                                    </button>
-                                </>
-                            )}
                         </div>
 
 
@@ -378,7 +359,6 @@ export default function TeacherProfilePage() {
                                                 <TableHead className="text-[11px] font-black uppercase tracking-wider">PK Time</TableHead>
                                                 <TableHead className="text-[11px] font-black uppercase tracking-wider">UK Time</TableHead>
                                                 <TableHead className="text-[11px] font-black uppercase tracking-wider">Schedule Days</TableHead>
-                                                <TableHead className="w-[80px] text-[11px] font-black uppercase tracking-wider">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -401,23 +381,7 @@ export default function TeacherProfilePage() {
                                                             ))}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1">
-                                                            <Link href={`/students/${cls.student?.id}`} className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
-                                                                <Eye className="h-4 w-4" />
-                                                            </Link>
-                                                            {!isSupervisor && (
-                                                                <>
-                                                                    <button className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all" onClick={() => handleEditClick(cls)}>
-                                                                        <Edit className="h-4 w-4" />
-                                                                    </button>
-                                                                    <button className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all" onClick={() => handleDeleteClick(cls.id)}>
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </button>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
+
                                                 </TableRow>
                                             ))}
                                         </TableBody>

@@ -99,6 +99,13 @@ export async function loginAction(prevState: any, formData: FormData) {
       path: "/",
     });
 
+    cookieStore.set("dept_role", "Teacher", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
     revalidatePath("/", "layout");
     redirect("/");
   } else {

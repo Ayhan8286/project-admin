@@ -53,7 +53,7 @@ export function middleware(request: NextRequest) {
       
       let redirectRes;
       if (isSupervisor && supervisorId) {
-        if (deptRole === 'supervisor') {
+        if (deptRole === 'supervisor' || deptRole === 'tech' || deptRole === 'marketing') {
             redirectRes = NextResponse.redirect(new URL(`/`, request.url));
         } else {
             redirectRes = NextResponse.redirect(new URL(`/tasks`, request.url));
@@ -83,7 +83,7 @@ export function middleware(request: NextRequest) {
       pathname === "/login" ||
       pathname === "/tasks" ||
       pathname.startsWith(`/departments/${deptRole}/`) ||
-      (deptRole === 'supervisor' && (
+      ((deptRole === 'supervisor' || deptRole === 'tech' || deptRole === 'marketing') && (
         pathname === "/" ||
         pathname === "/departments/teacher" ||
         pathname === `/supervisors/${supervisorId}` ||
@@ -113,7 +113,7 @@ export function middleware(request: NextRequest) {
       pathname === "/login" ||
       pathname === "/" ||
       pathname === "/timetable" ||
-      pathname === "/attendance" ||
+      pathname.startsWith("/attendance") ||
       pathname === "/reports" ||
       pathname.startsWith("/teachers/") ||
       pathname.startsWith("/students/"); // Teachers might need to see student details

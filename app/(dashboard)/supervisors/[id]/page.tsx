@@ -130,11 +130,22 @@ export default function SupervisorDetailPage() {
                     <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">Overview</span>
                     <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                     {[
-                        { label: "Assigned Teachers", value: assignedTeachers.length, sub: "Under this supervisor", accent: "#13ec37", Icon: Users },
-                        { label: "Total Classes", value: allClasses.filter((c: any) => assignedTeachers.some((t: Teacher) => t.id === c.teacher_id)).length, sub: "Across all teachers", accent: "#a855f7", Icon: BookOpen },
-                        { label: "Active Faculty", value: assignedTeachers.filter((t: Teacher) => t.is_active).length, sub: "Currently active", accent: "#3b82f6", Icon: ShieldCheck },
+                        { 
+                            label: "Total Teachers Assigned", 
+                            value: assignedTeachers.length, 
+                            sub: "Under this supervisor", 
+                            accent: "#13ec37", 
+                            Icon: Users 
+                        },
+                        { 
+                            label: "Total Students Assigned", 
+                            value: new Set(allClasses.filter((c: any) => assignedTeachers.some((t: Teacher) => t.id === c.teacher_id)).map((c: any) => c.student_id)).size, 
+                            sub: "Across all teachers", 
+                            accent: "#a855f7", 
+                            Icon: BookOpen 
+                        },
                     ].map(({ label, value, sub, accent, Icon }, i) => (
                         <div key={i} className="card-hover relative bg-card rounded-3xl p-5 border border-border overflow-hidden group flex flex-col gap-3">
                             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" style={{ background: accent }} />
@@ -232,7 +243,7 @@ export default function SupervisorDetailPage() {
                                             className="w-full py-2.5 flex items-center justify-center gap-2 rounded-full text-sm font-black bg-forest text-white fab-glow hover:bg-forest/90 transition-all"
                                         >
                                             <Eye className="h-4 w-4" />
-                                            View Students & Schedule
+                                            Students
                                         </Link>
                                     </div>
                                 </div>

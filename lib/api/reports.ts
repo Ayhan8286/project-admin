@@ -92,7 +92,7 @@ export async function getDailyReports(filters: {
     }));
 }
 
-export async function getStudentsForReporting(supervisorId?: string): Promise<any[]> {
+export async function getStudentsForReporting(supervisorId?: string, teacherId?: string): Promise<any[]> {
     let query = supabase
         .from("students")
         .select(`
@@ -108,7 +108,11 @@ export async function getStudentsForReporting(supervisorId?: string): Promise<an
         `)
         .ilike("status", "active");
 
-    if (supervisorId) {
+    if (teacherId) {
+        const { data: classStudents } = await supabase.from("classes").select("student_id").eq("teacher_id", teacherId);
+        const linkedStudentIds = (classStudents || []).map(cs => cs.student_id);
+        query = query.in("id", linkedStudentIds.length > 0 ? linkedStudentIds : ['00000000-0000-0000-0000-000000000000']);
+    } else if (supervisorId) {
         // Resolve linked students via teachers first
         const { data: teachers } = await supabase.from("teachers").select("id").eq("supervisor_id", supervisorId);
         const teacherIds = (teachers || []).map(t => t.id);

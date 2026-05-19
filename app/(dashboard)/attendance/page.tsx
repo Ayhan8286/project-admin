@@ -8,6 +8,8 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { getTeachers, getStudentsByTeacher, getTeachersBySupervisor } from "@/lib/api/classes";
 import { submitAttendance } from "@/lib/api/attendance";
+import { getSupervisors } from "@/lib/api/supervisors";
+import { Label } from "@/components/ui/label";
 import { Teacher, AttendanceRecord } from "@/types/student";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -46,38 +48,61 @@ function AttendanceContent() {
     const searchParams = useSearchParams();
     const teacherFromUrl = searchParams.get("teacherId");
 
+    const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
     const [selectedTeacher, setSelectedTeacher] = useState<string>("");
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [attendanceList, setAttendanceList] = useState<StudentAttendance[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
 
-    // Initial effect for URL param
+    const [authRole, setAuthRole] = useState<string | undefined>(undefined);
+    const [authTeacherId, setAuthTeacherId] = useState<string | undefined>(undefined);
+    const [authSupervisorId, setAuthSupervisorId] = useState<string | undefined>(undefined);
+
+    const isSupervisor = authRole === "supervisor";
+    const supervisorId = authSupervisorId;
+
+    // Read cookies on mount
     useEffect(() => {
+        const cookies = typeof document !== 'undefined' ? document.cookie.split(';').map(c => c.trim()) : [];
+        const role = cookies.find(c => c.startsWith("auth_role="))?.split("=")[1];
+        const tId = cookies.find(c => c.startsWith("teacher_id="))?.split("=")[1];
+        const supId = cookies.find(c => c.startsWith("supervisor_id="))?.split("=")[1];
+        
+        setAuthRole(role);
+        setAuthTeacherId(tId);
+        setAuthSupervisorId(supId);
+
         if (teacherFromUrl) {
             setSelectedTeacher(teacherFromUrl);
-        } else if (typeof document !== 'undefined' && document.cookie.includes("auth_role=teacher")) {
-            const teacherId = document.cookie.split("; ").find(c => c.trim().startsWith("teacher_id="))?.split("=")[1];
-            if (teacherId) setSelectedTeacher(teacherId);
+        } else if (role === "teacher" && tId) {
+            setSelectedTeacher(tId);
         }
     }, [teacherFromUrl]);
 
-    const { data: teachers = [], isLoading: teachersLoading } = useQuery({
-        queryKey: (typeof document !== 'undefined' && document.cookie.includes("auth_role=supervisor")) 
-            ? ["teachers", "attendance", "supervisor", document.cookie.split("; ").find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1]]
-            : ["teachers", "attendance"],
-        queryFn: async () => {
-            // Check for supervisor role from cookies
-            const cookies = document.cookie.split("; ");
-            const role = cookies.find(c => c.trim().startsWith("auth_role="))?.split("=")[1];
-            const supervisorId = cookies.find(c => c.trim().startsWith("supervisor_id="))?.split("=")[1];
+    const { data: supervisors = [], isLoading: supervisorsLoading } = useQuery({
+        queryKey: ["supervisors"],
+        queryFn: () => getSupervisors(),
+    });
 
-            if (role === "supervisor" && supervisorId) {
+    const { data: teachers = [], isLoading: teachersLoading } = useQuery({
+        queryKey: ["teachers", "attendance", selectedSupervisor, isSupervisor, supervisorId],
+        queryFn: async () => {
+            if (isSupervisor && supervisorId) {
                 return await getTeachersBySupervisor(supervisorId);
+            }
+            if (selectedSupervisor && selectedSupervisor !== "all") {
+                return await getTeachersBySupervisor(selectedSupervisor);
             }
             return await getTeachers();
         },
     });
+
+    useEffect(() => {
+        if (selectedSupervisor) {
+            setSelectedTeacher("");
+        }
+    }, [selectedSupervisor]);
 
     const { data: studentsData = [], isLoading: studentsLoading, isFetched } = useQuery({
         queryKey: ["studentsByTeacher", selectedTeacher],
@@ -170,6 +195,11 @@ function AttendanceContent() {
                     <p className="text-muted-foreground mt-1.5 text-sm">
                         Mark and submit daily attendance for students.
                     </p>
+                    {authRole === "teacher" && (
+                        <div className="text-xs text-muted-foreground font-mono bg-accent/20 p-2 rounded-lg mt-2 max-w-max">
+                            Debug: role={authRole}, teacherId={authTeacherId}, selectedTeacher={selectedTeacher}
+                        </div>
+                    )}
                 </div>
                 <Link href="/attendance/records">
                     <button className="flex items-center gap-2 px-6 py-3 glass-panel border border-white/20 dark:border-white/5 rounded-full text-sm font-bold hover:bg-accent transition-colors text-foreground shadow-[0px_0px_48px_rgba(45,52,50,0.06)]">
@@ -182,43 +212,69 @@ function AttendanceContent() {
             {/* Main Selection Area */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Teacher Selection */}
-                <div className="glass-panel border-white/20 dark:border-white/5 rounded-3xl p-6 border shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col card-hover">
-                    <h3 className="text-lg font-black mb-2 text-foreground">Select Class</h3>
-                    <p className="text-xs text-muted-foreground mb-6 font-medium">Choose a teacher to load their students.</p>
-                    <div className="relative z-10">
-                        {typeof document !== 'undefined' && document.cookie.includes("auth_role=teacher") ? (
-                            <div className="pill-input h-14 bg-accent/10 border-border rounded-2xl px-5 flex items-center text-sm font-bold text-foreground opacity-70">
-                                {teachers.find((t: Teacher) => t.id === selectedTeacher)?.name || "Your Assigned Class"}
+                {authRole !== "teacher" && (
+                    <div className="glass-panel border-white/20 dark:border-white/5 rounded-3xl p-6 border shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col card-hover">
+                        <h3 className="text-lg font-black mb-2 text-foreground">Select Class</h3>
+                        <p className="text-xs text-muted-foreground mb-6 font-medium">Choose a supervisor and teacher to load students.</p>
+                        <div className="relative z-10 space-y-4">
+                            {/* Supervisor Selection */}
+                            {!isSupervisor && (
+                                <div>
+                                    <Label className="text-xs font-bold text-muted-foreground mb-1 block">Supervisor</Label>
+                                    <Select value={selectedSupervisor} onValueChange={setSelectedSupervisor}>
+                                        <SelectTrigger className="pill-input h-12 bg-accent/20 border-border rounded-2xl px-4 text-sm font-bold text-foreground focus:ring-2 focus:ring-primary focus:border-primary shadow-sm outline-none transition-all">
+                                            <SelectValue placeholder={supervisorsLoading ? "Loading..." : "Select Supervisor..."} />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-border shadow-xl">
+                                            <SelectItem value="all" className="cursor-pointer font-medium hover:bg-accent focus:bg-accent rounded-xl m-1 transition-colors">All Supervisors / Unassigned</SelectItem>
+                                            {supervisors.map((sup: any) => (
+                                                <SelectItem key={sup.id} value={sup.id} className="cursor-pointer font-medium hover:bg-accent focus:bg-accent rounded-xl m-1 transition-colors">
+                                                    {sup.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
+                            {/* Teacher Selection */}
+                            <div>
+                                <Label className="text-xs font-bold text-muted-foreground mb-1 block">Teacher</Label>
+                                {typeof document !== 'undefined' && document.cookie.includes("auth_role=teacher") ? (
+                                    <div className="pill-input h-12 bg-accent/10 border-border rounded-2xl px-4 flex items-center text-sm font-bold text-foreground opacity-70">
+                                        {teachers.find((t: Teacher) => t.id === selectedTeacher)?.name || "Your Assigned Class"}
+                                    </div>
+                                ) : (
+                                    <Select value={selectedTeacher} onValueChange={setSelectedTeacher} disabled={!isSupervisor && !selectedSupervisor && selectedSupervisor !== "all"}>
+                                        <SelectTrigger className="pill-input h-12 bg-accent/20 border-border rounded-2xl px-4 text-sm font-bold text-foreground focus:ring-2 focus:ring-primary focus:border-primary shadow-sm outline-none transition-all">
+                                            <SelectValue placeholder={teachersLoading ? "Loading..." : "Select Teacher..."} />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-border shadow-xl">
+                                            {teachers.map((teacher: Teacher) => (
+                                                <SelectItem key={teacher.id} value={teacher.id} className="cursor-pointer font-medium hover:bg-accent focus:bg-accent rounded-xl m-1 transition-colors">
+                                                    {teacher.name} ({teacher.staff_id})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
-                        ) : (
-                            <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
-                                <SelectTrigger className="pill-input h-14 bg-accent/20 border-border rounded-2xl px-5 text-sm font-bold text-foreground focus:ring-2 focus:ring-primary focus:border-primary shadow-sm outline-none transition-all">
-                                    <SelectValue placeholder={teachersLoading ? "Loading..." : "Select Teacher..."} />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-border shadow-xl">
-                                    {teachers.map((teacher: Teacher) => (
-                                        <SelectItem key={teacher.id} value={teacher.id} className="cursor-pointer font-medium hover:bg-accent focus:bg-accent rounded-xl m-1 transition-colors">
-                                            {teacher.name} ({teacher.staff_id})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        </div>
+
+                        {!selectedTeacher && (
+                            <div className="mt-8 flex-1 flex flex-col items-center justify-center text-center opacity-50">
+                                <div className="p-4 rounded-full bg-accent mb-3">
+                                    <UserCheck className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                                <p className="text-sm font-bold text-foreground">Awaiting Selection</p>
+                                <p className="text-xs text-muted-foreground max-w-[200px] mt-1">Please select a teacher from the dropdown to continue.</p>
+                            </div>
                         )}
                     </div>
-
-                    {!selectedTeacher && (
-                        <div className="mt-8 flex-1 flex flex-col items-center justify-center text-center opacity-50">
-                            <div className="p-4 rounded-full bg-accent mb-3">
-                                <UserCheck className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                            <p className="text-sm font-bold text-foreground">Awaiting Selection</p>
-                            <p className="text-xs text-muted-foreground max-w-[200px] mt-1">Please select a teacher from the dropdown to continue.</p>
-                        </div>
-                    )}
-                </div>
+                )}
 
                 {/* Inline Calendar (only prominent when a teacher is selected) */}
-                <div className={cn("glass-panel border-white/20 dark:border-white/5 rounded-3xl p-6 border shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col transition-all duration-500", !selectedTeacher ? "opacity-50 pointer-events-none filter blur-[1px]" : "card-hover")}>
+                <div className={cn("glass-panel border-white/20 dark:border-white/5 rounded-3xl p-6 border shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex flex-col transition-all duration-500", !selectedTeacher ? "opacity-50 pointer-events-none filter blur-[1px]" : "card-hover", authRole === "teacher" && "md:col-span-2")}>
                     <h3 className="text-lg font-black mb-2 text-foreground">Select Date</h3>
                     <p className="text-xs text-muted-foreground mb-6 font-medium">Pick the date you are recording attendance for.</p>
                     <div className="flex justify-center bg-accent/10 rounded-3xl border border-border p-4 shadow-inner">
@@ -269,6 +325,9 @@ function AttendanceContent() {
                                 <h4 className="text-base font-bold text-foreground">No Students Found</h4>
                                 <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                                     There are no students currently assigned to this teacher.
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-2 font-mono">
+                                    Debug ID: {selectedTeacher || "None"}
                                 </p>
                             </div>
                         ) : (

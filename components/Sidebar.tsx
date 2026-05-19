@@ -61,7 +61,7 @@ export function Sidebar({
                             if (!allowed.includes(item.label)) return null;
                         } else {
                             // Specialized departments only see Tasks
-                            const allowed = ["Tasks"];
+                            const allowed = ["Dashboard", "Tasks"];
                             if (!allowed.includes(item.label)) return null;
                         }
                     }
@@ -74,7 +74,7 @@ export function Sidebar({
                     let href = item.href;
                     // Point Dashboard to correct personal URL for specialized departments
                     if (role === "supervisor" && item.label === "Dashboard" && supervisorId) {
-                        if (deptRole !== 'supervisor') {
+                        if (deptRole !== 'supervisor' && deptRole !== 'tech' && deptRole !== 'marketing') {
                             href = `/departments/${deptRole}/${supervisorId}`;
                         }
                     }
@@ -110,7 +110,7 @@ export function Sidebar({
                             {userName}
                         </p>
                         <p className="text-xs text-emerald-800/60 dark:text-emerald-200/60 truncate capitalize">
-                            {role === "admin" ? "Administrator" : `${department} Team`}
+                            {role === "admin" ? "Administrator" : (role === "teacher" ? "Teacher" : `${department} Team`)}
                         </p>
                     </div>
                 </div>

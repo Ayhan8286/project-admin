@@ -54,15 +54,9 @@ export default function DashboardClient({
             {/* TopAppBar */}
             <header className="flex justify-between items-center px-6 md:px-10 py-6 w-full sticky top-0 z-20 glass-panel border-b border-white/20 dark:border-white/5">
                 <div className="flex items-center">
-                    {/* Handled by sidebar mobile toggle normally, but we can leave a placeholder */}
-                    <span className="md:hidden mr-4 material-symbols-outlined text-emerald-900 dark:text-emerald-50" data-icon="menu">menu</span>
                     <h2 className="text-2xl font-black tracking-tight text-emerald-900 dark:text-emerald-50 brand-font">Dashboard Overview</h2>
                 </div>
                 <div className="flex items-center space-x-6">
-                    <div className="hidden lg:flex items-center bg-surface-container-highest px-4 py-2 rounded-full w-64 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                        <span className="material-symbols-outlined text-outline" data-icon="search">search</span>
-                        <input className="bg-transparent border-none focus:ring-0 text-sm w-full font-body outline-none placeholder:text-outline/60 ml-2" placeholder="Search analytics..." type="text" />
-                    </div>
                     <div className="flex space-x-2">
                         {mounted && (
                             <button
@@ -82,10 +76,7 @@ export default function DashboardClient({
 
             {/* Content Area */}
             <div className="p-6 md:p-10 space-y-16 relative z-10 w-full max-w-7xl mx-auto">
-                {role === "teacher" ? (
-                    <TeacherSchedule teacherId={teacherId!} />
-                ) : (
-                    <>
+
                     {/* Bento Grid Section: Primary Stats */}
                 <section className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
                     {/* Total Students */}
@@ -113,20 +104,22 @@ export default function DashboardClient({
                     </Link>
 
                     {/* Summary Column */}
-                    <div className="md:col-span-2 lg:col-span-2 grid grid-rows-2 gap-6">
-                        <Link href="/departments/teacher" className="p-6 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex items-center space-x-6 border border-white/20 dark:border-white/5 group hover:border-emerald-500/50 transition-all duration-300">
-                            <div className="w-14 h-14 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-800 dark:text-emerald-200 group-hover:scale-110 transition-transform">
-                                <span className="material-symbols-outlined" data-icon="supervisor_account">supervisor_account</span>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-xs font-bold text-emerald-800/60 dark:text-emerald-200/60 uppercase tracking-widest">Teachers</p>
-                                <div className="flex items-baseline space-x-2">
-                                    <h4 className="text-2xl font-black text-emerald-900 dark:text-emerald-50">{activeTeachers.toLocaleString()}</h4>
-                                    <span className="text-sm font-semibold text-emerald-800/50 dark:text-emerald-200/50">/ {totalTeachers.toLocaleString()}</span>
+                    <div className={`md:col-span-2 lg:col-span-2 grid gap-6 ${role !== "teacher" ? "grid-rows-2" : ""}`}>
+                        {role !== "teacher" && (
+                            <Link href="/departments/teacher" className="p-6 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex items-center space-x-6 border border-white/20 dark:border-white/5 group hover:border-emerald-500/50 transition-all duration-300">
+                                <div className="w-14 h-14 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-800 dark:text-emerald-200 group-hover:scale-110 transition-transform">
+                                    <span className="material-symbols-outlined" data-icon="supervisor_account">supervisor_account</span>
                                 </div>
-                                <p className="text-[10px] text-emerald-800/50 dark:text-emerald-200/50 font-medium">Currently Active</p>
-                            </div>
-                        </Link>
+                                <div className="flex-1">
+                                    <p className="text-xs font-bold text-emerald-800/60 dark:text-emerald-200/60 uppercase tracking-widest">Teachers</p>
+                                    <div className="flex items-baseline space-x-2">
+                                        <h4 className="text-2xl font-black text-emerald-900 dark:text-emerald-50">{activeTeachers.toLocaleString()}</h4>
+                                        <span className="text-sm font-semibold text-emerald-800/50 dark:text-emerald-200/50">/ {totalTeachers.toLocaleString()}</span>
+                                    </div>
+                                    <p className="text-[10px] text-emerald-800/50 dark:text-emerald-200/50 font-medium">Currently Active</p>
+                                </div>
+                            </Link>
+                        )}
                         <div className="p-6 rounded-xl glass-panel shadow-[0px_0px_48px_rgba(45,52,50,0.06)] flex items-center space-x-6 border border-white/20 dark:border-white/5 group hover:border-emerald-700/50 transition-all duration-300">
                             <div className="w-14 h-14 shrink-0 rounded-full bg-emerald-800 dark:bg-emerald-700 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
                                 <span className="material-symbols-outlined" data-icon="how_to_reg">how_to_reg</span>
@@ -299,8 +292,7 @@ export default function DashboardClient({
                         </div>
                     </div>
                 </section>
-                </>
-                )}
+
             </div>
             
             {/* Bottom Navigation spacer for mobile */}

@@ -46,10 +46,13 @@ export async function getAttendanceByDate(date: string, supervisorId?: string): 
                 full_name, 
                 reg_no, 
                 supervisor_id,
-                supervisor:supervisors(name),
+                supervisor:supervisors(id, name),
                 classes(
                     teacher:teachers(
-                        supervisor:supervisors(name)
+                        id,
+                        name,
+                        supervisor_id,
+                        supervisor:supervisors(id, name)
                     )
                 )
             )
@@ -112,11 +115,13 @@ export async function getMissingAttendanceStudents(date: string, supervisorId?: 
         .from("students")
         .select(`
             id, full_name, reg_no, status, shift, supervisor_id,
-            supervisor:supervisors(name),
+            supervisor:supervisors(id, name),
             classes(
                 teacher:teachers(
+                    id,
                     name,
-                    supervisor:supervisors(name)
+                    supervisor_id,
+                    supervisor:supervisors(id, name)
                 )
             )
         `)
